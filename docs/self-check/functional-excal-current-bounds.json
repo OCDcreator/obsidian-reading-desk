@@ -1,0 +1,118 @@
+{
+  "timestamp": "2026-09-18T15:59:49.782Z",
+  "command": "eval",
+  "target": "F5514A5BEFBB73BCDA0D08EFB70361A8",
+  "result": {
+    "active": "reading-desk-reader",
+    "type": "excalidraw",
+    "text": "",
+    "spans": [
+      {
+        "text": "Introduction",
+        "rect": {
+          "x": 270.015625,
+          "y": 146.625,
+          "width": 78.3756103515625,
+          "height": 15,
+          "top": 146.625,
+          "right": 348.3912353515625,
+          "bottom": 161.625,
+          "left": 270.015625
+        }
+      },
+      {
+        "text": "Functional reading desk selection line one.",
+        "rect": {
+          "x": 270.015625,
+          "y": 227.328125,
+          "width": 283.470703125,
+          "height": 15,
+          "top": 227.328125,
+          "right": 553.486328125,
+          "bottom": 242.328125,
+          "left": 270.015625
+        }
+      },
+      {
+        "text": "This second line belongs to chapter 1.",
+        "rect": {
+          "x": 270.015625,
+          "y": 264.828125,
+          "width": 252.6363525390625,
+          "height": 15,
+          "top": 264.828125,
+          "right": 522.6519775390625,
+          "bottom": 279.828125,
+          "left": 270.015625
+        }
+      }
+    ],
+    "palette": [
+      {
+        "text": "苔",
+        "rect": {
+          "x": 599.5,
+          "y": 100.328125,
+          "width": 28,
+          "height": 28,
+          "top": 100.328125,
+          "right": 627.5,
+          "bottom": 128.328125,
+          "left": 599.5
+        }
+      },
+      {
+        "text": "琥",
+        "rect": {
+          "x": 632.5,
+          "y": 100.328125,
+          "width": 28,
+          "height": 28,
+          "top": 100.328125,
+          "right": 660.5,
+          "bottom": 128.328125,
+          "left": 632.5
+        }
+      },
+      {
+        "text": "砖",
+        "rect": {
+          "x": 665.5,
+          "y": 100.328125,
+          "width": 28,
+          "height": 28,
+          "top": 100.328125,
+          "right": 693.5,
+          "bottom": 128.328125,
+          "left": 665.5
+        }
+      },
+      {
+        "text": "靛",
+        "rect": {
+          "x": 698.5,
+          "y": 100.328125,
+          "width": 28,
+          "height": 28,
+          "top": 100.328125,
+          "right": 726.5,
+          "bottom": 128.328125,
+          "left": 698.5
+        }
+      },
+      {
+        "text": "梅",
+        "rect": {
+          "x": 731.5,
+          "y": 100.328125,
+          "width": 28,
+          "height": 28,
+          "top": 100.328125,
+          "right": 759.5,
+          "bottom": 128.328125,
+          "left": 731.5
+        }
+      }
+    ]
+  }
+}

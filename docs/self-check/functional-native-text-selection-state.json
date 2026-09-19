@@ -1,0 +1,51 @@
+{
+  "timestamp": "2026-09-18T15:38:08.297Z",
+  "command": "eval",
+  "target": "F5514A5BEFBB73BCDA0D08EFB70361A8",
+  "result": {
+    "text": "Functional reading desk selection line one.\nThis second line belongs to chapter 2.",
+    "rects": [
+      {
+        "x": 264.9140625,
+        "y": 304.328125,
+        "width": 283.470703125,
+        "height": 21,
+        "top": 304.328125,
+        "right": 548.384765625,
+        "bottom": 325.328125,
+        "left": 264.9140625
+      },
+      {
+        "x": 196.140625,
+        "y": 179.828125,
+        "width": 0,
+        "height": 18,
+        "top": 179.828125,
+        "right": 196.140625,
+        "bottom": 197.828125,
+        "left": 196.140625
+      },
+      {
+        "x": 264.9140625,
+        "y": 344.828125,
+        "width": 252.6357421875,
+        "height": 15,
+        "top": 344.828125,
+        "right": 517.5498046875,
+        "bottom": 359.828125,
+        "left": 264.9140625
+      },
+      {
+        "x": 264.9140625,
+        "y": 341.828125,
+        "width": 252.6357421875,
+        "height": 21,
+        "top": 341.828125,
+        "right": 517.5498046875,
+        "bottom": 362.828125,
+        "left": 264.9140625
+      }
+    ],
+    "page": 2
+  }
+}

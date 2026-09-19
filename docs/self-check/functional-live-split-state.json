@@ -1,0 +1,144 @@
+{
+  "timestamp": "2026-09-18T15:31:43.017Z",
+  "command": "eval",
+  "target": "F5514A5BEFBB73BCDA0D08EFB70361A8",
+  "result": {
+    "layout": "split",
+    "panels": [
+      {
+        "text": "本页摘录卡片折叠卡片定位目标ReadingDeskselectionfixture折叠卡片定位目标paragraphexistssolely折叠卡片定位目标excerpten\ntrypaths,persisted",
+        "rect": {
+          "x": 390.875,
+          "y": 498.7265625,
+          "width": 220.59375,
+          "height": 422.59375,
+          "top": 498.7265625,
+          "right": 611.46875,
+          "bottom": 921.3203125,
+          "left": 390.875
+        }
+      }
+    ],
+    "inputs": [
+      {
+        "value": "ReadingDeskselectionfixture",
+        "rect": {
+          "x": 399.875,
+          "y": 548.3203125,
+          "width": 202.59375,
+          "height": 30,
+          "top": 548.3203125,
+          "right": 602.46875,
+          "bottom": 578.3203125,
+          "left": 399.875
+        }
+      },
+      {
+        "value": "paragraphexistssolely",
+        "rect": {
+          "x": 399.875,
+          "y": 671.3203125,
+          "width": 202.59375,
+          "height": 30,
+          "top": 671.3203125,
+          "right": 602.46875,
+          "bottom": 701.3203125,
+          "left": 399.875
+        }
+      },
+      {
+        "value": "excerpten trypaths,persisted",
+        "rect": {
+          "x": 399.875,
+          "y": 794.3203125,
+          "width": 202.59375,
+          "height": 30,
+          "top": 794.3203125,
+          "right": 602.46875,
+          "bottom": 824.3203125,
+          "left": 399.875
+        }
+      }
+    ],
+    "controls": [
+      {
+        "text": "折叠卡片",
+        "rect": {
+          "x": 399.875,
+          "y": 586.3203125,
+          "width": 78,
+          "height": 30,
+          "top": 586.3203125,
+          "right": 477.875,
+          "bottom": 616.3203125,
+          "left": 399.875
+        }
+      },
+      {
+        "text": "定位目标",
+        "rect": {
+          "x": 483.875,
+          "y": 586.3203125,
+          "width": 78,
+          "height": 30,
+          "top": 586.3203125,
+          "right": 561.875,
+          "bottom": 616.3203125,
+          "left": 483.875
+        }
+      },
+      {
+        "text": "折叠卡片",
+        "rect": {
+          "x": 399.875,
+          "y": 709.3203125,
+          "width": 78,
+          "height": 30,
+          "top": 709.3203125,
+          "right": 477.875,
+          "bottom": 739.3203125,
+          "left": 399.875
+        }
+      },
+      {
+        "text": "定位目标",
+        "rect": {
+          "x": 483.875,
+          "y": 709.3203125,
+          "width": 78,
+          "height": 30,
+          "top": 709.3203125,
+          "right": 561.875,
+          "bottom": 739.3203125,
+          "left": 483.875
+        }
+      },
+      {
+        "text": "折叠卡片",
+        "rect": {
+          "x": 399.875,
+          "y": 832.3203125,
+          "width": 78,
+          "height": 30,
+          "top": 832.3203125,
+          "right": 477.875,
+          "bottom": 862.3203125,
+          "left": 399.875
+        }
+      },
+      {
+        "text": "定位目标",
+        "rect": {
+          "x": 483.875,
+          "y": 832.3203125,
+          "width": 78,
+          "height": 30,
+          "top": 832.3203125,
+          "right": 561.875,
+          "bottom": 862.3203125,
+          "left": 483.875
+        }
+      }
+    ]
+  }
+}

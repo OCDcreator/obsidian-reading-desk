@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-09-18T15:52:16.581Z",
+  "command": "eval",
+  "target": "F5514A5BEFBB73BCDA0D08EFB70361A8",
+  "result": {
+    "openDrawing": "openDrawing(e,t,i=!1,a,n=!1,r){this.fileManager.openDrawing(e,t,i,a,n,r)}",
+    "createDrawing": "async createDrawing(e,t,i){const a=await this.fileManager.createDrawing(e,t,i);if(Date.now()-this.loadTimestamp>1){const e=this.app.vault.getFiles().filter(e=>this.isExcalidrawFile(e)).length,t=e<200?\"Bronze\":e<750?\"Silver\":e<2e3?\"Gold\":\"Platinum\",{grip:i,decoration:a,blade:n}=SwordColors[t];this.settings.rank!==t&&(await this.loadSettings(),this.settings.rank!==t&&(this.settings.rank=t,await this.saveSettings(),new RankMessage(this.app,e,t,a,n,i).open()))}return a}",
+    "isFile": true,
+    "command": "()=>{this.openDialog.start(openDialogAction.openFile,!1)}"
+  }
+}

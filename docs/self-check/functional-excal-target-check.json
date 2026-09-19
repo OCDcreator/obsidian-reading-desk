@@ -1,0 +1,9 @@
+{
+  "timestamp": "2026-09-18T15:58:35.573Z",
+  "command": "eval",
+  "target": "F5514A5BEFBB73BCDA0D08EFB70361A8",
+  "result": {
+    "type": "canvas",
+    "active": "<select aria-label=\"摘录目标类型\"><option value=\"canvas\">Canvas</option><option value=\"excalidraw\">Excalidraw</option><option value=\"markdown\">Markdown</option></select>"
+  }
+}

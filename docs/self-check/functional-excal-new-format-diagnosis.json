@@ -1,0 +1,16 @@
+{
+  "timestamp": "2026-09-18T16:00:52.112Z",
+  "command": "eval",
+  "target": "F5514A5BEFBB73BCDA0D08EFB70361A8",
+  "result": {
+    "isFile": true,
+    "cache": {
+      "excalidraw-plugin": "parsed",
+      "tags": [
+        "excalidraw"
+      ]
+    },
+    "raw": "---\nexcalidraw-plugin: parsed\ntags: [excalidraw]\n---\n\n```json\n{\n  \"type\": \"excalidraw\",\n  \"version\": 2,\n  \"elements\": [\n    {\n      \"id\": \"rd-excalidraw-2699c679-99c9-4bf4-aea8-fc93e23c962e\",\n      \"type\": \"text\",\n      \"x\": 0,\n      \"y\": 0,\n      \"width\": 680,\n      \"height\": 72,\n      \"angle\": 0,\n      \"strokeColor\": \"#1e1e1e\",\n      \"backgroundColor\": \"transparent\",\n      \"fillStyle\": \"solid\",\n      \"strokeWidth\": 1,\n      \"strokeStyle\": \"solid\",\n      \"roughness\": 1,\n      \"opacity\": 100,\n  ",
+    "split": "async openTargetInSplit(path, objectId) {\n    const file = this.app.vault.getAbstractFileByPath(path);\n    if (!(file instanceof import_obsidian4.TFile))\n      throw new Error(`\\u672A\\u627E\\u5230\\u6458\\u5F55\\u76EE\\u6807\\uFF1A${path}`);\n    if (path.endsWith(\".excalidraw.md\")) {\n      const excalidraw = this.excalidrawPlugin();\n      if (!excalidraw)\n        throw new Error(\"\\u672A\\u5B89\\u88C5 Excalidraw \\u63D2\\u4EF6\\uFF0C\\u65E0\\u6CD5\\u5728\\u539F\\u751F\\u76EE\\u6807\\u9762\\u677F\\u6253\\u5F00\\u8BE5\\u6458\\u5F55\\u3002\");\n      await excalidraw.openDrawing(file, \"new-pane\", true);\n      if (objectId)\n        this.scheduleNativeFocus(objectId);\n      return;\n    }\n    const leaf = this.app.workspace.getLeaf(\"split\");\n    await leaf.openFile(file);\n    this.app.workspace.setActiveLeaf(leaf, { focus: true });\n    if (objectId)\n      this.scheduleNativeFocus(objectId, leaf.view);\n  }"
+  }
+}

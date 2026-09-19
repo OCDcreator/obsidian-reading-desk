@@ -1,0 +1,43 @@
+{
+  "timestamp": "2026-09-18T15:32:24.196Z",
+  "command": "eval",
+  "target": "F5514A5BEFBB73BCDA0D08EFB70361A8",
+  "result": {
+    "cardText": "展开卡片定位目标",
+    "stored": {
+      "title": "独立验收标题 1532",
+      "folded": true
+    },
+    "node": {
+      "id": "rd-excerpt-0e9974ce-fb13-41a6-80e3-5b72a0f4d199",
+      "type": "text",
+      "text": "# 独立验收标题 1532\n\nReadingDeskselectionfixture\n\n[原文第 1 页](obsidian://reading-desk-highlight?file=Reading%20Desk%20Fixtures%2Freader-text-fixture.pdf&highlight=highlight-2ab55fda-9b59-4840-a94a-9702fce38c48)",
+      "x": 0,
+      "y": 48,
+      "width": 400,
+      "height": 240,
+      "color": "4",
+      "readingDesk": {
+        "schemaVersion": 1,
+        "kind": "excerpt",
+        "highlightId": "highlight-2ab55fda-9b59-4840-a94a-9702fce38c48",
+        "pdfPath": "Reading Desk Fixtures/reader-text-fixture.pdf",
+        "page": 0,
+        "title": "独立验收标题 1532",
+        "sourceLink": "obsidian://reading-desk-highlight?file=Reading%20Desk%20Fixtures%2Freader-text-fixture.pdf&highlight=highlight-2ab55fda-9b59-4840-a94a-9702fce38c48",
+        "folded": true,
+        "color": "moss"
+      }
+    },
+    "focusButton": {
+      "x": 483.875,
+      "y": 586.3203125,
+      "width": 78,
+      "height": 30,
+      "top": 586.3203125,
+      "right": 561.875,
+      "bottom": 616.3203125,
+      "left": 483.875
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "timestamp": "2026-09-18T15:57:22.885Z",
+  "command": "eval",
+  "target": "F5514A5BEFBB73BCDA0D08EFB70361A8",
+  "result": {
+    "hasHighlight": false,
+    "readerMarks": 0,
+    "readerCards": 0,
+    "target": [
+      {
+        "id": "rd-chapter-92f97a7f-edda-4d34-952c-0248c3793184",
+        "kind": "chapter"
+      },
+      {
+        "id": "rd-chapter-ef16e1c8-1b57-4f5c-8fc4-67f24ba5bb0a",
+        "kind": "chapter"
+      }
+    ]
+  }
+}

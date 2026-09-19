@@ -1,0 +1,30 @@
+{
+  "timestamp": "2026-09-18T16:06:30.439Z",
+  "command": "eval",
+  "target": "F5514A5BEFBB73BCDA0D08EFB70361A8",
+  "result": {
+    "active": "excalidraw",
+    "readers": [
+      {
+        "path": "Reading Desk Fixtures/functional-excal-source.pdf",
+        "page": 1,
+        "matched": 0
+      }
+    ],
+    "linkButton": [
+      {
+        "label": "打开所选元素里的链接 \n（按住 Shift 在新面板打开）",
+        "rect": {
+          "x": 1465,
+          "y": 55.6640625,
+          "width": 28,
+          "height": 24,
+          "top": 55.6640625,
+          "right": 1493,
+          "bottom": 79.6640625,
+          "left": 1465
+        }
+      }
+    ]
+  }
+}

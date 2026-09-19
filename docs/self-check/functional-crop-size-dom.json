@@ -1,0 +1,215 @@
+{
+  "timestamp": "2026-09-18T16:39:46.211Z",
+  "command": "eval",
+  "target": "F5514A5BEFBB73BCDA0D08EFB70361A8",
+  "result": {
+    "rootType": "split",
+    "rootChildren": [
+      {
+        "id": "f120614a8f6638ac",
+        "type": "tabs",
+        "keys": [
+          "_",
+          "containerEl",
+          "dimension",
+          "component",
+          "app",
+          "workspace",
+          "id",
+          "resizeHandleEl",
+          "allowSingleChild",
+          "autoManageDOM",
+          "type",
+          "children",
+          "parent",
+          "tabHeaderEls",
+          "currentTab",
+          "hasLockedTabWidths",
+          "touchUnlockTabWidths",
+          "isStacked",
+          "tabHeaderContainerEl",
+          "tabsInnerEl",
+          "tabsContainerEl"
+        ],
+        "children": [
+          {
+            "id": "0d2164c2d11e00bc",
+            "type": "leaf",
+            "view": "markdown"
+          },
+          {
+            "id": "0279de1228252461",
+            "type": "leaf",
+            "view": "markdown"
+          },
+          {
+            "id": "a82e27a79c6d0e3b",
+            "type": "leaf",
+            "view": "reading-desk-shelf"
+          },
+          {
+            "id": "9b8a736d8272f23a",
+            "type": "leaf",
+            "view": "reading-desk-shelf"
+          },
+          {
+            "id": "b4f1712fc3ca6e09",
+            "type": "leaf",
+            "view": "markdown"
+          },
+          {
+            "id": "19f4f815645a681f",
+            "type": "leaf",
+            "view": "canvas"
+          }
+        ]
+      },
+      {
+        "id": "cc406c3e1c63920e",
+        "type": "tabs",
+        "keys": [
+          "_",
+          "containerEl",
+          "dimension",
+          "component",
+          "app",
+          "workspace",
+          "id",
+          "resizeHandleEl",
+          "allowSingleChild",
+          "autoManageDOM",
+          "type",
+          "children",
+          "parent",
+          "tabHeaderEls",
+          "currentTab",
+          "hasLockedTabWidths",
+          "touchUnlockTabWidths",
+          "isStacked",
+          "tabHeaderContainerEl",
+          "tabsInnerEl",
+          "tabsContainerEl"
+        ],
+        "children": [
+          {
+            "id": "b252a7af95decdfe",
+            "type": "leaf",
+            "view": "reading-desk-shelf"
+          },
+          {
+            "id": "7bd3cae6fe986572",
+            "type": "leaf",
+            "view": "reading-desk-reader"
+          }
+        ]
+      }
+    ],
+    "dom": [
+      {
+        "type": null,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      {
+        "type": null,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      {
+        "type": null,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      {
+        "type": null,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      {
+        "type": null,
+        "rect": {
+          "x": 55,
+          "y": 49,
+          "width": 756,
+          "height": 895,
+          "top": 49,
+          "right": 811,
+          "bottom": 944,
+          "left": 55
+        }
+      },
+      {
+        "type": null,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      {
+        "type": null,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      {
+        "type": null,
+        "rect": {
+          "x": 833,
+          "y": 49,
+          "width": 756,
+          "height": 895,
+          "top": 49,
+          "right": 1589,
+          "bottom": 944,
+          "left": 833
+        }
+      }
+    ],
+    "activeLeaf": "7bd3cae6fe986572"
+  }
+}

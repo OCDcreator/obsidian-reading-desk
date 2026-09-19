@@ -1,0 +1,277 @@
+{
+  "buildId": "0.1.1+2026-09-18T17:18:51.094Z",
+  "deployed": {
+    "main.js": "bdc4b77585cea7c39a013c5f78e83533a33f87daaf18608a36af5d321a100bd1",
+    "styles.css": "b936f1e925be7433e2c32008304c8c5b1154b78e9f6cf61ee0824179c838e1ca",
+    "manifest.json": "236da1b1d1185193ac1e1bf462bed3c31da0f4f85ee06cdf924b2bf4a690a374",
+    "pdf.worker.mjs": "7c237f83fa56bce645d8af51d183c9c56ba7b2d2928ff42754dc7020bea36323"
+  },
+  "scope": "Only V03 and V06; independent loaded UI, no source/build/reload",
+  "initial": {
+    "theme": "moonstone",
+    "left": true,
+    "right": true,
+    "rightWidth": 650
+  },
+  "light": {
+    "theme": "moonstone",
+    "viewport": [
+      1600,
+      953
+    ],
+    "reader": {
+      "x": 55,
+      "y": 87.328125,
+      "width": 884,
+      "height": 856.671875,
+      "top": 87.328125,
+      "right": 939,
+      "bottom": 944,
+      "left": 55
+    },
+    "elements": {
+      ".rd-reader-body": {
+        "rect": {
+          "x": 55,
+          "y": 180.328125,
+          "width": 884,
+          "height": 802.671875,
+          "top": 180.328125,
+          "right": 939,
+          "bottom": 983,
+          "left": 55
+        },
+        "clientWidth": 884,
+        "scrollWidth": 884
+      },
+      ".rd-reader-toolbar": {
+        "rect": {
+          "x": 55,
+          "y": 87.328125,
+          "width": 884,
+          "height": 93,
+          "top": 87.328125,
+          "right": 939,
+          "bottom": 180.328125,
+          "left": 55
+        },
+        "clientWidth": 884,
+        "scrollWidth": 884
+      },
+      ".rd-pdf-page-host": {
+        "rect": {
+          "x": 98.2421875,
+          "y": 204.328125,
+          "width": 514,
+          "height": 665.171875,
+          "top": 204.328125,
+          "right": 612.2421875,
+          "bottom": 869.5,
+          "left": 98.2421875
+        },
+        "clientWidth": 514,
+        "scrollWidth": 514
+      },
+      ".rd-target-panel": {
+        "rect": {
+          "x": 647.484375,
+          "y": 204.328125,
+          "width": 267.515625,
+          "height": 585.9921875,
+          "top": 204.328125,
+          "right": 915,
+          "bottom": 790.3203125,
+          "left": 647.484375
+        },
+        "clientWidth": 266,
+        "scrollWidth": 266
+      }
+    },
+    "popover": {
+      "sameNode": true,
+      "rect": {
+        "x": 479.7109375,
+        "y": 219.34375,
+        "width": 360,
+        "height": 586,
+        "top": 219.34375,
+        "right": 839.7109375,
+        "bottom": 805.34375,
+        "left": 479.7109375
+      },
+      "background": "color(srgb 1 0.985098 0.985098)"
+    },
+    "swatches": [
+      {
+        "color": "moss",
+        "label": "苔绿",
+        "foreground": "rgb(12, 14, 18)",
+        "background": "rgb(8, 185, 78)",
+        "contrast": 7.413588197326192
+      },
+      {
+        "color": "amber",
+        "label": "琥珀",
+        "foreground": "rgb(12, 14, 18)",
+        "background": "rgb(224, 172, 0)",
+        "contrast": 9.262907487812223
+      },
+      {
+        "color": "brick",
+        "label": "砖红",
+        "foreground": "rgb(12, 14, 18)",
+        "background": "rgb(233, 49, 71)",
+        "contrast": 4.594482083585637
+      },
+      {
+        "color": "indigo",
+        "label": "靛青",
+        "foreground": "rgb(248, 247, 244)",
+        "background": "rgb(120, 82, 238)",
+        "contrast": 4.622942990247317
+      },
+      {
+        "color": "plum",
+        "label": "梅紫",
+        "foreground": "rgb(12, 14, 18)",
+        "background": "rgb(0, 191, 188)",
+        "contrast": 8.442456685032457
+      }
+    ]
+  },
+  "dark": {
+    "theme": "obsidian",
+    "viewport": [
+      1600,
+      953
+    ],
+    "reader": {
+      "x": 55,
+      "y": 87.328125,
+      "width": 884,
+      "height": 856.671875,
+      "top": 87.328125,
+      "right": 939,
+      "bottom": 944,
+      "left": 55
+    },
+    "elements": {
+      ".rd-reader-body": {
+        "rect": {
+          "x": 55,
+          "y": 180.328125,
+          "width": 884,
+          "height": 802.671875,
+          "top": 180.328125,
+          "right": 939,
+          "bottom": 983,
+          "left": 55
+        },
+        "clientWidth": 884,
+        "scrollWidth": 884
+      },
+      ".rd-reader-toolbar": {
+        "rect": {
+          "x": 55,
+          "y": 87.328125,
+          "width": 884,
+          "height": 93,
+          "top": 87.328125,
+          "right": 939,
+          "bottom": 180.328125,
+          "left": 55
+        },
+        "clientWidth": 884,
+        "scrollWidth": 884
+      },
+      ".rd-pdf-page-host": {
+        "rect": {
+          "x": 98.2421875,
+          "y": 204.328125,
+          "width": 514,
+          "height": 665.171875,
+          "top": 204.328125,
+          "right": 612.2421875,
+          "bottom": 869.5,
+          "left": 98.2421875
+        },
+        "clientWidth": 514,
+        "scrollWidth": 514
+      },
+      ".rd-target-panel": {
+        "rect": {
+          "x": 647.484375,
+          "y": 204.328125,
+          "width": 267.515625,
+          "height": 585.9921875,
+          "top": 204.328125,
+          "right": 915,
+          "bottom": 790.3203125,
+          "left": 647.484375
+        },
+        "clientWidth": 266,
+        "scrollWidth": 266
+      }
+    },
+    "popover": {
+      "sameNode": true,
+      "rect": {
+        "x": 479.7109375,
+        "y": 219.34375,
+        "width": 360,
+        "height": 586,
+        "top": 219.34375,
+        "right": 839.7109375,
+        "bottom": 805.34375,
+        "left": 479.7109375
+      },
+      "background": "color(srgb 0.133333 0.14 0.18)"
+    },
+    "swatches": [
+      {
+        "color": "moss",
+        "label": "苔绿",
+        "foreground": "rgb(12, 14, 18)",
+        "background": "rgb(68, 207, 110)",
+        "contrast": 9.562404388859562
+      },
+      {
+        "color": "amber",
+        "label": "琥珀",
+        "foreground": "rgb(12, 14, 18)",
+        "background": "rgb(224, 222, 113)",
+        "contrast": 13.665069079239643
+      },
+      {
+        "color": "brick",
+        "label": "砖红",
+        "foreground": "rgb(12, 14, 18)",
+        "background": "rgb(251, 70, 76)",
+        "contrast": 5.594526820815837
+      },
+      {
+        "color": "indigo",
+        "label": "靛青",
+        "foreground": "rgb(12, 14, 18)",
+        "background": "rgb(168, 130, 255)",
+        "contrast": 6.716462800292995
+      },
+      {
+        "color": "plum",
+        "label": "梅紫",
+        "foreground": "rgb(12, 14, 18)",
+        "background": "rgb(83, 223, 221)",
+        "contrast": 11.927128615115931
+      }
+    ]
+  },
+  "deployedAfter": {
+    "main.js": "bdc4b77585cea7c39a013c5f78e83533a33f87daaf18608a36af5d321a100bd1",
+    "styles.css": "b936f1e925be7433e2c32008304c8c5b1154b78e9f6cf61ee0824179c838e1ca",
+    "manifest.json": "236da1b1d1185193ac1e1bf462bed3c31da0f4f85ee06cdf924b2bf4a690a374",
+    "pdf.worker.mjs": "7c237f83fa56bce645d8af51d183c9c56ba7b2d2928ff42754dc7020bea36323"
+  },
+  "hashUnchanged": true,
+  "V03": true,
+  "V06": true
+}

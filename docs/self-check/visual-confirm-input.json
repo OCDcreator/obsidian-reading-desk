@@ -1,0 +1,13 @@
+{
+  "scope": "real loaded ShelfView via synthetic DOM CompositionEvent/InputEvent; not physical IME hardware",
+  "compositionStartInput": {
+    "sameNode": false,
+    "focused": false,
+    "text": "测试"
+  },
+  "compositionEndInput": {
+    "sameNode": false,
+    "focused": false
+  },
+  "nodeReference": "window.__rdVisualInput only used for identity comparison"
+}

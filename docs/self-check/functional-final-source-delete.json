@@ -1,0 +1,15 @@
+{
+  "timestamp": "2026-09-18T15:57:23.304Z",
+  "command": "eval",
+  "target": "F5514A5BEFBB73BCDA0D08EFB70361A8",
+  "result": {
+    "bookExists": false,
+    "readers": [
+      {
+        "path": "",
+        "text": "源 PDF 已删除，无法继续摘录。请从书架重新选择文件。",
+        "marks": 0
+      }
+    ]
+  }
+}

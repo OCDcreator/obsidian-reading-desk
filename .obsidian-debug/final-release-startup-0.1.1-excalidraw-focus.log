@@ -1,0 +1,20 @@
+23:52:41 {"where":"Utils/checkExcalidrawVersion","error":"Error: Request failed, status 403\n    at new t (app://obsidian.md/app.js:1:1096589)\n    at Ry (app:…"}
+23:54:38 Received CLI command {"0":"dev:console","1":"limit=1"}
+23:54:38 Received CLI command {"0":"plugin:reload","1":"id=obsidian-reading-desk"}
+23:54:38 [INFO] [Reading Desk] Margin v0.1.0 build 0.1.0+2026-09-18T15:54:23.292Z
+23:54:38 Received CLI command {"0":"dev:console","1":"limit=20"}
+23:54:38 Received CLI command {"0":"dev:errors"}
+23:56:50 Received CLI command {"0":"move","1":"path=Reading Desk Fixtures/functional-outline-renamed.pdf","2":"to=Reading Desk Fixtures/functional-outline-final.pdf"}
+23:57:22 Received CLI command {"0":"delete","1":"path=Reading Desk Fixtures/functional-outline-final.pdf"}
+00:00:11 [ERROR] {"plugin":"Excalidraw","where":"ExcalidrawView.setViewData","error":"SyntaxError: No number after minus sign in JSON at position 1 (line 1 column 2)\n    at JSON.parse (…"}
+00:00:28 Received CLI command {"0":"dev:errors"}
+00:01:05 [ERROR] {"plugin":"Excalidraw","where":"ExcalidrawView.setViewData","error":"SyntaxError: No number after minus sign in JSON at position 1 (line 1 column 2)\n    at JSON.parse (…"}
+00:03:58 Received CLI command {"0":"dev:console","1":"limit=1"}
+00:03:58 Received CLI command {"0":"plugin:reload","1":"id=obsidian-reading-desk"}
+00:03:58 [INFO] [Reading Desk] Margin v0.1.1 build 0.1.1+2026-09-18T16:03:41.653Z
+00:03:58 Received CLI command {"0":"dev:console","1":"limit=30"}
+00:03:58 Received CLI command {"0":"dev:errors"}
+00:04:49 [ERROR] {"plugin":"Excalidraw","where":"ExcalidrawView.setViewData","error":"SyntaxError: No number after minus sign in JSON at position 1 (line 1 column 2)\n    at JSON.parse (…"}
+00:06:37 Received CLI command {"0":"dev:console","1":"limit=1"}
+00:06:37 Received CLI command {"0":"plugin:reload","1":"id=obsidian-reading-desk"}
+00:06:37 [INFO] [Reading Desk] Margin v0.1.1 build 0.1.1+2026-09-18T16:06:21.819Z

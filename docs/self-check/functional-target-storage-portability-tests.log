@@ -1,0 +1,19 @@
+
+> obsidian-reading-desk@0.1.0 test
+> vitest run --threads=false test/targets test/storage test/portability
+
+
+ RUN  v0.34.6 /Volumes/SDD2T/obsidian-vault-write/custom-project/obsidian-reading-desk
+
+ ✓ test/storage/MarkdownImagePasteService.test.ts  (3 tests) 7ms
+ ✓ test/storage/ObjectStorageService.test.ts  (7 tests) 3ms
+ ✓ test/targets/TargetService.test.ts  (6 tests) 3ms
+ ✓ test/portability/BookshelfPortabilityService.test.ts  (5 tests) 2ms
+
+ Test Files  4 passed (4)
+      Tests  21 passed (21)
+   Start at  22:17:30
+   Duration  208ms (transform 56ms, setup 0ms, collect 78ms, tests 15ms, environment 0ms, prepare 45ms)
+
+
+EXIT_CODE=0

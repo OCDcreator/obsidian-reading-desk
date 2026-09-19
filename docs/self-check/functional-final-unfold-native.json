@@ -1,0 +1,21 @@
+{
+  "timestamp": "2026-09-18T15:56:50.633Z",
+  "command": "eval",
+  "target": "F5514A5BEFBB73BCDA0D08EFB70361A8",
+  "result": {
+    "height": 240,
+    "folded": false,
+    "title": "独立验收标题 1532",
+    "hasSource": true,
+    "screen": {
+      "x": 1011,
+      "y": 395.828125,
+      "width": 400,
+      "height": 240,
+      "top": 395.828125,
+      "right": 1411,
+      "bottom": 635.828125,
+      "left": 1011
+    }
+  }
+}

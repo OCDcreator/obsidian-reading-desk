@@ -1,0 +1,126 @@
+{
+  "timestamp": "2026-09-18T16:41:00.295Z",
+  "command": "eval",
+  "target": "F5514A5BEFBB73BCDA0D08EFB70361A8",
+  "result": {
+    "events": [
+      {
+        "type": "dragstart",
+        "trusted": true,
+        "types": [
+          "text/uri-list",
+          "text/html",
+          "Files"
+        ],
+        "target": ""
+      },
+      {
+        "type": "dragover",
+        "trusted": true,
+        "types": [
+          "text/plain",
+          "text/uri-list",
+          "text/html",
+          "chromium/x-drag-id",
+          "application/x-reading-desk-crop+json",
+          "Files"
+        ],
+        "target": ""
+      },
+      {
+        "type": "dragover",
+        "trusted": true,
+        "types": [
+          "text/plain",
+          "text/uri-list",
+          "text/html",
+          "chromium/x-drag-id",
+          "application/x-reading-desk-crop+json",
+          "Files"
+        ],
+        "target": "rd-excerpt-card__title"
+      },
+      {
+        "type": "dragover",
+        "trusted": true,
+        "types": [
+          "text/plain",
+          "text/uri-list",
+          "text/html",
+          "chromium/x-drag-id",
+          "application/x-reading-desk-crop+json",
+          "Files"
+        ],
+        "target": "rd-excerpt-card__title"
+      },
+      {
+        "type": "drop",
+        "trusted": true,
+        "types": [
+          "text/plain",
+          "text/uri-list",
+          "text/html",
+          "chromium/x-drag-id",
+          "application/x-reading-desk-crop+json",
+          "Files"
+        ],
+        "target": "rd-excerpt-card__title"
+      },
+      {
+        "type": "dragend",
+        "trusted": true,
+        "types": [
+          "text/uri-list",
+          "text/html",
+          "application/x-reading-desk-crop+json",
+          "text/plain",
+          "Files"
+        ],
+        "target": ""
+      }
+    ],
+    "targetPath": "Reading Desk Fixtures/functional-complete-outline.canvas",
+    "nodeCount": 5,
+    "chapterCount": 4,
+    "crops": [
+      {
+        "id": "rd-crop-1789749659580-tz8afc",
+        "type": "file",
+        "file": "Reading Desk/裁剪/裁剪-1789749659580-tz8afc.png",
+        "x": 0,
+        "y": 0,
+        "width": 640,
+        "height": 420,
+        "readingDesk": {
+          "schemaVersion": 1,
+          "kind": "crop",
+          "pdfPath": "Reading Desk Fixtures/functional-excal-source.pdf",
+          "page": 0,
+          "rect": {
+            "x": 0.09802979849726776,
+            "y": 0.12671298668032788,
+            "width": 0.3797814207650273,
+            "height": 0.12295081967213115
+          }
+        }
+      }
+    ],
+    "png": [
+      {
+        "path": "Reading Desk/裁剪/裁剪-1789749659580-tz8afc.png",
+        "bytes": 20679,
+        "signature": [
+          137,
+          80,
+          78,
+          71,
+          13,
+          10,
+          26,
+          10
+        ]
+      }
+    ],
+    "preparedCount": 0
+  }
+}

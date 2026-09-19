@@ -1,0 +1,26 @@
+{
+  "book-e1e22c02-461a-4696-93bf-ea585dab2bf2": {
+    "path": "Sources/synthnote-runtime.pdf",
+    "title": "synthnote-runtime",
+    "pageCount": null,
+    "coverPath": null,
+    "metadataError": "No \"GlobalWorkerOptions.workerSrc\" specified.",
+    "progress": 1
+  },
+  "book-48ca4fea-9811-4aed-be90-c5866f2b9a98": {
+    "path": "Books/原子结构与化学键核心问题详解（Atomic Structure and Chemical Bonding）.pdf",
+    "title": "原子结构与化学键核心问题详解（Atomic Structure and Chemical Bonding）",
+    "pageCount": null,
+    "coverPath": null,
+    "metadataError": "No \"GlobalWorkerOptions.workerSrc\" specified.",
+    "progress": 0.1111111111111111
+  },
+  "book-295c9d88-65e4-49f2-8236-3b0fcf5c38d5": {
+    "path": "Reading Desk Fixtures/reader-text-fixture.pdf",
+    "title": "reader-text-fixture",
+    "pageCount": 1,
+    "coverPath": null,
+    "metadataError": null,
+    "progress": 1
+  }
+}

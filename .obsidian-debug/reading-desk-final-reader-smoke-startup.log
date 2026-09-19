@@ -1,0 +1,11 @@
+22:58:40 Received CLI command {"0":"dev:console","1":"clear"}
+22:58:40 Received CLI command {"0":"dev:errors","1":"clear"}
+22:58:40 Received CLI command {"0":"eval","1":"vault=testvault","2":"code=(async()=>{const view=app.workspace.getLeaves…th.includes('Reading Desk')).map(f=>f.path)})})()"}
+22:58:42 Received CLI command {"0":"dev:errors"}
+22:58:42 Received CLI command {"0":"dev:console","1":"limit=100"}
+22:59:04 Received CLI command {"0":"eval","1":"vault=testvault","2":"code=JSON.stringify(Array.from(document.querySelec…abel'),text:x.textContent,disabled:x.disabled})))"}
+22:59:04 Received CLI command {"0":"eval","1":"vault=testvault","2":"code=(function(){const spans=document.querySelecto…ument.activeElement?.outerHTML.slice(0,120)})})()"}
+22:59:15 Received CLI command {"0":"eval","1":"vault=testvault","2":"code=(function(){const spans=document.querySelecto…ySelector('.rd-pdf-text-layer')).userSelect})})()"}
+23:00:22 Received CLI command {"0":"dev:console","1":"limit=1"}
+23:00:22 Received CLI command {"0":"plugin:reload","1":"id=obsidian-reading-desk"}
+23:00:22 [INFO] [Reading Desk] Margin v0.1.0 build 0.1.0+2026-09-18T15:00:08.855Z

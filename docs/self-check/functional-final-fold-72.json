@@ -1,0 +1,27 @@
+{
+  "timestamp": "2026-09-18T15:56:21.102Z",
+  "command": "eval",
+  "target": "F5514A5BEFBB73BCDA0D08EFB70361A8",
+  "result": {
+    "stored": {
+      "highlight-2ab55fda-9b59-4840-a94a-9702fce38c48": {
+        "title": "独立验收标题 1532",
+        "folded": true
+      }
+    },
+    "nativeHeight": 72,
+    "folded": true,
+    "text": "# 独立验收标题 1532\n\nReadingDeskselectionfixture\n\n[原文第 1 页](obsidian://reading-desk-highlight?file=Reading%20Desk%20Fixtures%2Freader-text-fixture.pdf&highlight=highlight-2ab55fda-9b59-4840-a94a-9702fce38c48)",
+    "screen": {
+      "x": 1011,
+      "y": 395.828125,
+      "width": 400,
+      "height": 72,
+      "top": 395.828125,
+      "right": 1411,
+      "bottom": 467.828125,
+      "left": 1011
+    },
+    "disk": 72
+  }
+}

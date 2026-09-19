@@ -1,0 +1,14 @@
+{
+  "fixture": "synthetic empty drawing",
+  "scene": {
+    "type": "excalidraw",
+    "version": 2,
+    "source": "https://excalidraw.com",
+    "elements": [],
+    "appState": {},
+    "files": {}
+  },
+  "compression": "lz-string@1.5.0 compressToBase64",
+  "packageUrl": "https://registry.npmjs.org/lz-string/-/lz-string-1.5.0.tgz",
+  "tarballSha256": "ad640cf79fc54bc8035a66edd33974f1334db9ba079c8b845f13e5d54c5e011b"
+}

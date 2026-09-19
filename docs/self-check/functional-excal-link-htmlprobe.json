@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-09-18T16:09:03.608Z",
+  "command": "eval",
+  "target": "F5514A5BEFBB73BCDA0D08EFB70361A8",
+  "result": {
+    "apiSelected": {
+      "8z0bMFSa": true
+    },
+    "appKeys": [],
+    "linkClick": "async linkClick(e,t,i,a,n,r=!1){return this.linkNavigationManager.linkClick(e,t,i,a,n,r)}",
+    "nodeLink": "obsidian://reading-desk-highlight?file=Reading%20Desk%20Fixtures%2Ffunctional-excal-source.pdf&highlight=functional-excal-final-1789747516669",
+    "rawText": ""
+  }
+}

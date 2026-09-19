@@ -1,0 +1,41 @@
+{
+  "timestamp": "2026-09-18T16:39:34.107Z",
+  "command": "eval",
+  "target": "F5514A5BEFBB73BCDA0D08EFB70361A8",
+  "result": {
+    "leaves": [
+      {
+        "type": "empty",
+        "root": false
+      },
+      {
+        "type": "file-explorer",
+        "root": false
+      },
+      {
+        "type": "outline",
+        "root": false
+      }
+    ],
+    "page": {
+      "x": 845,
+      "y": 182.328125,
+      "width": 732,
+      "height": 976,
+      "top": 182.328125,
+      "right": 1577,
+      "bottom": 1158.328125,
+      "left": 845
+    },
+    "panel": {
+      "x": 845,
+      "y": 1174.328125,
+      "width": 732,
+      "height": 492.9921875,
+      "top": 1174.328125,
+      "right": 1577,
+      "bottom": 1667.3203125,
+      "left": 845
+    }
+  }
+}

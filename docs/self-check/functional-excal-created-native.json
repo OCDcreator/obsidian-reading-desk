@@ -1,0 +1,34 @@
+{
+  "timestamp": "2026-09-18T16:00:12.152Z",
+  "command": "eval",
+  "target": "F5514A5BEFBB73BCDA0D08EFB70361A8",
+  "result": {
+    "highlight": {
+      "id": "highlight-13f26c34-e395-4279-829f-5c15b4bb00d8",
+      "pdfPath": "Reading Desk Fixtures/functional-excal-source.pdf",
+      "page": 0,
+      "rotation": 0,
+      "rects": [
+        {
+          "x": 0.09169791666666666,
+          "y": 0.13799999999999998,
+          "width": 0.3729368489583333,
+          "height": 0.021000000000000074
+        }
+      ],
+      "text": "Functional reading desk selection line one",
+      "color": "moss",
+      "chapterPath": [
+        "Introduction"
+      ],
+      "tags": [],
+      "createdAt": 1789747210828,
+      "updatedAt": 1789747210828,
+      "target": {
+        "type": "excalidraw",
+        "path": "Reading Desk/摘录-1789747210828.excalidraw.md",
+        "objectId": "rd-excalidraw-2699c679-99c9-4bf4-aea8-fc93e23c962e"
+      }
+    }
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "timestamp": "2026-09-18T16:07:06.823Z",
+  "command": "eval",
+  "target": "F5514A5BEFBB73BCDA0D08EFB70361A8",
+  "result": {
+    "highlight": "functional-excal-final-1789747516669",
+    "storedObjectId": "rd-excalidraw-d5cd567f-33f1-429e-82e3-6c5540b97bf7",
+    "nativeType": "excalidraw",
+    "actualId": "8z0bMFSa",
+    "selected": {
+      "8z0bMFSa": true
+    },
+    "link": "obsidian://reading-desk-highlight?file=Reading%20Desk%20Fixtures%2Ffunctional-excal-source.pdf&highlight=functional-excal-final-1789747516669",
+    "coords": {
+      "x": 0,
+      "y": 0,
+      "width": 1386.268798828125,
+      "height": 67.5
+    },
+    "viewport": {
+      "scrollX": 36.48041428256865,
+      "scrollY": 795.2161677417356,
+      "zoom": {
+        "value": 0.516711
+      }
+    },
+    "buttons": [
+      {
+        "rect": {
+          "x": 1465,
+          "y": 55.6640625,
+          "width": 28,
+          "height": 24,
+          "top": 55.6640625,
+          "right": 1493,
+          "bottom": 79.6640625,
+          "left": 1465
+        }
+      }
+    ]
+  }
+}

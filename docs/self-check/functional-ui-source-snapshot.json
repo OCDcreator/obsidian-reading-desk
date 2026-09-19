@@ -1,0 +1,153 @@
+{
+  "timestamp": "2026-09-18T14:31:08.892577+00:00",
+  "scope": "Read-only source reachability snapshot; not UI evidence",
+  "files": [
+    {
+      "path": "src/main.ts",
+      "sha256": "f394fd7111ba982f6d920bb4acaa75c77fa42d553db25fdbde7d76c8c547d0e3",
+      "lineCount": 162,
+      "matches": [
+        {
+          "line": 31,
+          "code": "atomicTransform: (path, transform) => this.atomicTransform(path, transform)"
+        },
+        {
+          "line": 33,
+          "code": "this.ai = new AiIntegrationService((this.app as unknown as { plugins: { enabledPlugins: Set<string>; getPlugin(id: string): unknown } }).plugins);"
+        },
+        {
+          "line": 39,
+          "code": "createTarget: type => this.createTarget(type),"
+        },
+        {
+          "line": 41,
+          "code": "showTarget: (path, objectId) => this.showTarget(path, objectId)"
+        },
+        {
+          "line": 48,
+          "code": "this.registerEvent(this.app.vault.on('create', file => { if (file instanceof TFile) void this.onLibraryFileChanged(file); }));"
+        },
+        {
+          "line": 50,
+          "code": "this.registerEvent(this.app.vault.on('rename', file => { if (file instanceof TFile) void this.onLibraryFileChanged(file); }));"
+        },
+        {
+          "line": 93,
+          "code": "return new PdfRenderer({"
+        },
+        {
+          "line": 110,
+          "code": "private async createTarget(type: TargetType): Promise<{ type: TargetType; path: string }> {"
+        },
+        {
+          "line": 138,
+          "code": "private async atomicTransform(path: string, transform: (current: string) => string): Promise<void> {"
+        },
+        {
+          "line": 141,
+          "code": "await this.app.vault.process(existing, current => transform(current));"
+        }
+      ]
+    },
+    {
+      "path": "src/views/ReaderView.ts",
+      "sha256": "7038d4558d4779e762807b437423b22780f04b09e6c4429578df5b53792dcd7e",
+      "lineCount": 175,
+      "matches": [
+        {
+          "line": 17,
+          "code": "createTarget(type: TargetType): Promise<{ type: TargetType; path: string }>;"
+        },
+        {
+          "line": 57,
+          "code": "this.button(toolbar, '适应宽度', () => this.fitWidth());"
+        },
+        {
+          "line": 59,
+          "code": "this.button(toolbar, '裁剪', () => this.enterCropMode());"
+        },
+        {
+          "line": 99,
+          "code": "private async fitWidth(): Promise<void> { this.pdf.setScale(1.25); await this.render(); }"
+        },
+        {
+          "line": 101,
+          "code": "private enterCropMode(): void { new Notice('裁剪模式：拖拽 PDF 区域后选择 Canvas 目标。'); }"
+        },
+        {
+          "line": 143,
+          "code": "id: createId('highlight'), pdfPath: this.activePath(), page: this.page - 1, rotation: viewport.rotation, rects, text,"
+        },
+        {
+          "line": 144,
+          "code": "color: 'moss', chapterPath: [], tags: [], createdAt: Date.now(), updatedAt: Date.now()"
+        },
+        {
+          "line": 146,
+          "code": "const target = await this.host.createTarget(type);"
+        }
+      ]
+    },
+    {
+      "path": "src/views/ShelfItemView.ts",
+      "sha256": "4b15924dd27a162c366fbc5da6d4b75271962abce7aca8fb365ceab7c9c8f087",
+      "lineCount": 32,
+      "matches": []
+    },
+    {
+      "path": "src/views/ShelfView.ts",
+      "sha256": "110ef64d6060052a5a9971ba937a9610468153dbb26fc02f0eecd9445825d6cf",
+      "lineCount": 465,
+      "matches": [
+        {
+          "line": 255,
+          "code": "image.src = book.coverPath;"
+        }
+      ]
+    },
+    {
+      "path": "src/settings/ReadingDeskSettingTab.ts",
+      "sha256": "16bf22dd160076b10edb2c3263a428adfd9e8bf4a3d274c9f39016d6362fbb10",
+      "lineCount": 52,
+      "matches": []
+    },
+    {
+      "path": "src/ai/AiIntegrationService.ts",
+      "sha256": "0c0ef799f5baf9387b8632db2874c8a37af8b2ada0cb3dda5df63e19c4c80117",
+      "lineCount": 38,
+      "matches": [
+        {
+          "line": 16,
+          "code": "constructor(private readonly plugins: AiPluginRegistry, private readonly supported: Record<string, (plugin: unknown) => AiBridge | null> = {}) { }"
+        }
+      ]
+    },
+    {
+      "path": "src/reader/PdfRenderer.ts",
+      "sha256": "acdc47c310b5a71e1f719f081f7e35156ac584f9dcfdd5a930cfac0e4beddd38",
+      "lineCount": 113,
+      "matches": [
+        {
+          "line": 66,
+          "code": "async getOutline(): Promise<unknown[]> {"
+        },
+        {
+          "line": 67,
+          "code": "return (await this.requireDocument().getOutline()) ?? [];"
+        }
+      ]
+    },
+    {
+      "path": "src/library/MetadataExtractor.ts",
+      "sha256": "a9491af0b4cbe02b2d0489eb01a844cd91e1165f5e63376049b60fbbe8c1f612",
+      "lineCount": 105,
+      "matches": []
+    },
+    {
+      "path": "src/data/ReadingDeskRepository.ts",
+      "sha256": "ef3edfa42f65bf39840aa5b0cdc991c569eee0683012d2719e169929e8c94ef9",
+      "lineCount": 66,
+      "matches": []
+    }
+  ]
+}

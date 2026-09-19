@@ -1,0 +1,12 @@
+{
+  "timestamp": "2026-09-18T15:52:26.841Z",
+  "command": "eval",
+  "target": "F5514A5BEFBB73BCDA0D08EFB70361A8",
+  "result": {
+    "openDrawing": "openDrawing(e,t,i=!1,a,n=!1,r){const s=()=>{let e;return\"md-properties\"===t&&(t=\"new-tab\"),\"popout-window\"===t&&(e=this.app.workspace.openPopoutLeaf(r)),\"new-tab\"===t&&(e=this.app.workspace.getLeaf(\"tab\")),e||(e=this.app.workspace.getLeaf(!1),\"empty\"!==e.view.getViewType()&&\"new-pane\"===t&&(e=getNewOrAdjacentLeaf(this.plugin,e))),e},{leaf:o,promise:l}=openLeaf({plugin:this.plugin,fnGetLeaf:()=>s(),file:e,openState:a&&\"\"!==a?{active:i,eState:{subpath:a}}:{active:i}});l.then(()=>{const t=this.plugin.ea;if(n&&t.onFileCreateHook)try{t.onFileCreateHook({ea:t,excalidrawFile:e,view:o.view})}catch(e){console.error(e)}})}",
+    "views": [
+      "excalidraw",
+      "excalidraw-sidepanel"
+    ]
+  }
+}

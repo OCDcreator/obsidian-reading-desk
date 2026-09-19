@@ -1,0 +1,30 @@
+{
+  "capturedAt": "2026-09-18T14:31:37.828112+00:00",
+  "kind": "source-and-read-only-runtime-preflight",
+  "visualPassUsed": false,
+  "source": {
+    "src/views/ReaderView.ts": "7038d4558d4779e762807b437423b22780f04b09e6c4429578df5b53792dcd7e",
+    "src/views/ShelfView.ts": "110ef64d6060052a5a9971ba937a9610468153dbb26fc02f0eecd9445825d6cf",
+    "src/reader/PdfRenderer.ts": "acdc47c310b5a71e1f719f081f7e35156ac584f9dcfdd5a930cfac0e4beddd38",
+    "src/main.ts": "f394fd7111ba982f6d920bb4acaa75c77fa42d553db25fdbde7d76c8c547d0e3",
+    "src/settings/ReadingDeskSettingTab.ts": "16bf22dd160076b10edb2c3263a428adfd9e8bf4a3d274c9f39016d6362fbb10",
+    "styles.css": "03b154b72adbffa2f71cb99edd7b023845d3e88af2b97706a77ec3968714637d"
+  },
+  "runtimeReadOnly": {
+    "vault": "testvault",
+    "pluginLoaded": true,
+    "enabledPluginsContains": false,
+    "readerLeaves": 3,
+    "shelfLeaves": 5,
+    "viewport": [
+      1600,
+      953
+    ],
+    "visibleSurfaceText": "书架扫描书库卡片视图表格视图path.split is not a function重试"
+  },
+  "limitations": [
+    "No final screenshots or visual scores collected",
+    "Source under active implementation; findings must be revisited at stable-build handoff",
+    "No Obsidian window or global settings changed"
+  ]
+}

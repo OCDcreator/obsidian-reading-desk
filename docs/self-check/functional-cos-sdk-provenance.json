@@ -1,0 +1,9 @@
+{
+  "package": "cos-nodejs-sdk-v5",
+  "version": "3.0.0",
+  "url": "https://registry.npmjs.org/cos-nodejs-sdk-v5/-/cos-nodejs-sdk-v5-3.0.0.tgz",
+  "tarballSha256": "48a98921c59030e20a7e2a103b7db7097d4040055fdf839c3a4add3c8af9b232",
+  "source": "package/sdk/util.js",
+  "sourceSha256": "075fe520eab6fd9bd3bb43e9d155c381e968f648dd7ea724e4d6c233c1565e4a",
+  "method": "getAuth from unmodified official SDK util.js; XML-only parser constructor stubbed because unused by getAuth; Node crypto is real; all keys synthetic"
+}

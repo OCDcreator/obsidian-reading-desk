@@ -1,0 +1,278 @@
+{
+  "timestamp": "2026-09-18T14:37:56.940Z",
+  "pdfjs": "4.10.38",
+  "hashes": {
+    "src/reader/PdfSelectionGeometry.ts": "192fab9e1470528e38b4302bbe84aa80df93108084ee5b7eea718607859ea265",
+    "src/library/LibraryIndex.ts": "acce609505eda339d2185e9ab40d14266279b326de1ac913a1dbd264bf26ee83",
+    "src/utils/ids.ts": "85ea5032b05c8778d5d0c3290b23fc4cba9c720696b304fc1c82d38971346777",
+    "src/storage/ObjectStorageService.ts": "2c7e513361bdfeb555063d2d6676ee8765cc0521f58dbc9da999cdd63c6e4b69",
+    "src/targets/CanvasTargetAdapter.ts": "f79b637e9e51d3021071c1e07f63e02bc227e001a3c9c2d94a8071d66844acaa",
+    "src/targets/TargetTypes.ts": "a27a3d400a553f0819967a7eb6dcc84b320d3e14319b11872db3cec02983a67e",
+    "src/targets/ExcalidrawTargetAdapter.ts": "fdfbfd02b8204e7322c43ce9d25e36daab5e3d7de292cae0b4016382326bf1c7",
+    "src/targets/LzStringBase64.ts": "fb6abae61bc02c5a35e8f18760fae55d2e5802468602c840d1d520d1bfecea0f",
+    "src/targets/MarkdownTargetAdapter.ts": "30c9b8ab9403f12539085f3a1b23a06b1a2be8cdd40a43437a07da973c4cfd33",
+    "src/targets/TargetService.ts": "4166790224ebc38499d3c93dd823199897b36520844a9853d3d6d664941fdb76"
+  },
+  "summary": {
+    "passed": 16,
+    "failed": 0
+  },
+  "checks": [
+    {
+      "name": "geometry actual PDF 0,0,600,800 scale2-to1 rotation0",
+      "pass": true,
+      "evidence": {
+        "normalized": {
+          "x": 0.1,
+          "y": 0.125,
+          "width": 0.1,
+          "height": 0.024999999999999994
+        },
+        "expected": {
+          "left": 60,
+          "top": 100,
+          "width": 60,
+          "height": 20
+        },
+        "actual": {
+          "left": 60,
+          "top": 100,
+          "width": 60,
+          "height": 20
+        }
+      }
+    },
+    {
+      "name": "geometry actual PDF 0,0,600,800 scale2-to1 rotation90",
+      "pass": true,
+      "evidence": {
+        "normalized": {
+          "x": 0.1,
+          "y": 0.125,
+          "width": 0.1,
+          "height": 0.024999999999999994
+        },
+        "expected": {
+          "left": 680,
+          "top": 60,
+          "width": 20,
+          "height": 60
+        },
+        "actual": {
+          "left": 680,
+          "top": 60,
+          "width": 20,
+          "height": 60
+        }
+      }
+    },
+    {
+      "name": "geometry actual PDF 20,30,620,830 scale2-to1 rotation0",
+      "pass": true,
+      "evidence": {
+        "normalized": {
+          "x": 0.1,
+          "y": 0.125,
+          "width": 0.1,
+          "height": 0.024999999999999994
+        },
+        "expected": {
+          "left": 60,
+          "top": 100,
+          "width": 60,
+          "height": 20
+        },
+        "actual": {
+          "left": 60,
+          "top": 100,
+          "width": 60,
+          "height": 20
+        }
+      }
+    },
+    {
+      "name": "geometry actual PDF 20,30,620,830 scale2-to1 rotation90",
+      "pass": true,
+      "evidence": {
+        "normalized": {
+          "x": 0.1,
+          "y": 0.125,
+          "width": 0.1,
+          "height": 0.024999999999999994
+        },
+        "expected": {
+          "left": 680,
+          "top": 60,
+          "width": 20,
+          "height": 60
+        },
+        "actual": {
+          "left": 680,
+          "top": 60,
+          "width": 20,
+          "height": 60
+        }
+      }
+    },
+    {
+      "name": "overlapping scans retain latest discovered book",
+      "pass": true,
+      "evidence": {
+        "paths": [
+          "books/a.pdf",
+          "books/b.pdf"
+        ]
+      }
+    },
+    {
+      "name": "scan queue recovers after one transient persistence rejection",
+      "pass": true,
+      "evidence": {
+        "paths": [
+          "books/a.pdf",
+          "books/b.pdf"
+        ]
+      }
+    },
+    {
+      "name": "COS signature matches official SDK: reading-desk/images/a.png",
+      "pass": true,
+      "evidence": {
+        "sdkVersion": "3.0.0",
+        "oracleSourceSha256": "075fe520eab6fd9bd3bb43e9d155c381e968f648dd7ea724e4d6c233c1565e4a",
+        "expected": "q-sign-algorithm=sha1&q-ak=test-ak&q-sign-time=1735787045;1735787945&q-key-time=1735787045;1735787945&q-header-list=host&q-url-param-list=&q-signature=6f1d10f4451e882d53f594abaad540359389f513",
+        "actual": "q-sign-algorithm=sha1&q-ak=test-ak&q-sign-time=1735787045;1735787945&q-key-time=1735787045;1735787945&q-header-list=host&q-url-param-list=&q-signature=6f1d10f4451e882d53f594abaad540359389f513"
+      }
+    },
+    {
+      "name": "COS signature matches official SDK: reading-desk/实验 图(1).png",
+      "pass": true,
+      "evidence": {
+        "sdkVersion": "3.0.0",
+        "oracleSourceSha256": "075fe520eab6fd9bd3bb43e9d155c381e968f648dd7ea724e4d6c233c1565e4a",
+        "expected": "q-sign-algorithm=sha1&q-ak=test-ak&q-sign-time=1735787045;1735787945&q-key-time=1735787045;1735787945&q-header-list=host&q-url-param-list=&q-signature=c432c6732bf7a91633eb50877a6a013850c3526e",
+        "actual": "q-sign-algorithm=sha1&q-ak=test-ak&q-sign-time=1735787045;1735787945&q-key-time=1735787045;1735787945&q-header-list=host&q-url-param-list=&q-signature=c432c6732bf7a91633eb50877a6a013850c3526e"
+      }
+    },
+    {
+      "name": "COS connection signature matches official SDK",
+      "pass": true,
+      "evidence": {
+        "expected": "q-sign-algorithm=sha1&q-ak=test-ak&q-sign-time=1735787045;1735787945&q-key-time=1735787045;1735787945&q-header-list=host&q-url-param-list=max-keys&q-signature=7a4c9ffa809d0295f5e7d9ecbf5d759a7a811675",
+        "actual": "q-sign-algorithm=sha1&q-ak=test-ak&q-sign-time=1735787045;1735787945&q-key-time=1735787045;1735787945&q-header-list=host&q-url-param-list=max-keys&q-signature=7a4c9ffa809d0295f5e7d9ecbf5d759a7a811675"
+      }
+    },
+    {
+      "name": "OSS V1 HMAC matches independently computed canonical request",
+      "pass": true,
+      "evidence": {
+        "expected": "OSS test-ak:V/CB3XDZPp1FXd35tHrDCb+7er4=",
+        "actual": "OSS test-ak:V/CB3XDZPp1FXd35tHrDCb+7er4=",
+        "scope": "cryptographic/protocol construction only; no cloud request"
+      }
+    },
+    {
+      "name": "Target file transaction preserves an external edit before atomic transform",
+      "pass": true,
+      "evidence": {
+        "finalNodeIds": [
+          "user-concurrent-node",
+          "rd-chapter-af0f2ee4-a2ec-470f-98f0-f7bb2943302f",
+          "rd-chapter-8170f523-53a3-4783-9d50-8d6e728dec50",
+          "rd-excerpt-4a713898-ed8b-4b93-aa9b-cc00a0697cee"
+        ],
+        "contract": "TargetService computes its adapter result inside atomicTransform using the supplied current contents; main.ts binding separately reviewed"
+      }
+    },
+    {
+      "name": "Canvas excerpts serialize their palette color",
+      "pass": true,
+      "evidence": {
+        "colors": [
+          "4",
+          "4"
+        ]
+      }
+    },
+    {
+      "name": "Canvas same chapter names in two PDFs remain separate",
+      "pass": true,
+      "evidence": {
+        "chapters": [
+          {
+            "pdfPath": "papers/a.pdf",
+            "chapterPath": [
+              "第一章"
+            ]
+          },
+          {
+            "pdfPath": "papers/a.pdf",
+            "chapterPath": [
+              "第一章",
+              "导论"
+            ]
+          },
+          {
+            "pdfPath": "papers/b.pdf",
+            "chapterPath": [
+              "第一章"
+            ]
+          },
+          {
+            "pdfPath": "papers/b.pdf",
+            "chapterPath": [
+              "第一章",
+              "导论"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "Excalidraw existing excerpt update changes visible text and link",
+      "pass": true,
+      "evidence": {
+        "text": "NEW\nChanged excerpt\n原文第 3 页：obsidian://reading-desk?id=new",
+        "link": "obsidian://reading-desk?id=new",
+        "metadata": {
+          "schemaVersion": 1,
+          "kind": "excerpt",
+          "highlightId": "one",
+          "pdfPath": "papers/a.pdf",
+          "page": 2,
+          "title": "NEW",
+          "sourceLink": "obsidian://reading-desk?id=new",
+          "folded": false
+        }
+      }
+    },
+    {
+      "name": "Excalidraw reads standard compressed-json scene (synthetic lz-string fixture)",
+      "pass": true,
+      "evidence": {
+        "source": "docs/self-check/functional-compressed-scene.md",
+        "sourceSha256": "ba34c5460b84f83fa2f931b413a699e12d2eb3fbb6f97fe9662711815e1a9c06",
+        "fencedFormats": [
+          "compressed-json"
+        ],
+        "unchangedOnDisk": true
+      }
+    },
+    {
+      "name": "Markdown update preserves user content and replaces backlink without duplicating excerpt",
+      "pass": true,
+      "evidence": {
+        "link": {
+          "highlightId": "one",
+          "sourceLink": "obsidian://reading-desk?id=new",
+          "page": 2
+        }
+      }
+    }
+  ],
+  "limits": [
+    "No Obsidian UI interaction in this run.",
+    "No actual OSS/COS credentials or cloud requests.",
+    "Fixture/in-memory adapter checks do not prove native rendering."
+  ]
+}

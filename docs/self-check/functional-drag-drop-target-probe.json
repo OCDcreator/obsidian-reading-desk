@@ -1,0 +1,55 @@
+{
+  "timestamp": "2026-09-18T15:39:21.054Z",
+  "command": "eval",
+  "target": "F5514A5BEFBB73BCDA0D08EFB70361A8",
+  "result": {
+    "atPoint": "<h4>本页摘录卡片</h4>",
+    "panel": {
+      "x": 1079.28125,
+      "y": 166.328125,
+      "width": 470.71875,
+      "height": 351.9921875,
+      "top": 166.328125,
+      "right": 1550,
+      "bottom": 518.3203125,
+      "left": 1079.28125
+    },
+    "window": [
+      1600,
+      953
+    ],
+    "log": [
+      {
+        "type": "dragstart",
+        "trusted": true,
+        "types": [
+          "text/html",
+          "text/plain"
+        ],
+        "text": "Functional reading desk selection line one.\nThis second line belongs to chapter 2."
+      },
+      {
+        "type": "dragover",
+        "trusted": true,
+        "types": [
+          "text/plain",
+          "text/html",
+          "chromium/x-drag-id",
+          "application/x-reading-desk-rects"
+        ],
+        "text": "",
+        "target": ""
+      },
+      {
+        "type": "dragend",
+        "trusted": true,
+        "types": [
+          "text/html",
+          "text/plain",
+          "application/x-reading-desk-rects"
+        ],
+        "text": ""
+      }
+    ]
+  }
+}

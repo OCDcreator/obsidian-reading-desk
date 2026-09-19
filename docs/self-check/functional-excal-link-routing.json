@@ -1,0 +1,9 @@
+{
+  "timestamp": "2026-09-18T16:07:55.806Z",
+  "command": "eval",
+  "target": "F5514A5BEFBB73BCDA0D08EFB70361A8",
+  "result": {
+    "handle": "async handleLinkClick(e,t=!1){this.view.removeLinkTooltip();const i=this.dependencies.getSelectedTextElement(),a=i?.id?null:this.dependencies.getSelectedImageElement(),n=a?.id||i?.id?null:this.dependencies.getSelectedElementWithLink();this.view.linkClick(e instanceof MouseEvent?e:null,i,a,n,e instanceof MouseEvent?null:e,t)}",
+    "buttons": []
+  }
+}

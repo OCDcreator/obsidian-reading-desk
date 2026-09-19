@@ -1,0 +1,7 @@
+{
+  "command": "sh <specified-skill>/scripts/impeccable detect --json --scope layout src/views src/ui styles.css",
+  "stdout": [],
+  "exitCode": 0,
+  "scope": "current source, possibly ahead of deployed build; this does not supersede rendered failures",
+  "directLauncher": "permission denied, shell fallback used"
+}

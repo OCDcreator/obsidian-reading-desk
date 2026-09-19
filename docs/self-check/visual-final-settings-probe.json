@@ -1,0 +1,122 @@
+{
+  "generatedAt": "2026-09-18T16:51:34.838Z",
+  "status": "selected",
+  "kind": [
+    "detached"
+  ],
+  "profile": {
+    "path": "docs/self-check/visual-settings.profile.json",
+    "labels": [
+      "Reading Desk 设置"
+    ],
+    "targetStrategy": {
+      "valid": true,
+      "mode": "detached",
+      "target": {
+        "titleContains": "",
+        "titlePattern": "^设置 - testvault - Obsidian 1\\.13\\.7$",
+        "urlContains": ""
+      },
+      "mainWindowTarget": {
+        "titleContains": "",
+        "titlePattern": "(?:^| - )testvault - Obsidian 1\\.13\\.7$",
+        "urlContains": "app://obsidian.md/index.html"
+      }
+    },
+    "selectors": {
+      "root": ".reading-desk-settings",
+      "navigation": null,
+      "targetRow": null
+    },
+    "declarativeCapabilityProbe": null,
+    "assertions": [
+      "document.querySelector('.reading-desk-settings')?.textContent.includes('对象存储与图床')"
+    ]
+  },
+  "target": {
+    "id": "D66B61F07B2B0DDE0C4767340D83C785",
+    "title": "设置 - testvault - Obsidian 1.13.7",
+    "url": "about:blank",
+    "webSocketDebuggerUrl": "ws://127.0.0.1:9222/devtools/page/D66B61F07B2B0DDE0C4767340D83C785"
+  },
+  "windowMetadata": {
+    "obsidianVersion": null,
+    "electronVersion": "43.1.1",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) obsidian/1.13.4 Chrome/150.0.7871.114 Electron/43.1.1 Safari/537.36",
+    "documentTitle": "设置 - testvault - Obsidian 1.13.7",
+    "locationHref": "about:blank"
+  },
+  "ownerDocument": {
+    "title": "设置 - testvault - Obsidian 1.13.7",
+    "isTargetDocument": true,
+    "targetId": "D66B61F07B2B0DDE0C4767340D83C785",
+    "targetTitle": "设置 - testvault - Obsidian 1.13.7",
+    "titleMatchesTarget": true
+  },
+  "visibility": {
+    "visible": true,
+    "offsetWidth": 675,
+    "offsetHeight": 670,
+    "computedVisibility": "visible",
+    "computedOpacity": "1"
+  },
+  "profileMatch": {
+    "rootPresent": true,
+    "navigationPresent": null,
+    "assertionsPassed": true,
+    "assertionResults": [
+      true
+    ],
+    "declarativeCapabilityObserved": null
+  },
+  "detachedWindowEvidence": {
+    "selectedTarget": {
+      "id": "D66B61F07B2B0DDE0C4767340D83C785",
+      "title": "设置 - testvault - Obsidian 1.13.7",
+      "url": "about:blank",
+      "webSocketDebuggerUrl": "ws://127.0.0.1:9222/devtools/page/D66B61F07B2B0DDE0C4767340D83C785"
+    },
+    "mainWindowTarget": {
+      "id": "F5514A5BEFBB73BCDA0D08EFB70361A8",
+      "title": "阅读：functional-excal-source.pdf - testvault - Obsidian 1.13.7",
+      "url": "app://obsidian.md/index.html",
+      "webSocketDebuggerUrl": "ws://127.0.0.1:9222/devtools/page/F5514A5BEFBB73BCDA0D08EFB70361A8"
+    },
+    "distinctTargetId": true,
+    "distinctTitle": true,
+    "isIndependentWindow": true
+  },
+  "confidenceReasons": [
+    "CDP target matched predicate (title=\"设置 - testvault - Obsidian 1.13.7\", url=\"about:blank\")",
+    "Profile root selector \".reading-desk-settings\" present in target document",
+    "All 1 profile assertions passed",
+    "Profile root ownerDocument is the selected CDP target document",
+    "Selected detached CDP target has a distinct id and title from the explicitly profiled main Obsidian target"
+  ],
+  "observedFallbackEvidence": {
+    "hostClasses": [
+      ".modal.mod-settings",
+      ".vertical-tab-content",
+      ".vertical-tab-content-container"
+    ],
+    "isMeasuringProbes": 1,
+    "realDropdownSelects": 1,
+    "note": "Host classes recorded for diagnosis only; they are NOT part of the success contract."
+  },
+  "diagnostics": {
+    "cdpReachable": true,
+    "targetCount": 6,
+    "matchCount": 1,
+    "candidates": null,
+    "rootLabelDisambiguation": null,
+    "pollingDeadlineMs": 1789750302815,
+    "pollingElapsedMs": 23,
+    "pollingIterations": 1,
+    "hostDomMutated": false,
+    "inspectionError": null,
+    "reason": null,
+    "unsupportedReason": null
+  },
+  "host": "127.0.0.1",
+  "port": 9222
+}

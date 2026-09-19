@@ -1,0 +1,51 @@
+{
+  "timestamp": "2026-09-18T15:40:19.997Z",
+  "command": "eval",
+  "target": "F5514A5BEFBB73BCDA0D08EFB70361A8",
+  "result": {
+    "source": "Reading Desk Fixtures/functional-outline-renamed.pdf",
+    "book": {
+      "id": "book-f4bf7b2c-155f-48f8-b722-ba9de75b59b5",
+      "path": "Reading Desk Fixtures/functional-outline-renamed.pdf",
+      "format": "pdf",
+      "title": "functional-outline",
+      "author": "",
+      "pageCount": 3,
+      "coverPath": ".obsidian/plugins/obsidian-reading-desk/covers/90586c7917060e251362c238aa1aa907b1a4b346afafdee7e9fbbbf096f8deff.png",
+      "fileSize": 2280,
+      "fingerprint": {
+        "mtime": 1789745862083,
+        "size": 2280
+      },
+      "tags": [],
+      "progress": 0.6666666666666666,
+      "lastReadAt": 1789745987364
+    },
+    "target": {
+      "id": "rd-excerpt-0b17d3fe-b5be-49e3-8fdc-09519261732d",
+      "type": "text",
+      "text": "# Functional reading desk selection line one. This second line belongs to …\n\nFunctional reading desk selection line one.\nThis second line belongs to chapter 2.\n\n[原文第 2 页](obsidian://reading-desk-highlight?file=Reading%20Desk%20Fixtures%2Ffunctional-outline-renamed.pdf&highlight=highlight-f62b391d-d002-4883-b9fb-40b30c5cea35)",
+      "x": 840,
+      "y": 324,
+      "width": 400,
+      "height": 292,
+      "color": "4",
+      "readingDesk": {
+        "schemaVersion": 1,
+        "kind": "excerpt",
+        "highlightId": "highlight-f62b391d-d002-4883-b9fb-40b30c5cea35",
+        "pdfPath": "Reading Desk Fixtures/functional-outline-renamed.pdf",
+        "page": 1,
+        "title": "Functional reading desk selection line one. This second line belongs to …",
+        "sourceLink": "obsidian://reading-desk-highlight?file=Reading%20Desk%20Fixtures%2Ffunctional-outline-renamed.pdf&highlight=highlight-f62b391d-d002-4883-b9fb-40b30c5cea35",
+        "folded": false,
+        "color": "moss",
+        "chapterPath": [
+          "Methods",
+          "Details"
+        ]
+      }
+    },
+    "readerActivePath": "Reading Desk Fixtures/functional-outline.pdf"
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "timestamp": "2026-09-18T15:40:19.619Z",
+  "command": "eval",
+  "target": "F5514A5BEFBB73BCDA0D08EFB70361A8",
+  "result": {
+    "highlightId": "highlight-f62b391d-d002-4883-b9fb-40b30c5cea35",
+    "target": {
+      "type": "canvas",
+      "path": "Reading Desk/摘录-1789745987343.canvas",
+      "objectId": "rd-excerpt-0b17d3fe-b5be-49e3-8fdc-09519261732d"
+    },
+    "chapterPath": [
+      "Methods",
+      "Details"
+    ],
+    "nodes": [
+      {
+        "id": "rd-chapter-92f97a7f-edda-4d34-952c-0248c3793184",
+        "kind": "chapter",
+        "title": "Methods",
+        "chapterPath": [
+          "Methods"
+        ],
+        "pdfPath": "Reading Desk Fixtures/functional-outline.pdf"
+      },
+      {
+        "id": "rd-chapter-ef16e1c8-1b57-4f5c-8fc4-67f24ba5bb0a",
+        "kind": "chapter",
+        "title": "Details",
+        "chapterPath": [
+          "Methods",
+          "Details"
+        ],
+        "pdfPath": "Reading Desk Fixtures/functional-outline.pdf"
+      },
+      {
+        "id": "rd-excerpt-0b17d3fe-b5be-49e3-8fdc-09519261732d",
+        "kind": "excerpt",
+        "title": "Functional reading desk selection line one. This second line belongs to …",
+        "chapterPath": [
+          "Methods",
+          "Details"
+        ],
+        "pdfPath": "Reading Desk Fixtures/functional-outline.pdf",
+        "color": "4"
+      }
+    ],
+    "edges": [
+      {
+        "id": "rd-chapter-edge-afebd225-bb3e-46d4-b70b-bdaf87b1464a",
+        "fromNode": "rd-chapter-92f97a7f-edda-4d34-952c-0248c3793184",
+        "fromSide": "bottom",
+        "toNode": "rd-chapter-ef16e1c8-1b57-4f5c-8fc4-67f24ba5bb0a",
+        "toSide": "top",
+        "readingDesk": {
+          "kind": "chapter-edge"
+        }
+      },
+      {
+        "id": "rd-excerpt-edge-6d87b1c8-5cdf-44fa-a0e2-95c5a75f862d",
+        "fromNode": "rd-chapter-ef16e1c8-1b57-4f5c-8fc4-67f24ba5bb0a",
+        "fromSide": "right",
+        "toNode": "rd-excerpt-0b17d3fe-b5be-49e3-8fdc-09519261732d",
+        "toSide": "left",
+        "readingDesk": {
+          "kind": "excerpt-edge"
+        }
+      }
+    ]
+  }
+}

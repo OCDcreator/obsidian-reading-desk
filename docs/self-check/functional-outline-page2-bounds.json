@@ -1,0 +1,72 @@
+{
+  "timestamp": "2026-09-18T15:38:08.013Z",
+  "command": "eval",
+  "target": "F5514A5BEFBB73BCDA0D08EFB70361A8",
+  "result": {
+    "page": 2,
+    "spans": [
+      {
+        "text": "Methods and evidence",
+        "rect": {
+          "x": 264.9140625,
+          "y": 226.625,
+          "width": 150.91653442382812,
+          "height": 15,
+          "top": 226.625,
+          "right": 415.8305969238281,
+          "bottom": 241.625,
+          "left": 264.9140625
+        }
+      },
+      {
+        "text": "Functional reading desk selection line one.",
+        "rect": {
+          "x": 264.9140625,
+          "y": 307.328125,
+          "width": 283.470703125,
+          "height": 15,
+          "top": 307.328125,
+          "right": 548.384765625,
+          "bottom": 322.328125,
+          "left": 264.9140625
+        }
+      },
+      {
+        "text": "This second line belongs to chapter 2.",
+        "rect": {
+          "x": 264.9140625,
+          "y": 344.828125,
+          "width": 252.6357421875,
+          "height": 15,
+          "top": 344.828125,
+          "right": 517.5498046875,
+          "bottom": 359.828125,
+          "left": 264.9140625
+        }
+      },
+      {
+        "text": "A controlled fixture for native interaction.",
+        "rect": {
+          "x": 264.9140625,
+          "y": 407.328125,
+          "width": 267.615966796875,
+          "height": 15,
+          "top": 407.328125,
+          "right": 532.530029296875,
+          "bottom": 422.328125,
+          "left": 264.9140625
+        }
+      }
+    ],
+    "panel": {
+      "x": 1079.28125,
+      "y": 166.328125,
+      "width": 470.71875,
+      "height": 351.9921875,
+      "top": 166.328125,
+      "right": 1550,
+      "bottom": 518.3203125,
+      "left": 1079.28125
+    }
+  }
+}

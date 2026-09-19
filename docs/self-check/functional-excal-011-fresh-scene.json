@@ -1,0 +1,62 @@
+{
+  "timestamp": "2026-09-18T16:05:16.850Z",
+  "command": "eval",
+  "target": "F5514A5BEFBB73BCDA0D08EFB70361A8",
+  "result": {
+    "h": {
+      "id": "functional-excal-final-1789747516669",
+      "pdfPath": "Reading Desk Fixtures/functional-excal-source.pdf",
+      "page": 0,
+      "rotation": 0,
+      "rects": [
+        {
+          "x": 0.09169791666666666,
+          "y": 0.13799999999999998,
+          "width": 0.3729368489583333,
+          "height": 0.021000000000000074
+        }
+      ],
+      "text": "Functional native Excalidraw final scene",
+      "color": "moss",
+      "chapterPath": [
+        "Introduction"
+      ],
+      "tags": [],
+      "createdAt": 1789747516669,
+      "updatedAt": 1789747516669,
+      "target": {
+        "type": "excalidraw",
+        "path": "Reading Desk/摘录-1789747516669.excalidraw.md",
+        "objectId": "rd-excalidraw-d5cd567f-33f1-429e-82e3-6c5540b97bf7"
+      }
+    },
+    "rawPrefix": "---\nexcalidraw-plugin: parsed\ntags: [excalidraw]\n---\n# Excalidraw Data\n\n## Text Elements\n%%\n## Drawing\n```json\n{\n  \"type\": \"excalidraw\",\n  \"version\": 2,\n  \"source\": \"https://excalidraw.com\",\n  \"elements\": [\n    {\n      \"",
+    "nativeType": "excalidraw",
+    "file": "Reading Desk/摘录-1789747516669.excalidraw.md",
+    "elements": [
+      {
+        "id": "8z0bMFSa",
+        "text": "Functional native Excalidraw final scene\nFunctional native Excalidraw final scene\n原文第 1 页：obsidian://reading-desk-highlight?file=Reading%20Desk%20Fixtures%2Ffunctional-excal-source.pdf&highlight=functional-excal-final-1789747516669",
+        "link": "obsidian://reading-desk-highlight?file=Reading%20Desk%20Fixtures%2Ffunctional-excal-source.pdf&highlight=functional-excal-final-1789747516669",
+        "customData": {
+          "readingDesk": {
+            "schemaVersion": 1,
+            "kind": "excerpt",
+            "highlightId": "functional-excal-final-1789747516669",
+            "pdfPath": "Reading Desk Fixtures/functional-excal-source.pdf",
+            "page": 0,
+            "title": "Functional native Excalidraw final scene",
+            "sourceLink": "obsidian://reading-desk-highlight?file=Reading%20Desk%20Fixtures%2Ffunctional-excal-source.pdf&highlight=functional-excal-final-1789747516669",
+            "folded": false
+          }
+        }
+      }
+    ],
+    "selected": {},
+    "zoom": {
+      "value": 0.516711
+    },
+    "notices": [],
+    "layer": "runtime production creation plus actual native plugin render; not claiming Input excerpt creation for this fresh file"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "timestamp": "2026-09-18T15:31:15.286Z",
+  "command": "eval",
+  "target": "F5514A5BEFBB73BCDA0D08EFB70361A8",
+  "result": {
+    "vault": "testvault",
+    "active": "empty",
+    "leaves": [
+      {
+        "id": "88b6eee26759cb23",
+        "path": "Reading Desk Fixtures/reader-text-fixture.pdf",
+        "layout": "focus",
+        "display": "阅读：reader-text-fixture.pdf",
+        "connected": true,
+        "visible": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      }
+    ],
+    "canvas": 0,
+    "settings": "focus",
+    "panels": 0
+  }
+}

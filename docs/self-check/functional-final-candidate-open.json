@@ -1,0 +1,97 @@
+{
+  "timestamp": "2026-09-18T15:55:15.412Z",
+  "command": "eval",
+  "target": "F5514A5BEFBB73BCDA0D08EFB70361A8",
+  "result": {
+    "layout": "split",
+    "stored": {
+      "highlight-2ab55fda-9b59-4840-a94a-9702fce38c48": {
+        "title": "独立验收标题 1532",
+        "folded": true
+      }
+    },
+    "buttons": [
+      {
+        "text": "展开卡片",
+        "rect": {
+          "x": 1105.28125,
+          "y": 451.3203125,
+          "width": 78,
+          "height": 30,
+          "top": 451.3203125,
+          "right": 1183.28125,
+          "bottom": 481.3203125,
+          "left": 1105.28125
+        }
+      },
+      {
+        "text": "定位目标",
+        "rect": {
+          "x": 1189.28125,
+          "y": 451.3203125,
+          "width": 78,
+          "height": 30,
+          "top": 451.3203125,
+          "right": 1267.28125,
+          "bottom": 481.3203125,
+          "left": 1189.28125
+        }
+      },
+      {
+        "text": "折叠卡片",
+        "rect": {
+          "x": 1105.28125,
+          "y": 545.3203125,
+          "width": 78,
+          "height": 30,
+          "top": 545.3203125,
+          "right": 1183.28125,
+          "bottom": 575.3203125,
+          "left": 1105.28125
+        }
+      },
+      {
+        "text": "定位目标",
+        "rect": {
+          "x": 1189.28125,
+          "y": 545.3203125,
+          "width": 78,
+          "height": 30,
+          "top": 545.3203125,
+          "right": 1267.28125,
+          "bottom": 575.3203125,
+          "left": 1189.28125
+        }
+      }
+    ],
+    "highlights": [
+      {
+        "id": "highlight-2ab55fda-9b59-4840-a94a-9702fce38c48",
+        "path": "Reading Desk Fixtures/reader-text-fixture.pdf",
+        "target": {
+          "type": "canvas",
+          "path": "Reading Desk/摘录-1789743647081.canvas",
+          "objectId": "rd-excerpt-0e9974ce-fb13-41a6-80e3-5b72a0f4d199"
+        }
+      },
+      {
+        "id": "highlight-45c391be-97fb-416e-abd6-26ac0c5327d3",
+        "path": "Reading Desk Fixtures/reader-text-fixture.pdf",
+        "target": {
+          "type": "markdown",
+          "path": "Reading Desk/摘录-1789743736161.md",
+          "objectId": "highlight-45c391be-97fb-416e-abd6-26ac0c5327d3"
+        }
+      },
+      {
+        "id": "highlight-f62b391d-d002-4883-b9fb-40b30c5cea35",
+        "path": "Reading Desk Fixtures/functional-outline-renamed.pdf",
+        "target": {
+          "type": "canvas",
+          "path": "Reading Desk/摘录-1789745987343.canvas",
+          "objectId": "rd-excerpt-0b17d3fe-b5be-49e3-8fdc-09519261732d"
+        }
+      }
+    ]
+  }
+}

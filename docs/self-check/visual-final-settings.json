@@ -1,0 +1,111 @@
+{
+  "target": {
+    "id": "2DAEB523D2B3C5C34FF3D419473CB592",
+    "title": "设置 - testvault - Obsidian 1.13.7",
+    "url": "about:blank"
+  },
+  "result": {
+    "h2": [
+      {
+        "text": "Reading Desk 设置",
+        "rect": {
+          "x": 257,
+          "y": 78,
+          "width": 611,
+          "height": 25,
+          "top": 78,
+          "right": 868,
+          "bottom": 103,
+          "left": 257
+        },
+        "fontSize": "20px",
+        "fontWeight": "650",
+        "lineHeight": "25px"
+      }
+    ],
+    "h3": [
+      {
+        "text": "书库",
+        "rect": {
+          "x": 257,
+          "y": 154,
+          "width": 611,
+          "height": 19.5,
+          "top": 154,
+          "right": 868,
+          "bottom": 173.5,
+          "left": 257
+        },
+        "fontSize": "15px",
+        "fontWeight": "600",
+        "lineHeight": "19.5px"
+      },
+      {
+        "text": "对象存储与图床",
+        "rect": {
+          "x": 257,
+          "y": 281.9921875,
+          "width": 611,
+          "height": 19.5,
+          "top": 281.9921875,
+          "right": 868,
+          "bottom": 301.4921875,
+          "left": 257
+        },
+        "fontSize": "15px",
+        "fontWeight": "600",
+        "lineHeight": "19.5px"
+      },
+      {
+        "text": "可选 AI 集成",
+        "rect": {
+          "x": 257,
+          "y": 1052.96875,
+          "width": 611,
+          "height": 19.5,
+          "top": 1052.96875,
+          "right": 868,
+          "bottom": 1072.46875,
+          "left": 257
+        },
+        "fontSize": "15px",
+        "fontWeight": "600",
+        "lineHeight": "19.5px"
+      },
+      {
+        "text": "导入与导出",
+        "rect": {
+          "x": 257,
+          "y": 1164.9609375,
+          "width": 611,
+          "height": 19.5,
+          "top": 1164.9609375,
+          "right": 868,
+          "bottom": 1184.4609375,
+          "left": 257
+        },
+        "fontSize": "15px",
+        "fontWeight": "600",
+        "lineHeight": "19.5px"
+      }
+    ],
+    "root": {
+      "rect": {
+        "x": 225,
+        "y": 30,
+        "width": 675,
+        "height": 670,
+        "top": 30,
+        "right": 900,
+        "bottom": 700,
+        "left": 225
+      },
+      "clientWidth": 675,
+      "scrollWidth": 675
+    },
+    "body": {
+      "w": 900,
+      "h": 700
+    }
+  }
+}

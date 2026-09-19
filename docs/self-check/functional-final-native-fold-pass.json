@@ -1,0 +1,47 @@
+{
+  "timestamp": "2026-09-18T15:55:43.635Z",
+  "command": "eval",
+  "target": "F5514A5BEFBB73BCDA0D08EFB70361A8",
+  "result": {
+    "file": "Reading Desk/摘录-1789743647081.canvas",
+    "selected": [
+      "rd-excerpt-0e9974ce-fb13-41a6-80e3-5b72a0f4d199"
+    ],
+    "nodes": [
+      {
+        "id": "rd-excerpt-0e9974ce-fb13-41a6-80e3-5b72a0f4d199",
+        "data": {
+          "id": "rd-excerpt-0e9974ce-fb13-41a6-80e3-5b72a0f4d199",
+          "type": "text",
+          "text": "# 独立验收标题 1532\n\nReadingDeskselectionfixture\n\n[原文第 1 页](obsidian://reading-desk-highlight?file=Reading%20Desk%20Fixtures%2Freader-text-fixture.pdf&highlight=highlight-2ab55fda-9b59-4840-a94a-9702fce38c48)",
+          "readingDesk": {
+            "schemaVersion": 1,
+            "kind": "excerpt",
+            "highlightId": "highlight-2ab55fda-9b59-4840-a94a-9702fce38c48",
+            "pdfPath": "Reading Desk Fixtures/reader-text-fixture.pdf",
+            "page": 0,
+            "title": "独立验收标题 1532",
+            "sourceLink": "obsidian://reading-desk-highlight?file=Reading%20Desk%20Fixtures%2Freader-text-fixture.pdf&highlight=highlight-2ab55fda-9b59-4840-a94a-9702fce38c48",
+            "folded": false,
+            "color": "moss"
+          },
+          "x": 0,
+          "y": 48,
+          "width": 400,
+          "height": 240,
+          "color": "4"
+        },
+        "screen": {
+          "x": 1011,
+          "y": 395.828125,
+          "width": 400,
+          "height": 240,
+          "top": 395.828125,
+          "right": 1411,
+          "bottom": 635.828125,
+          "left": 1011
+        }
+      }
+    ]
+  }
+}

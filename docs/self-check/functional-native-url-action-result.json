@@ -1,0 +1,20 @@
+{
+  "timestamp": "2026-09-18T16:09:50.612Z",
+  "command": "eval",
+  "target": "F5514A5BEFBB73BCDA0D08EFB70361A8",
+  "result": {
+    "active": "reading-desk-reader",
+    "readers": [
+      {
+        "marks": 0,
+        "text": ""
+      },
+      {
+        "path": "Reading Desk Fixtures/functional-excal-source.pdf",
+        "page": 1,
+        "marks": 1,
+        "text": "Reading Desk 阅读器缩小放大适应宽度高亮列表裁剪专注阅读CanvasExcalidrawMarkdown苔琥砖靛梅上一页/ 3下一页IntroductionFunctional reading desk selection line one.This second line belong"
+      }
+    ]
+  }
+}

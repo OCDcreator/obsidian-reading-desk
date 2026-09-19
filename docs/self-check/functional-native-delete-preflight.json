@@ -1,0 +1,50 @@
+{
+  "timestamp": "2026-09-18T15:35:58.190Z",
+  "command": "eval",
+  "target": "F5514A5BEFBB73BCDA0D08EFB70361A8",
+  "result": {
+    "active": "canvas",
+    "path": "Reading Desk/摘录-1789743834685.canvas",
+    "nodes": [
+      {
+        "id": "rd-excerpt-36550fac-3a51-401d-85ac-ab52e93a77f6",
+        "rect": {
+          "x": 1140.8359375,
+          "y": 382.828125,
+          "width": 400,
+          "height": 266,
+          "top": 382.828125,
+          "right": 1540.8359375,
+          "bottom": 648.828125,
+          "left": 1140.8359375
+        }
+      }
+    ],
+    "highlights": [
+      {
+        "id": "highlight-2ab55fda-9b59-4840-a94a-9702fce38c48",
+        "target": {
+          "type": "canvas",
+          "path": "Reading Desk/摘录-1789743647081.canvas",
+          "objectId": "rd-excerpt-0e9974ce-fb13-41a6-80e3-5b72a0f4d199"
+        }
+      },
+      {
+        "id": "highlight-45c391be-97fb-416e-abd6-26ac0c5327d3",
+        "target": {
+          "type": "markdown",
+          "path": "Reading Desk/摘录-1789743736161.md",
+          "objectId": "highlight-45c391be-97fb-416e-abd6-26ac0c5327d3"
+        }
+      },
+      {
+        "id": "highlight-cb82116e-06df-4b9f-9c2f-0ac02edfa9b4",
+        "target": {
+          "type": "canvas",
+          "path": "Reading Desk/摘录-1789743834685.canvas",
+          "objectId": "rd-excerpt-36550fac-3a51-401d-85ac-ab52e93a77f6"
+        }
+      }
+    ]
+  }
+}

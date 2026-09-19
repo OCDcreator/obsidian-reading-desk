@@ -1,0 +1,248 @@
+{
+  "timestamp": "2026-09-18T14:11:55.825Z",
+  "pdfjs": "4.10.38",
+  "hashes": {
+    "src/reader/PdfSelectionGeometry.ts": "192fab9e1470528e38b4302bbe84aa80df93108084ee5b7eea718607859ea265",
+    "src/library/LibraryIndex.ts": "ba151b1e5d80ed273de2875ad50ddf83f78aa9c4bfa03d01199fd814e5a33c05",
+    "src/utils/ids.ts": "85ea5032b05c8778d5d0c3290b23fc4cba9c720696b304fc1c82d38971346777",
+    "src/storage/ObjectStorageService.ts": "d1af7b6ab6c97097cbf120f297d4865eecfb88e22acc3f2e07df2d8ce08cbda6",
+    "src/targets/CanvasTargetAdapter.ts": "740a8e272464dd586e78bed544b7f9bfc3c96e5c10457544a584c2a39f564ffb",
+    "src/targets/TargetTypes.ts": "101341fd1accf63febe9c72c5d090a5320ed1d988fe8e88604d0539a973c52fe",
+    "src/targets/ExcalidrawTargetAdapter.ts": "e079ba7f31c21e4e075b4785e56cfa28d04af896b56e4863bfdc841ee166f503",
+    "src/targets/MarkdownTargetAdapter.ts": "d1a8b05df481bd21bfe35e775e66265002efecd1d8c455421afc4d514f59564a"
+  },
+  "summary": {
+    "passed": 9,
+    "failed": 6
+  },
+  "checks": [
+    {
+      "name": "geometry actual PDF 0,0,600,800 scale2-to1 rotation0",
+      "pass": true,
+      "evidence": {
+        "normalized": {
+          "x": 0.1,
+          "y": 0.125,
+          "width": 0.1,
+          "height": 0.024999999999999994
+        },
+        "expected": {
+          "left": 60,
+          "top": 100,
+          "width": 60,
+          "height": 20
+        },
+        "actual": {
+          "left": 60,
+          "top": 100,
+          "width": 60,
+          "height": 20
+        }
+      }
+    },
+    {
+      "name": "geometry actual PDF 0,0,600,800 scale2-to1 rotation90",
+      "pass": true,
+      "evidence": {
+        "normalized": {
+          "x": 0.1,
+          "y": 0.125,
+          "width": 0.1,
+          "height": 0.024999999999999994
+        },
+        "expected": {
+          "left": 680,
+          "top": 60,
+          "width": 20,
+          "height": 60
+        },
+        "actual": {
+          "left": 680,
+          "top": 60,
+          "width": 20,
+          "height": 60
+        }
+      }
+    },
+    {
+      "name": "geometry actual PDF 20,30,620,830 scale2-to1 rotation0",
+      "pass": true,
+      "evidence": {
+        "normalized": {
+          "x": 0.1,
+          "y": 0.125,
+          "width": 0.1,
+          "height": 0.024999999999999994
+        },
+        "expected": {
+          "left": 60,
+          "top": 100,
+          "width": 60,
+          "height": 20
+        },
+        "actual": {
+          "left": 60,
+          "top": 100,
+          "width": 60,
+          "height": 20
+        }
+      }
+    },
+    {
+      "name": "geometry actual PDF 20,30,620,830 scale2-to1 rotation90",
+      "pass": true,
+      "evidence": {
+        "normalized": {
+          "x": 0.1,
+          "y": 0.125,
+          "width": 0.1,
+          "height": 0.024999999999999994
+        },
+        "expected": {
+          "left": 680,
+          "top": 60,
+          "width": 20,
+          "height": 60
+        },
+        "actual": {
+          "left": 680,
+          "top": 60,
+          "width": 20,
+          "height": 60
+        }
+      }
+    },
+    {
+      "name": "overlapping scans retain latest discovered book",
+      "pass": true,
+      "evidence": {
+        "paths": [
+          "books/a.pdf",
+          "books/b.pdf"
+        ]
+      }
+    },
+    {
+      "name": "scan queue recovers after one transient persistence rejection",
+      "pass": false,
+      "evidence": {
+        "error": "simulated single transient save failure",
+        "paths": []
+      }
+    },
+    {
+      "name": "COS signature matches official SDK: reading-desk/images/a.png",
+      "pass": true,
+      "evidence": {
+        "sdkVersion": "3.0.0",
+        "oracleSourceSha256": "075fe520eab6fd9bd3bb43e9d155c381e968f648dd7ea724e4d6c233c1565e4a",
+        "expected": "q-sign-algorithm=sha1&q-ak=test-ak&q-sign-time=1735787045;1735787945&q-key-time=1735787045;1735787945&q-header-list=host&q-url-param-list=&q-signature=6f1d10f4451e882d53f594abaad540359389f513",
+        "actual": "q-sign-algorithm=sha1&q-ak=test-ak&q-sign-time=1735787045;1735787945&q-key-time=1735787045;1735787945&q-header-list=host&q-url-param-list=&q-signature=6f1d10f4451e882d53f594abaad540359389f513"
+      }
+    },
+    {
+      "name": "COS signature matches official SDK: reading-desk/实验 图(1).png",
+      "pass": false,
+      "evidence": {
+        "sdkVersion": "3.0.0",
+        "oracleSourceSha256": "075fe520eab6fd9bd3bb43e9d155c381e968f648dd7ea724e4d6c233c1565e4a",
+        "expected": "q-sign-algorithm=sha1&q-ak=test-ak&q-sign-time=1735787045;1735787945&q-key-time=1735787045;1735787945&q-header-list=host&q-url-param-list=&q-signature=c432c6732bf7a91633eb50877a6a013850c3526e",
+        "actual": "q-sign-algorithm=sha1&q-ak=test-ak&q-sign-time=1735787045;1735787945&q-key-time=1735787045;1735787945&q-header-list=host&q-url-param-list=&q-signature=193799c190e915b8b5629c27d61db89b201b0103"
+      }
+    },
+    {
+      "name": "COS connection signature matches official SDK",
+      "pass": true,
+      "evidence": {
+        "expected": "q-sign-algorithm=sha1&q-ak=test-ak&q-sign-time=1735787045;1735787945&q-key-time=1735787045;1735787945&q-header-list=host&q-url-param-list=max-keys&q-signature=7a4c9ffa809d0295f5e7d9ecbf5d759a7a811675",
+        "actual": "q-sign-algorithm=sha1&q-ak=test-ak&q-sign-time=1735787045;1735787945&q-key-time=1735787045;1735787945&q-header-list=host&q-url-param-list=max-keys&q-signature=7a4c9ffa809d0295f5e7d9ecbf5d759a7a811675"
+      }
+    },
+    {
+      "name": "OSS V1 HMAC matches independently computed canonical request",
+      "pass": true,
+      "evidence": {
+        "expected": "OSS test-ak:V/CB3XDZPp1FXd35tHrDCb+7er4=",
+        "actual": "OSS test-ak:V/CB3XDZPp1FXd35tHrDCb+7er4=",
+        "scope": "cryptographic/protocol construction only; no cloud request"
+      }
+    },
+    {
+      "name": "Canvas excerpts serialize their palette color",
+      "pass": false,
+      "evidence": {
+        "colors": [
+          null,
+          null
+        ]
+      }
+    },
+    {
+      "name": "Canvas same chapter names in two PDFs remain separate",
+      "pass": false,
+      "evidence": {
+        "chapters": [
+          {
+            "pdfPath": "papers/a.pdf",
+            "chapterPath": [
+              "第一章"
+            ]
+          },
+          {
+            "pdfPath": "papers/a.pdf",
+            "chapterPath": [
+              "第一章",
+              "导论"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "Excalidraw existing excerpt update changes visible text and link",
+      "pass": false,
+      "evidence": {
+        "text": "OLD\nOriginal excerpt\n原文第 2 页：obsidian://reading-desk?id=old",
+        "link": "obsidian://reading-desk?id=old",
+        "metadata": {
+          "schemaVersion": 1,
+          "kind": "excerpt",
+          "highlightId": "one",
+          "pdfPath": "papers/a.pdf",
+          "page": 2,
+          "title": "NEW",
+          "sourceLink": "obsidian://reading-desk?id=new",
+          "folded": false
+        }
+      }
+    },
+    {
+      "name": "Excalidraw compressed-json compatibility observation (superseded by synthetic fixture)",
+      "pass": false,
+      "evidence": {
+        "fencedFormats": [
+          "compressed-json"
+        ],
+        "error": "不支持的 Excalidraw 文件：未找到可解析的 JSON scene fenced block，未写入任何内容。",
+        "sourceDetails": "Removed; use functional-compressed-scene.md for all future checks",
+        "unchangedOnDisk": true
+      }
+    },
+    {
+      "name": "Markdown update preserves user content and replaces backlink without duplicating excerpt",
+      "pass": true,
+      "evidence": {
+        "link": {
+          "highlightId": "one",
+          "sourceLink": "obsidian://reading-desk?id=new",
+          "page": 2
+        }
+      }
+    }
+  ],
+  "limits": [
+    "No Obsidian UI interaction in this run.",
+    "No actual OSS/COS credentials or cloud requests.",
+    "Fixture/in-memory adapter checks do not prove native rendering."
+  ]
+}

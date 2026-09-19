@@ -1,0 +1,25 @@
+{
+  "timestamp": "2026-09-18T16:10:34.250Z",
+  "command": "eval",
+  "target": "F5514A5BEFBB73BCDA0D08EFB70361A8",
+  "result": {
+    "active": "excalidraw",
+    "links": [
+      {
+        "href": "obsidian://reading-desk-highlight?file=Reading%20Desk%20Fixtures%2Ffunctional-excal-source.pdf&highlight=functional-excal-final-1789747516669",
+        "text": "obsidian://reading-desk-highlight?file=Reading%20Desk%20Fixtures%2Ffunctional-excal-source.pdf&highlight=functional-excal-final-1789747516669",
+        "rect": {
+          "x": 1026,
+          "y": 422.21875,
+          "width": 240,
+          "height": 24,
+          "top": 422.21875,
+          "right": 1266,
+          "bottom": 446.21875,
+          "left": 1026
+        }
+      }
+    ],
+    "readerCount": 2
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "timestamp": "2026-09-18T15:39:06.078Z",
+  "command": "eval",
+  "target": "F5514A5BEFBB73BCDA0D08EFB70361A8",
+  "result": {
+    "events": [
+      {
+        "type": "dragstart",
+        "trusted": true,
+        "types": [
+          "text/html",
+          "text/plain"
+        ],
+        "text": "Functional reading desk selection line one.\nThis second line belongs to chapter 2."
+      },
+      {
+        "type": "dragover",
+        "trusted": true,
+        "types": [
+          "text/plain",
+          "text/html",
+          "chromium/x-drag-id",
+          "application/x-reading-desk-rects"
+        ],
+        "text": "",
+        "target": ""
+      },
+      {
+        "type": "dragend",
+        "trusted": true,
+        "types": [
+          "text/html",
+          "text/plain",
+          "application/x-reading-desk-rects"
+        ],
+        "text": ""
+      }
+    ],
+    "selection": "Functional reading desk selection line one.\nThis second line belongs to chapter 2.",
+    "highlights": []
+  }
+}

@@ -1,0 +1,155 @@
+{
+  "timestamp": "2026-09-18T15:39:47.674Z",
+  "command": "eval",
+  "target": "F5514A5BEFBB73BCDA0D08EFB70361A8",
+  "result": {
+    "events": [
+      {
+        "type": "dragstart",
+        "trusted": true,
+        "types": [
+          "text/html",
+          "text/plain"
+        ],
+        "text": "Functional reading desk selection line one.\nThis second line belongs to chapter 2."
+      },
+      {
+        "type": "dragover",
+        "trusted": true,
+        "types": [
+          "text/plain",
+          "text/html",
+          "chromium/x-drag-id",
+          "application/x-reading-desk-rects"
+        ],
+        "text": "",
+        "target": ""
+      },
+      {
+        "type": "dragend",
+        "trusted": true,
+        "types": [
+          "text/html",
+          "text/plain",
+          "application/x-reading-desk-rects"
+        ],
+        "text": ""
+      },
+      {
+        "type": "dragstart",
+        "trusted": true,
+        "types": [
+          "text/html",
+          "text/plain"
+        ],
+        "text": "Functional reading desk selection line one.\nThis second line belongs to chapter 2."
+      },
+      {
+        "type": "dragover",
+        "trusted": true,
+        "types": [
+          "text/plain",
+          "text/html",
+          "chromium/x-drag-id",
+          "application/x-reading-desk-rects"
+        ],
+        "text": "",
+        "target": ""
+      },
+      {
+        "type": "dragover",
+        "trusted": true,
+        "types": [
+          "text/plain",
+          "text/html",
+          "chromium/x-drag-id",
+          "application/x-reading-desk-rects"
+        ],
+        "text": "",
+        "target": "rd-empty"
+      },
+      {
+        "type": "dragover",
+        "trusted": true,
+        "types": [
+          "text/plain",
+          "text/html",
+          "chromium/x-drag-id",
+          "application/x-reading-desk-rects"
+        ],
+        "text": "",
+        "target": "rd-empty"
+      },
+      {
+        "type": "drop",
+        "trusted": true,
+        "types": [
+          "text/plain",
+          "text/html",
+          "chromium/x-drag-id",
+          "application/x-reading-desk-rects"
+        ],
+        "text": "Functional reading desk selection line one.\nThis second line belongs to chapter 2.",
+        "target": "rd-empty"
+      },
+      {
+        "type": "dragend",
+        "trusted": true,
+        "types": [
+          "text/html",
+          "text/plain",
+          "application/x-reading-desk-rects"
+        ],
+        "text": ""
+      }
+    ],
+    "highlights": [
+      {
+        "id": "highlight-f62b391d-d002-4883-b9fb-40b30c5cea35",
+        "pdfPath": "Reading Desk Fixtures/functional-outline.pdf",
+        "page": 1,
+        "rotation": 0,
+        "rects": [
+          {
+            "x": 0.09169791666666666,
+            "y": 0.13799999999999998,
+            "width": 0.37796093750000004,
+            "height": 0.021000000000000074
+          },
+          {
+            "x": 0,
+            "y": 0.013499999999999943,
+            "width": 0,
+            "height": 0.018000000000000113
+          },
+          {
+            "x": 0.09169791666666666,
+            "y": 0.17849999999999994,
+            "width": 0.33684765625000007,
+            "height": 0.015000000000000013
+          },
+          {
+            "x": 0.09169791666666666,
+            "y": 0.17549999999999996,
+            "width": 0.33684765625000007,
+            "height": 0.021000000000000102
+          }
+        ],
+        "text": "Functional reading desk selection line one.\nThis second line belongs to chapter 2.",
+        "color": "moss",
+        "chapterPath": [
+          "Methods",
+          "Details"
+        ],
+        "tags": [],
+        "createdAt": 1789745987343,
+        "updatedAt": 1789745987343,
+        "target": {
+          "type": "canvas",
+          "path": "Reading Desk/摘录-1789745987343.canvas",
+          "objectId": "rd-excerpt-0b17d3fe-b5be-49e3-8fdc-09519261732d"
+        }
+      }
+    ]
+  }
+}

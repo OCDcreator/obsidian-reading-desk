@@ -1,0 +1,27 @@
+{
+  "buildId": "0.1.1+2026-09-18T16:32:50.656Z",
+  "deployed": {
+    "main.js": "52fe9488d53dd1771de713c70a3e81b2869d91d6370d2a65cd3631958ae0175c",
+    "manifest.json": "236da1b1d1185193ac1e1bf462bed3c31da0f4f85ee06cdf924b2bf4a690a374",
+    "styles.css": "a291459fc2164d7604222280b1ebd6847971a1bed6f3bdb92b9859a83678ab63",
+    "pdf.worker.mjs": "7c237f83fa56bce645d8af51d183c9c56ba7b2d2928ff42754dc7020bea36323"
+  },
+  "hotReloadEnabled": false,
+  "hostInitial": {
+    "theme": "moonstone",
+    "leftCollapsed": true,
+    "rightCollapsed": true,
+    "viewport": [
+      1600,
+      953
+    ]
+  },
+  "round": 3,
+  "deployedAtEnd": {
+    "main.js": "e222d87288138e63b4709dc9a233da9401870ecbddf05c089c0bdfd55b049a0d",
+    "manifest.json": "236da1b1d1185193ac1e1bf462bed3c31da0f4f85ee06cdf924b2bf4a690a374",
+    "styles.css": "f007b057430068107f3b0bc2b20ebf2f489a2f61c7f64ed61101f9f5f92425b8",
+    "pdf.worker.mjs": "7c237f83fa56bce645d8af51d183c9c56ba7b2d2928ff42754dc7020bea36323"
+  },
+  "unchangedThroughout": true
+}

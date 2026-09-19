@@ -1,0 +1,46 @@
+{
+  "timestamp": "2026-09-18T16:10:06.745Z",
+  "command": "eval",
+  "target": "F5514A5BEFBB73BCDA0D08EFB70361A8",
+  "result": {
+    "state": {
+      "offsetLeft": 834,
+      "offsetTop": 87.328125,
+      "width": 754,
+      "height": 856.671875,
+      "scrollX": 36.48041428256865,
+      "scrollY": 795.2161677417356,
+      "zoom": {
+        "value": 0.516711
+      }
+    },
+    "el": {
+      "x": 0,
+      "y": 0,
+      "width": 1386.268798828125,
+      "height": 67.5
+    },
+    "canvas": [
+      {
+        "x": 834,
+        "y": 87.328125,
+        "width": 754,
+        "height": 856.671875,
+        "top": 87.328125,
+        "right": 1588,
+        "bottom": 944,
+        "left": 834
+      },
+      {
+        "x": 834,
+        "y": 87.328125,
+        "width": 754,
+        "height": 856.671875,
+        "top": 87.328125,
+        "right": 1588,
+        "bottom": 944,
+        "left": 834
+      }
+    ]
+  }
+}

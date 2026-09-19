@@ -1,0 +1,22 @@
+{
+  "timestamp": "2026-09-18T15:36:21.628Z",
+  "command": "eval",
+  "target": "F5514A5BEFBB73BCDA0D08EFB70361A8",
+  "result": {
+    "active": "canvas",
+    "canvasNodes": [],
+    "storeHasHighlight": true,
+    "diskHasHighlight": true,
+    "visibleReaderMarks": 30,
+    "readers": [
+      {
+        "path": "Reading Desk Fixtures/reader-text-fixture.pdf",
+        "marks": 17
+      },
+      {
+        "path": "Reading Desk Fixtures/reader-text-fixture.pdf",
+        "marks": 17
+      }
+    ]
+  }
+}

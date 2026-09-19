@@ -1,0 +1,4 @@
+23:35:43 Received URL action {"file":"Reading Desk Fixtures/reader-text-fixture.pdf","highlight":"highlight-2ab55fda-9b59-4840-a94a-9702fce38c48","action":"reading-desk-highlight"}
+23:40:19 Received CLI command {"0":"move","1":"path=Reading Desk Fixtures/functional-outline.pdf","2":"to=Reading Desk Fixtures/functional-outline-renamed.pdf"}
+23:54:38 Received CLI command {"0":"plugin:reload","1":"id=obsidian-reading-desk"}
+23:54:38 [INFO] [Reading Desk] Margin v0.1.0 build 0.1.0+2026-09-18T15:54:23.292Z

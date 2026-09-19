@@ -1,0 +1,48 @@
+{
+  "timestamp": "2026-09-18T15:35:25.298Z",
+  "command": "eval",
+  "target": "F5514A5BEFBB73BCDA0D08EFB70361A8",
+  "result": {
+    "links": [
+      {
+        "text": "原文第 1 页",
+        "href": "obsidian://reading-desk-highlight?file=Reading%20Desk%20Fixtures%2Freader-text-fixture.pdf&highlight=highlight-2ab55fda-9b59-4840-a94a-9702fce38c48",
+        "rect": {
+          "x": 1157.8359375,
+          "y": 536.359375,
+          "width": 115.0078125,
+          "height": 19,
+          "top": 536.359375,
+          "right": 1272.84375,
+          "bottom": 555.359375,
+          "left": 1157.8359375
+        }
+      }
+    ],
+    "readers": [
+      {
+        "id": "27ab3f7b0f523742",
+        "rect": {
+          "x": 573.6640625,
+          "y": 49,
+          "width": 496.671875,
+          "height": 895,
+          "top": 49,
+          "right": 1070.3359375,
+          "bottom": 944,
+          "left": 573.6640625
+        }
+      }
+    ],
+    "node": {
+      "x": 1140.8359375,
+      "y": 395.828125,
+      "width": 400,
+      "height": 240,
+      "top": 395.828125,
+      "right": 1540.8359375,
+      "bottom": 635.828125,
+      "left": 1140.8359375
+    }
+  }
+}

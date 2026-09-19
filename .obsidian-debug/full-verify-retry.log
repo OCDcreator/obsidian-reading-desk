@@ -1,0 +1,59 @@
+
+> obsidian-reading-desk@0.1.0 verify
+> npm run check:project-docs && npm run check:owner-guard && npm run version:check && npm run lint && npm test && npm run build
+
+
+> obsidian-reading-desk@0.1.0 check:project-docs
+> node scripts/check-project-docs.mjs
+
+Project documentation gate passed.
+
+> obsidian-reading-desk@0.1.0 check:owner-guard
+> node scripts/check-owner-guard.mjs
+
+Owner guard review band notices:
+- src/main.ts has 414 lines; confirm it still owns one behavior slice
+- src/portability/BookshelfPortabilityService.ts has 449 lines; confirm it still owns one behavior slice
+- src/storage/ObjectStorageService.ts has 410 lines; confirm it still owns one behavior slice
+- src/views/ShelfView.ts has 466 lines; confirm it still owns one behavior slice
+Owner guard passed.
+
+> obsidian-reading-desk@0.1.0 version:check
+> node scripts/bump-version.mjs check
+
+Version check passed: 0.1.0
+
+> obsidian-reading-desk@0.1.0 lint
+> eslint --ext .ts src test --max-warnings=0
+
+
+> obsidian-reading-desk@0.1.0 test
+> vitest run
+
+
+ RUN  v0.34.6 /Volumes/SDD2T/obsidian-vault-write/custom-project/obsidian-reading-desk
+
+ ✓ test/data/ReadingDeskRepository.test.ts  (1 test) 10ms
+ ✓ test/reader/PdfSelectionGeometry.test.ts  (3 tests) 9ms
+ ✓ test/storage/MarkdownImagePasteService.test.ts  (3 tests) 9ms
+ ✓ test/portability/BookshelfPortabilityService.test.ts  (5 tests) 9ms
+ ✓ test/storage/ObjectStorageService.test.ts  (7 tests) 15ms
+ ✓ test/library/LibraryIndex.test.ts  (1 test) 10ms
+ ✓ test/library/MetadataExtractor.test.ts  (3 tests) 26ms
+ ✓ test/ui/comments/CommentComponents.test.ts  (3 tests) 46ms
+ ✓ test/targets/TargetService.test.ts  (10 tests) 18ms
+ ✓ test/annotations/AnnotationStore.test.ts  (1 test) 3ms
+ ✓ test/ai/AiIntegrationService.test.ts  (2 tests) 6ms
+ ✓ test/ui/crop/CropGeometry.test.ts  (5 tests) 3ms
+ ✓ test/views/shelf/ShelfViewModel.test.ts  (3 tests) 6ms
+ ✓ test/ui/portability/ImportExportPanelState.test.ts  (4 tests) 3ms
+
+ Test Files  14 passed (14)
+      Tests  51 passed (51)
+   Start at  22:55:12
+   Duration  589ms (transform 526ms, setup 1ms, collect 971ms, tests 173ms, environment 2ms, prepare 1.08s)
+
+
+> obsidian-reading-desk@0.1.0 build
+> tsc -noEmit -skipLibCheck && node esbuild.config.mjs production
+

@@ -1,0 +1,13 @@
+import { describe, expect, it } from 'vitest';
+import { scaleToFitWidth } from '../../src/reader/PdfRenderer';
+
+describe('scaleToFitWidth', () => {
+	it('uses the actual PDF-column width instead of the enclosing Reader body', () => {
+		expect(scaleToFitWidth(1.25, 732, 552)).toBeCloseTo(0.9426, 3);
+	});
+
+	it('leaves a scale unchanged when a layout measurement is unusable', () => {
+		expect(scaleToFitWidth(1.25, 0, 552)).toBe(1.25);
+		expect(scaleToFitWidth(1.25, 732, 0)).toBe(1.25);
+	});
+});

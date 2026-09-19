@@ -1,0 +1,4 @@
+
+> obsidian-reading-desk@0.1.0 build
+> tsc -noEmit -skipLibCheck && node esbuild.config.mjs production
+

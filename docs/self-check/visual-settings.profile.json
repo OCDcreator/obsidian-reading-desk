@@ -1,0 +1,29 @@
+{
+  "metadata": {
+    "settingsSurface": {
+      "targetStrategy": {
+        "mode": "detached",
+        "target": {
+          "titlePattern": "^设置 - testvault - Obsidian 1\\.13\\.7$"
+        },
+        "mainWindowTarget": {
+          "titlePattern": "(?:^| - )testvault - Obsidian 1\\.13\\.7$",
+          "urlContains": "app://obsidian.md/index.html"
+        }
+      },
+      "selectors": {
+        "root": ".reading-desk-settings"
+      },
+      "labels": [
+        "Reading Desk 设置"
+      ],
+      "assertions": [
+        "document.querySelector('.reading-desk-settings')?.textContent.includes('对象存储与图床')"
+      ]
+    }
+  },
+  "plugin": {
+    "id": "obsidian-reading-desk",
+    "name": "Reading Desk"
+  }
+}

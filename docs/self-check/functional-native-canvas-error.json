@@ -1,0 +1,57 @@
+{
+  "timestamp": "2026-09-18T15:32:53.613Z",
+  "command": "eval",
+  "target": "F5514A5BEFBB73BCDA0D08EFB70361A8",
+  "result": {
+    "notices": [],
+    "enabled": false,
+    "canvasPlugin": true,
+    "viewRegistryKeys": [
+      "_",
+      "viewByType",
+      "typeByExtension"
+    ],
+    "leaves": [
+      {
+        "id": "732461c3a49a3bcc",
+        "type": "opencodian-settings-view",
+        "state": {
+          "type": "opencodian-settings-view",
+          "state": {},
+          "icon": "settings",
+          "title": "OpenCodian 设置"
+        }
+      },
+      {
+        "id": "57dc7b6ad3c64da6",
+        "type": "file-explorer",
+        "state": {
+          "type": "file-explorer",
+          "state": {
+            "sortOrder": "alphabetical",
+            "autoReveal": false,
+            "showSearch": false,
+            "searchQuery": "OpenCodian"
+          },
+          "icon": "lucide-folder-closed",
+          "title": "文件列表"
+        }
+      },
+      {
+        "id": "8b17a04931eb4537",
+        "type": "outline",
+        "state": {
+          "type": "outline",
+          "state": {
+            "file": "未命名 3.md",
+            "followCursor": false,
+            "showSearch": false,
+            "searchQuery": ""
+          },
+          "icon": "lucide-list",
+          "title": "大纲"
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "timestamp": "2026-09-18T15:51:42.113Z",
+  "command": "eval",
+  "target": "F5514A5BEFBB73BCDA0D08EFB70361A8",
+  "result": {
+    "installed": true,
+    "enabled": true,
+    "version": "2.27.3",
+    "keys": [
+      "footerSafeAreaManager",
+      "viewMigrationHandoffManager",
+      "viewMigrationPersistenceHandoffManager",
+      "eaInstances",
+      "activeExcalidrawView",
+      "lastActiveExcalidrawLeafID",
+      "ea",
+      "isReady",
+      "settingsReady",
+      "wasPenModeActivePreviously",
+      "lastPDFLeafID",
+      "forceExcalidrawViewMode"
+    ],
+    "methods": [
+      "loadFontFromFile",
+      "forceSaveActiveView",
+      "enableLegacyFilePopoverObserver",
+      "openSidepanel",
+      "createDrawing",
+      "createAndOpenDrawing",
+      "setMarkdownView",
+      "isExcalidrawFile",
+      "openDrawing",
+      "experimentalFileTypeDisplayToggle",
+      "registerViewMigrationHandoff",
+      "consumeViewMigrationHandoff",
+      "registerViewMigrationPersistenceHandoff",
+      "consumeViewMigrationPersistenceHandoff",
+      "discardViewMigrationPersistenceHandoff",
+      "isRecentSplitViewSwitch",
+      "updateFileCache"
+    ],
+    "ea": "object",
+    "commands": [
+      "obsidian-excalidraw-plugin:open-image-excalidraw-source",
+      "obsidian-excalidraw-plugin:excalidraw-open-sidepanel",
+      "obsidian-excalidraw-plugin:excalidraw-open",
+      "obsidian-excalidraw-plugin:excalidraw-open-on-current",
+      "obsidian-excalidraw-plugin:excalidraw-autocreate",
+      "obsidian-excalidraw-plugin:excalidraw-autocreate-newtab",
+      "obsidian-excalidraw-plugin:excalidraw-autocreate-on-current",
+      "obsidian-excalidraw-plugin:excalidraw-autocreate-popout",
+      "obsidian-excalidraw-plugin:excalidraw-autocreate-and-embed",
+      "obsidian-excalidraw-plugin:excalidraw-autocreate-and-embed-new-tab",
+      "obsidian-excalidraw-plugin:excalidraw-autocreate-and-embed-on-current",
+      "obsidian-excalidraw-plugin:excalidraw-autocreate-and-embed-popout",
+      "obsidian-excalidraw-plugin:open-link-props"
+    ]
+  }
+}

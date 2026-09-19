@@ -1,0 +1,39 @@
+{
+  "timestamp": "2026-09-18T15:35:44.415Z",
+  "command": "eval",
+  "target": "F5514A5BEFBB73BCDA0D08EFB70361A8",
+  "result": {
+    "active": "reading-desk-reader",
+    "path": "Reading Desk Fixtures/reader-text-fixture.pdf",
+    "page": 1,
+    "matchedMarks": [
+      {
+        "type": "DIV",
+        "rect": {
+          "x": 1116.1171875,
+          "y": 266.1796875,
+          "width": 210.640625,
+          "height": 15,
+          "top": 266.1796875,
+          "right": 1326.7578125,
+          "bottom": 281.1796875,
+          "left": 1116.1171875
+        }
+      },
+      {
+        "type": "DIV",
+        "rect": {
+          "x": 1116.1171875,
+          "y": 264.6796875,
+          "width": 210.640625,
+          "height": 17.5,
+          "top": 264.6796875,
+          "right": 1326.7578125,
+          "bottom": 282.1796875,
+          "left": 1116.1171875
+        }
+      }
+    ],
+    "readers": 2
+  }
+}

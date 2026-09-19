@@ -1,0 +1,17 @@
+{
+  "timestamp": "2026-09-18T16:07:19.784Z",
+  "command": "eval",
+  "target": "F5514A5BEFBB73BCDA0D08EFB70361A8",
+  "result": {
+    "point": "<button class=\"clickable-icon view-action\" aria-label=\"打开所选元素里的链接 \n（按住 Shift 在新面板打开）\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\"",
+    "selected": {
+      "8z0bMFSa": true
+    },
+    "selectedLink": {
+      "id": "8z0bMFSa",
+      "text": "obsidian://reading-desk-highlight?file=Reading%20Desk%20Fixtures%2Ffunctional-excal-source.pdf&highlight=functional-excal-final-1789747516669"
+    },
+    "handler": "async onLinkOpen(e,t){if(t.preventDefault(),!e)return;let i=\"\";if(\"text\"===e.type){const t=e.rawText.replaceAll(\"\\n\",\"\");REGEX_LINK.getResList(t).filter(e=>Boolean(e.value)).length>=1&&(i=t)}let a=`${e.link??\"\"} ${i}`;if(a=a.trim(),!a)return;window.setTimeout(()=>this.removeLinkTooltip(),500);let n=t?.detail?.nativeEvent;this.handleLinkHookCall(e,a,n)||openExternalLink(a,this.app)||(n.shiftKey||n.ctrlKey||n.metaKey||n.altKey?this.linkClick(n,null,null,{id:e.id,text:a},void 0,!0):this.linkClick(null,null,null,{id:e.id,text:a},emulateKeysForLinkClick(\"new-tab\"),!0))}",
+    "click": "async handleLinkClick(e,t=!1){return this.linkNavigationManager.handleLinkClick(e,t)}"
+  }
+}

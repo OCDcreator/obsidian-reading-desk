@@ -1,0 +1,214 @@
+[Reading Desk] Margin vfunctional-synthetic build functional-host-contract-only
+[Reading Desk] Margin vfunctional-synthetic build functional-host-contract-only
+[Reading Desk] Margin vfunctional-synthetic build functional-host-contract-only
+[Reading Desk] Margin vfunctional-synthetic build functional-host-contract-only
+[Reading Desk] Margin vfunctional-synthetic build functional-host-contract-only
+[Reading Desk] Margin vfunctional-synthetic build functional-host-contract-only
+[Reading Desk] Margin vfunctional-synthetic build functional-host-contract-only
+{
+  "timestamp": "2026-09-18T15:09:01.971Z",
+  "hashes": {
+    "src/main.ts": "34faa06c34a51b9705ef20ca96d081f8c08331ce9c1c7c6ba6721878d5f8fc00",
+    "src/annotations/AnnotationStore.ts": "5fa7af307508b1feb26e4f12bb430154201ee753095521884e07e78533fcd906",
+    "src/utils/ids.ts": "85ea5032b05c8778d5d0c3290b23fc4cba9c720696b304fc1c82d38971346777",
+    "src/data/ReadingDeskRepository.ts": "f828d65803594116ef8b169a2d015b6f8b4efeecc3904a82b32d2ce9b0d7f6f8",
+    "src/data/defaults.ts": "8015d03c65ed6a0903900a65d0d4b31f69fcd97f7647b6120e48887b97c3d91b",
+    "src/library/LibraryIndex.ts": "acce609505eda339d2185e9ab40d14266279b326de1ac913a1dbd264bf26ee83",
+    "src/library/MetadataExtractor.ts": "61fb4afb20c24ab326d173dd967250b03deb856e032589193e2020db6d9c3e9d",
+    "src/reader/PdfRenderer.ts": "add12aae1124af4dbecc5324f3e3198d7af4e3c747d4d63e081b5d21345f125e",
+    "src/reader/PdfSelectionGeometry.ts": "192fab9e1470528e38b4302bbe84aa80df93108084ee5b7eea718607859ea265",
+    "src/ai/AiIntegrationService.ts": "c49066ef2c2c42cae54b152656e290f4fd9ca756a672f1644b949551a7b94c08",
+    "src/portability/BookshelfPortabilityService.ts": "8ab2401d4bae8a97abc51fe74f99d5944c63bc999f92e6c9fbd2eae95b7643b6",
+    "src/storage/MarkdownImagePasteService.ts": "35fe78cdf0b907f72c24dccf15524b790a60cb5753cd74de11f45f8c33d98ae2",
+    "src/storage/ObjectStorageService.ts": "2c7e513361bdfeb555063d2d6676ee8765cc0521f58dbc9da999cdd63c6e4b69",
+    "src/settings/ReadingDeskSettingTab.ts": "54a787d338109fd51594fb3cd9d0356c9482d661b8f82722449bbb43ab8b0a9c",
+    "src/ui/portability/ImportExportPanel.ts": "f8a3ef81db04ae3ddc8bd02c1e5b225f8cb0019e2e7c03aca46da709df9f7803",
+    "src/ui/portability/ImportExportPanelState.ts": "7128eacab241fd8deb16592259a5c8bf853e53f61bc8e13b0c7d7a00d3548088",
+    "src/targets/index.ts": "d89ef0a2a8e4f490aa91ba6ede87bdae4f5f66ce1cbfc304c79244a169b1c029",
+    "src/targets/TargetService.ts": "4166790224ebc38499d3c93dd823199897b36520844a9853d3d6d664941fdb76",
+    "src/targets/CanvasTargetAdapter.ts": "f79b637e9e51d3021071c1e07f63e02bc227e001a3c9c2d94a8071d66844acaa",
+    "src/targets/TargetTypes.ts": "59448bd6dee7ea4122b283ba326845fcb8ec43e8349ade09c0265ed199fd617c",
+    "src/targets/ExcalidrawTargetAdapter.ts": "fdfbfd02b8204e7322c43ce9d25e36daab5e3d7de292cae0b4016382326bf1c7",
+    "src/targets/LzStringBase64.ts": "fb6abae61bc02c5a35e8f18760fae55d2e5802468602c840d1d520d1bfecea0f",
+    "src/targets/MarkdownTargetAdapter.ts": "30c9b8ab9403f12539085f3a1b23a06b1a2be8cdd40a43437a07da973c4cfd33",
+    "src/views/ReaderView.ts": "50e295313dfc02fbacef73a6d11e0861da4cf20ef46109ae9d09f1e6d3a1bcd8",
+    "src/ui/comments/CommentPopover.ts": "f655e5b479351ce0bdc8a9c602f3a503fa5c5bf9f3f0d1e8ccd06c5a20b90fdf",
+    "src/ui/comments/CommentUiTypes.ts": "d748b55bb087579176a13d6373cb397e5019d4c5e6f9c14e4fdefc8281d0e066",
+    "src/ui/comments/HighlightList.ts": "cab0499e0a1b16473bf5c545566b34e5c8b04a186d5a723d99e82e77b2eed6ee",
+    "src/ui/crop/CropSelectionOverlay.ts": "a9a5fe0cfda579a246576c74856c51f413f25c9cbd6283fd0bca1f295c237de6",
+    "src/ui/crop/CropGeometry.ts": "2181d49f62d240c663f291b0d6a97be931808fab93254bb6d04d9b13cd916e28",
+    "src/ui/targets/ExcerptTargetPanel.ts": "2cafc24be4b099659779d7a669d9c462a834c3c17dfbbb306d67cf3d86c0a760",
+    "src/views/ShelfItemView.ts": "4b15924dd27a162c366fbc5da6d4b75271962abce7aca8fb365ceab7c9c8f087",
+    "src/views/ShelfView.ts": "110ef64d6060052a5a9971ba937a9610468153dbb26fc02f0eecd9445825d6cf",
+    "src/views/shelf/ShelfViewModel.ts": "1153c04de4a6755e1f386064dcac1fe37229f1bd2ae40e183abd4eb9ff8c72ab"
+  },
+  "summary": {
+    "passed": 11,
+    "failed": 0
+  },
+  "checks": [
+    {
+      "name": "production main probes enabled AI and passes selection through declared commands",
+      "pass": true,
+      "evidence": {
+        "availability": {
+          "available": true,
+          "providerId": "opencodian",
+          "reason": "已检测到兼容 AI 插件：opencodian。"
+        },
+        "probed": [
+          "opencodian",
+          "opencodian"
+        ],
+        "commands": [
+          "opencodian:add-current-note-to-context",
+          "opencodian:open-view"
+        ],
+        "contextCreated": true,
+        "contextOpenedBeforeCommands": true,
+        "limit": "Obsidian host is synthetic; actual AI app receiving/opening context still needs native evidence"
+      }
+    },
+    {
+      "name": "production main registers user entry points for portability, AI, and paste",
+      "pass": true,
+      "evidence": {
+        "commandIds": [
+          "open-reading-desk",
+          "scan-library",
+          "open-reader-in-focus-layout",
+          "import-legacy-bookshelf",
+          "export-library-markdown",
+          "export-library-json",
+          "ask-ai-about-selection"
+        ],
+        "domEvents": [
+          "paste"
+        ]
+      }
+    },
+    {
+      "name": "production main keeps AI unavailable without installed enabled plugin",
+      "pass": true,
+      "evidence": {
+        "availability": {
+          "available": false,
+          "reason": "未检测到兼容 AI 插件；Reading Desk 不会猜测第三方 API。"
+        },
+        "commandCount": 0,
+        "createdCount": 0,
+        "failure": "未检测到兼容 AI 插件；Reading Desk 不会猜测第三方 API。"
+      }
+    },
+    {
+      "name": "production main imports actual legacy per-book metadata directory once without mutation",
+      "pass": true,
+      "evidence": {
+        "first": {
+          "count": 1,
+          "marker": true
+        },
+        "second": {
+          "count": 0,
+          "alreadyImported": true
+        },
+        "read": [
+          ".obsidian/plugins/bookshelf/metadata",
+          ".obsidian/plugins/bookshelf/metadata/source.json",
+          ".obsidian/plugins/obsidian-bookshelf/data.json",
+          ".obsidian/plugins/obsidian-bookshelf/data.json",
+          ".obsidian/plugins/bookshelf/metadata",
+          ".obsidian/plugins/bookshelf/metadata/source.json",
+          ".obsidian/plugins/obsidian-bookshelf/data.json",
+          ".obsidian/plugins/obsidian-bookshelf/data.json"
+        ],
+        "oldFilesChanged": []
+      }
+    },
+    {
+      "name": "missing legacy data does not consume the one-time import flag",
+      "pass": true,
+      "evidence": {
+        "failure": "未找到可导入的旧 Bookshelf 元数据；不会消耗一次性导入资格。",
+        "imported": false
+      }
+    },
+    {
+      "name": "production main registers exact persisted highlight protocol",
+      "pass": true,
+      "evidence": {
+        "protocols": [
+          "reading-desk-highlight"
+        ],
+        "scope": "Handler reachability, native click/open/highlight rendering not exercised"
+      }
+    },
+    {
+      "name": "object-storage crop keeps only external image in target and writes no local PNG",
+      "pass": true,
+      "evidence": {
+        "binaryWrites": 0,
+        "requestCount": 1,
+        "targetNodeType": "text",
+        "externalImage": "![PDF 裁剪](<https://synthetic-bucket.oss-cn-hangzhou.aliyuncs.com/crops/1789744141957-umr90p.png>)\n\n来源：Books/source.pdf 第 1 页",
+        "scope": "Request mocked deliberately; verifies main branching only, real account upload remains blocked"
+      }
+    },
+    {
+      "name": "PDF rename preserves book state and rewrites exact target backlink",
+      "pass": true,
+      "evidence": {
+        "storedSource": "Books/renamed.pdf",
+        "book": {
+          "id": "book",
+          "path": "Books/renamed.pdf",
+          "format": "pdf",
+          "title": "Manual title",
+          "author": "Manual author",
+          "fileSize": 20,
+          "fingerprint": {
+            "mtime": 1,
+            "size": 20
+          },
+          "tags": [
+            "retained"
+          ],
+          "progress": 0.5
+        },
+        "targetSource": "Books/renamed.pdf",
+        "targetLink": "obsidian://reading-desk-highlight?file=Books%2Frenamed.pdf&highlight=rename-highlight"
+      }
+    },
+    {
+      "name": "native-target deletion reconcile removes corresponding persistent highlight",
+      "pass": true,
+      "evidence": {
+        "survivingHighlightIds": [],
+        "limit": "Actual main reconcile with synthetic vault; native delete gesture and visible repaint still need live evidence"
+      }
+    },
+    {
+      "name": "source file delete removes its library record",
+      "pass": true,
+      "evidence": {
+        "survivingBookIds": []
+      }
+    },
+    {
+      "name": "registered export commands create readable Markdown and JSON files",
+      "pass": true,
+      "evidence": {
+        "outputPaths": [
+          "Reading Desk/exports/reading-desk-2026-09-18T15-09-01-971Z.md",
+          "Reading Desk/exports/reading-desk-2026-09-18T15-09-01-971Z.json"
+        ],
+        "opened": [
+          "Reading Desk/exports/reading-desk-2026-09-18T15-09-01-971Z.md",
+          "Reading Desk/exports/reading-desk-2026-09-18T15-09-01-971Z.json"
+        ],
+        "scope": "Command handler execution with synthetic vault; native command-palette click not exercised"
+      }
+    }
+  ],
+  "scope": "Executes actual main.ts/AiIntegrationService and other source with synthetic Obsidian host/file interfaces; proves wiring, not UI actions or third-party runtime interoperability."
+}

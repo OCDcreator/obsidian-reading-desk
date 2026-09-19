@@ -1,0 +1,20 @@
+{
+  "buildId": "0.1.0+2026-09-18T15:00:08.855Z",
+  "deployed": {
+    "main.js": "1ef01817a237efa44d8460ef6a99d9208a77d1d940f522cc1d1914b352dd9f6e",
+    "styles.css": "b8d5be10798cb0cd2be7370845a93ebf716b8d77268ea960fb8648edb228e7b1",
+    "manifest.json": "9910298a561839ba3b9881ddfd2390aef04eb77173e855eb47b1527f13833fed"
+  },
+  "hotreloadFilePresent": false,
+  "deployedAtEnd": {
+    "main.js": "1ef01817a237efa44d8460ef6a99d9208a77d1d940f522cc1d1914b352dd9f6e",
+    "styles.css": "b8d5be10798cb0cd2be7370845a93ebf716b8d77268ea960fb8648edb228e7b1",
+    "manifest.json": "9910298a561839ba3b9881ddfd2390aef04eb77173e855eb47b1527f13833fed"
+  },
+  "unchangedThroughout": true,
+  "hotReloadEnabled": false,
+  "limitations": [
+    "Host installer gate not run per parent task boundary; settings target profile independently selected",
+    "CLI global dev:errors includes older synthetic pointer exception from 23:04:08 before visual session; not attributed to visual interaction"
+  ]
+}

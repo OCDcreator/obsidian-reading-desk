@@ -1,0 +1,94 @@
+{
+  "timestamp": "2026-09-18T15:08:49.820171+00:00",
+  "artifacts": [
+    {
+      "name": "main.js",
+      "buildSha": "1ef01817a237efa44d8460ef6a99d9208a77d1d940f522cc1d1914b352dd9f6e",
+      "deployedSha": "1ef01817a237efa44d8460ef6a99d9208a77d1d940f522cc1d1914b352dd9f6e",
+      "match": true
+    },
+    {
+      "name": "manifest.json",
+      "buildSha": "9910298a561839ba3b9881ddfd2390aef04eb77173e855eb47b1527f13833fed",
+      "deployedSha": "9910298a561839ba3b9881ddfd2390aef04eb77173e855eb47b1527f13833fed",
+      "match": true
+    },
+    {
+      "name": "styles.css",
+      "buildSha": "2aff6386cf1a7907be6cfb4c7739ba900784080d071bc5d3ed7057f85e065897",
+      "deployedSha": "b8d5be10798cb0cd2be7370845a93ebf716b8d77268ea960fb8648edb228e7b1",
+      "match": false
+    },
+    {
+      "name": "pdf.worker.mjs",
+      "buildSha": "7c237f83fa56bce645d8af51d183c9c56ba7b2d2928ff42754dc7020bea36323",
+      "deployedSha": "7c237f83fa56bce645d8af51d183c9c56ba7b2d2928ff42754dc7020bea36323",
+      "match": true
+    }
+  ],
+  "persistedHighlights": [
+    {
+      "id": "highlight-2ab55fda-9b59-4840-a94a-9702fce38c48",
+      "pdfPath": "Reading Desk Fixtures/reader-text-fixture.pdf",
+      "page": 0,
+      "rectCount": 11,
+      "normalized": true,
+      "target": {
+        "type": "canvas",
+        "path": "Reading Desk/摘录-1789743647081.canvas",
+        "objectId": "rd-excerpt-0e9974ce-fb13-41a6-80e3-5b72a0f4d199"
+      },
+      "targetExists": true,
+      "color": "moss",
+      "canvasNodeTypes": [
+        "text"
+      ],
+      "mappedNodeExists": true,
+      "comments": [
+        {
+          "createdAt": 1789743820941,
+          "showTimestamp": true,
+          "length": 20
+        }
+      ]
+    },
+    {
+      "id": "highlight-45c391be-97fb-416e-abd6-26ac0c5327d3",
+      "pdfPath": "Reading Desk Fixtures/reader-text-fixture.pdf",
+      "page": 0,
+      "rectCount": 10,
+      "normalized": true,
+      "target": {
+        "type": "markdown",
+        "path": "Reading Desk/摘录-1789743736161.md",
+        "objectId": "highlight-45c391be-97fb-416e-abd6-26ac0c5327d3"
+      },
+      "targetExists": true,
+      "color": "moss",
+      "comments": []
+    },
+    {
+      "id": "highlight-cb82116e-06df-4b9f-9c2f-0ac02edfa9b4",
+      "pdfPath": "Reading Desk Fixtures/reader-text-fixture.pdf",
+      "page": 0,
+      "rectCount": 15,
+      "normalized": true,
+      "target": {
+        "type": "canvas",
+        "path": "Reading Desk/摘录-1789743834685.canvas",
+        "objectId": "rd-excerpt-36550fac-3a51-401d-85ac-ab52e93a77f6"
+      },
+      "targetExists": true,
+      "color": "moss",
+      "canvasNodeTypes": [
+        "text"
+      ],
+      "mappedNodeExists": true,
+      "comments": []
+    }
+  ],
+  "referencedCrop": {
+    "exists": true,
+    "pngSignature": "89504e470d0a1a0a"
+  }
+}

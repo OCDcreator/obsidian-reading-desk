@@ -1,0 +1,118 @@
+{
+  "timestamp": "2026-09-18T14:29:59.548Z",
+  "hashes": {
+    "src/data/ReadingDeskRepository.ts": "ef3edfa42f65bf39840aa5b0cdc991c569eee0683012d2719e169929e8c94ef9",
+    "src/data/defaults.ts": "8015d03c65ed6a0903900a65d0d4b31f69fcd97f7647b6120e48887b97c3d91b",
+    "src/library/MetadataExtractor.ts": "a9491af0b4cbe02b2d0489eb01a844cd91e1165f5e63376049b60fbbe8c1f612",
+    "src/ai/AiIntegrationService.ts": "0c0ef799f5baf9387b8632db2874c8a37af8b2ada0cb3dda5df63e19c4c80117"
+  },
+  "summary": {
+    "passed": 2,
+    "failed": 6
+  },
+  "checks": [
+    {
+      "name": "repository resumes after a single rejected save",
+      "pass": false,
+      "evidence": {
+        "attempts": 1,
+        "failure": "one transient save error",
+        "inMemory": "focus"
+      }
+    },
+    {
+      "name": "2.0 EPUB cover from actual ZIP/OPF books/epub2.epub",
+      "pass": false,
+      "evidence": {
+        "result": {
+          "title": "Science &amp; Art",
+          "author": "Alice &amp; Bob"
+        },
+        "writes": []
+      }
+    },
+    {
+      "name": "EPUB decodes XML entity values",
+      "pass": false,
+      "evidence": {
+        "title": "Science &amp; Art",
+        "author": "Alice &amp; Bob"
+      }
+    },
+    {
+      "name": "3.0 EPUB cover from actual ZIP/OPF 书籍/甲.epub",
+      "pass": true,
+      "evidence": {
+        "result": {
+          "title": "Science &amp; Art",
+          "author": "Alice &amp; Bob",
+          "coverPath": ".obsidian/plugins/obsidian-reading-desk/covers/epub.png"
+        },
+        "writes": [
+          {
+            "file": ".obsidian/plugins/obsidian-reading-desk/covers/epub.png",
+            "bytes": 68
+          }
+        ]
+      }
+    },
+    {
+      "name": "3.0 EPUB cover from actual ZIP/OPF 书籍/乙.epub",
+      "pass": true,
+      "evidence": {
+        "result": {
+          "title": "Science &amp; Art",
+          "author": "Alice &amp; Bob",
+          "coverPath": ".obsidian/plugins/obsidian-reading-desk/covers/epub.png"
+        },
+        "writes": [
+          {
+            "file": ".obsidian/plugins/obsidian-reading-desk/covers/epub.png",
+            "bytes": 68
+          }
+        ]
+      }
+    },
+    {
+      "name": "non-ASCII source book names do not share a cover cache path",
+      "pass": false,
+      "evidence": {
+        "lastTwoWrites": [
+          {
+            "file": ".obsidian/plugins/obsidian-reading-desk/covers/epub.png",
+            "bytes": 68
+          },
+          {
+            "file": ".obsidian/plugins/obsidian-reading-desk/covers/epub.png",
+            "bytes": 68
+          }
+        ]
+      }
+    },
+    {
+      "name": "PDF XMP dc:creator sequence is retained",
+      "pass": false,
+      "evidence": {
+        "actualPdfjsAuthors": [
+          "Alice",
+          "Bob"
+        ],
+        "extractedAuthor": "",
+        "title": "XMP Book"
+      }
+    },
+    {
+      "name": "production-default AI discovery can inspect installed plugin capabilities",
+      "pass": false,
+      "evidence": {
+        "availability": {
+          "available": false,
+          "reason": "未检测到兼容 AI 插件；Reading Desk 不会猜测第三方 API。"
+        },
+        "getPluginCalls": [],
+        "note": "main.ts currently constructs the service with this default supported map; no UI behavior claimed"
+      }
+    }
+  ],
+  "scope": "Isolated services with real JSZip and real pdfjs parsing; no UI, no main-vault fixtures, no actual cloud requests."
+}

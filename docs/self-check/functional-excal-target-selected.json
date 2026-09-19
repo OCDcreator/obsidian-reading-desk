@@ -1,0 +1,76 @@
+{
+  "timestamp": "2026-09-18T15:58:16.832Z",
+  "command": "eval",
+  "target": "F5514A5BEFBB73BCDA0D08EFB70361A8",
+  "result": {
+    "type": "canvas",
+    "selection": "canvas",
+    "palette": [
+      {
+        "text": "苔",
+        "rect": {
+          "x": 599.5,
+          "y": 100.328125,
+          "width": 28,
+          "height": 28,
+          "top": 100.328125,
+          "right": 627.5,
+          "bottom": 128.328125,
+          "left": 599.5
+        }
+      },
+      {
+        "text": "琥",
+        "rect": {
+          "x": 632.5,
+          "y": 100.328125,
+          "width": 28,
+          "height": 28,
+          "top": 100.328125,
+          "right": 660.5,
+          "bottom": 128.328125,
+          "left": 632.5
+        }
+      },
+      {
+        "text": "砖",
+        "rect": {
+          "x": 665.5,
+          "y": 100.328125,
+          "width": 28,
+          "height": 28,
+          "top": 100.328125,
+          "right": 693.5,
+          "bottom": 128.328125,
+          "left": 665.5
+        }
+      },
+      {
+        "text": "靛",
+        "rect": {
+          "x": 698.5,
+          "y": 100.328125,
+          "width": 28,
+          "height": 28,
+          "top": 100.328125,
+          "right": 726.5,
+          "bottom": 128.328125,
+          "left": 698.5
+        }
+      },
+      {
+        "text": "梅",
+        "rect": {
+          "x": 731.5,
+          "y": 100.328125,
+          "width": 28,
+          "height": 28,
+          "top": 100.328125,
+          "right": 759.5,
+          "bottom": 128.328125,
+          "left": 731.5
+        }
+      }
+    ]
+  }
+}

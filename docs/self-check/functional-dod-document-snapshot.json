@@ -1,0 +1,23 @@
+{
+  "timestamp": "2026-09-18T15:11:08.016610+00:00",
+  "controlMapRows": 418,
+  "referenceFiles": 70,
+  "states": {
+    "计划中": 276,
+    "自研替代": 119,
+    "不做": 23
+  },
+  "missingMappedSourceFiles": [],
+  "comparisonReportExists": false,
+  "adrs": {
+    "0001-repo-and-build.md": true,
+    "0002-pdf-rendering.md": true,
+    "0003-metadata-extraction.md": true,
+    "0004-annotation-storage.md": true
+  },
+  "versions": {
+    "package.json": "0.1.0",
+    "package-lock.json": "0.1.0",
+    "manifest.json": "0.1.0"
+  }
+}

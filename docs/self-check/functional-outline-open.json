@@ -1,0 +1,279 @@
+{
+  "timestamp": "2026-09-18T15:37:42.595Z",
+  "command": "eval",
+  "target": "F5514A5BEFBB73BCDA0D08EFB70361A8",
+  "result": {
+    "path": "Reading Desk Fixtures/functional-outline.pdf",
+    "pages": 3,
+    "outline": [
+      {
+        "title": "Introduction",
+        "page": 0,
+        "path": [
+          "Introduction"
+        ]
+      },
+      {
+        "title": "Methods",
+        "page": 1,
+        "path": [
+          "Methods"
+        ]
+      },
+      {
+        "title": "Details",
+        "page": 1,
+        "path": [
+          "Methods",
+          "Details"
+        ]
+      },
+      {
+        "title": "Results",
+        "page": 2,
+        "path": [
+          "Results"
+        ]
+      }
+    ],
+    "layout": "split",
+    "spans": [
+      {
+        "text": "Introduction",
+        "rect": {
+          "x": 264.9140625,
+          "y": 226.625,
+          "width": 78.3756103515625,
+          "height": 15,
+          "top": 226.625,
+          "right": 343.2896728515625,
+          "bottom": 241.625,
+          "left": 264.9140625
+        }
+      },
+      {
+        "text": "Functional reading desk selection line one.",
+        "rect": {
+          "x": 264.9140625,
+          "y": 307.328125,
+          "width": 283.470703125,
+          "height": 15,
+          "top": 307.328125,
+          "right": 548.384765625,
+          "bottom": 322.328125,
+          "left": 264.9140625
+        }
+      },
+      {
+        "text": "This second line belongs to chapter 1.",
+        "rect": {
+          "x": 264.9140625,
+          "y": 344.828125,
+          "width": 252.6363525390625,
+          "height": 15,
+          "top": 344.828125,
+          "right": 517.5504150390625,
+          "bottom": 359.828125,
+          "left": 264.9140625
+        }
+      },
+      {
+        "text": "A controlled fixture for native interaction.",
+        "rect": {
+          "x": 264.9140625,
+          "y": 407.328125,
+          "width": 267.615966796875,
+          "height": 15,
+          "top": 407.328125,
+          "right": 532.530029296875,
+          "bottom": 422.328125,
+          "left": 264.9140625
+        }
+      }
+    ],
+    "controls": [
+      {
+        "text": "缩小",
+        "rect": {
+          "x": 71,
+          "y": 99.328125,
+          "width": 48,
+          "height": 30,
+          "top": 99.328125,
+          "right": 119,
+          "bottom": 129.328125,
+          "left": 71
+        }
+      },
+      {
+        "text": "放大",
+        "rect": {
+          "x": 127,
+          "y": 99.328125,
+          "width": 48,
+          "height": 30,
+          "top": 99.328125,
+          "right": 175,
+          "bottom": 129.328125,
+          "left": 127
+        }
+      },
+      {
+        "text": "适应宽度",
+        "rect": {
+          "x": 183,
+          "y": 99.328125,
+          "width": 78,
+          "height": 30,
+          "top": 99.328125,
+          "right": 261,
+          "bottom": 129.328125,
+          "left": 183
+        }
+      },
+      {
+        "text": "高亮列表",
+        "rect": {
+          "x": 269,
+          "y": 99.328125,
+          "width": 78,
+          "height": 30,
+          "top": 99.328125,
+          "right": 347,
+          "bottom": 129.328125,
+          "left": 269
+        }
+      },
+      {
+        "text": "裁剪",
+        "rect": {
+          "x": 355,
+          "y": 99.328125,
+          "width": 48,
+          "height": 30,
+          "top": 99.328125,
+          "right": 403,
+          "bottom": 129.328125,
+          "left": 355
+        }
+      },
+      {
+        "text": "专注阅读",
+        "rect": {
+          "x": 411,
+          "y": 99.328125,
+          "width": 78,
+          "height": 30,
+          "top": 99.328125,
+          "right": 489,
+          "bottom": 129.328125,
+          "left": 411
+        }
+      },
+      {
+        "text": "苔",
+        "rect": {
+          "x": 599.5,
+          "y": 100.328125,
+          "width": 28,
+          "height": 28,
+          "top": 100.328125,
+          "right": 627.5,
+          "bottom": 128.328125,
+          "left": 599.5
+        }
+      },
+      {
+        "text": "琥",
+        "rect": {
+          "x": 632.5,
+          "y": 100.328125,
+          "width": 28,
+          "height": 28,
+          "top": 100.328125,
+          "right": 660.5,
+          "bottom": 128.328125,
+          "left": 632.5
+        }
+      },
+      {
+        "text": "砖",
+        "rect": {
+          "x": 665.5,
+          "y": 100.328125,
+          "width": 28,
+          "height": 28,
+          "top": 100.328125,
+          "right": 693.5,
+          "bottom": 128.328125,
+          "left": 665.5
+        }
+      },
+      {
+        "text": "靛",
+        "rect": {
+          "x": 698.5,
+          "y": 100.328125,
+          "width": 28,
+          "height": 28,
+          "top": 100.328125,
+          "right": 726.5,
+          "bottom": 128.328125,
+          "left": 698.5
+        }
+      },
+      {
+        "text": "梅",
+        "rect": {
+          "x": 731.5,
+          "y": 100.328125,
+          "width": 28,
+          "height": 28,
+          "top": 100.328125,
+          "right": 759.5,
+          "bottom": 128.328125,
+          "left": 731.5
+        }
+      },
+      {
+        "text": "上一页",
+        "rect": {
+          "x": 767.5,
+          "y": 99.328125,
+          "width": 63,
+          "height": 30,
+          "top": 99.328125,
+          "right": 830.5,
+          "bottom": 129.328125,
+          "left": 767.5
+        }
+      },
+      {
+        "text": "页码",
+        "rect": {
+          "x": 838.5,
+          "y": 99.328125,
+          "width": 32,
+          "height": 30,
+          "top": 99.328125,
+          "right": 870.5,
+          "bottom": 129.328125,
+          "left": 838.5
+        }
+      },
+      {
+        "text": "下一页",
+        "rect": {
+          "x": 906,
+          "y": 99.328125,
+          "width": 63,
+          "height": 30,
+          "top": 99.328125,
+          "right": 969,
+          "bottom": 129.328125,
+          "left": 906
+        }
+      }
+    ]
+  }
+}

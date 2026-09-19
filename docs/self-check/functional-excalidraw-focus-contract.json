@@ -1,0 +1,12 @@
+{
+  "timestamp": "2026-09-18T15:52:56.647Z",
+  "command": "eval",
+  "target": "F5514A5BEFBB73BCDA0D08EFB70361A8",
+  "result": {
+    "zoomToElementId": "async zoomToElementId(e,t){let i=0;for(;!this.excalidrawAPI&&i++<100;)await sleep(50);const a=this.excalidrawAPI;if(!a)return;const n=a.getSceneElements();let r=n.filter(t=>t.id===e);if(0===r.length){const t=getFrameBasedOnFrameNameOrId(e,n);if(!t)return;r=[t]}if(t){const e=this.plugin.ea.getElementsInTheSameGroupWithElement(r[0],n);e.length>0&&(r=e)}this.preventAutozoom(),this.zoomToElements(!a.getAppState().viewModeEnabled,r)}",
+    "zoomToElements": "zoomToElements(e,t,i=.05){const a=this.excalidrawAPI;if(!a)return;const n=t.filter(e=>!e.isDeleted);if(0===n.length)return;const r=this.plugin.settings.zoomToFitMaxLevel;e&&a.selectElements(n,!0),a.zoomToFit(n,r,i)}",
+    "selectElements": "(A,e=!1)=>{e&&(this.debounceClearHighlightSearchResults=!0,this.ownerWindow.setTimeout(()=>{this.debounceClearHighlightSearchResults=!1},500)),this.updateScene({appState:{...this.state,editingGroupId:null,selectedElementIds:A.reduce((A,e)=>(A[e.id]=!0,A),{}),highlightSearchResult:e},captureUpdate:k.NEVER,forceFlushSync:!0})}",
+    "updateScene": "A=>{(0,ZuA.unstable_batchedUpdates)(e,A)}",
+    "getAppState": {}
+  }
+}

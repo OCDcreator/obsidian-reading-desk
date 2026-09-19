@@ -1,0 +1,45 @@
+{
+  "timestamp": "2026-09-18T16:40:34.601Z",
+  "command": "eval",
+  "target": "F5514A5BEFBB73BCDA0D08EFB70361A8",
+  "result": {
+    "handle": {
+      "hidden": false,
+      "draggable": true,
+      "rect": {
+        "x": 423,
+        "y": 379,
+        "width": 136,
+        "height": 30,
+        "top": 379,
+        "right": 559,
+        "bottom": 409,
+        "left": 423
+      }
+    },
+    "preview": {
+      "src": "blob:app://obsidian.md/2cf536f0-7dc3-455c-bb3b-e831669016bd",
+      "naturalWidth": 342,
+      "naturalHeight": 148,
+      "blobSize": 20679,
+      "mime": "image/png"
+    },
+    "prepared": [
+      {
+        "token": "crop-1789749634001-pteh2std",
+        "page": 0,
+        "rect": {
+          "x": 0.09802979849726776,
+          "y": 0.12671298668032788,
+          "width": 0.3797814207650273,
+          "height": 0.12295081967213115
+        },
+        "bytes": 20679,
+        "mime": "image/png"
+      }
+    ],
+    "newPng": [],
+    "canvasNodeCount": 4,
+    "status": "真实裁剪预览已就绪。可拖到 Canvas，或按创建裁剪对象。"
+  }
+}

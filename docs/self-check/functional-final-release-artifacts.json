@@ -1,0 +1,74 @@
+{
+  "timestampUTC": "2026-09-18T16:47:12.408331+00:00",
+  "localDate": "2026-09-19",
+  "buildId": "0.1.1+2026-09-18T16:32:50.656Z",
+  "versions": {
+    "package.json": "0.1.1",
+    "package-lock.json": "0.1.1",
+    "manifest.json": "0.1.1"
+  },
+  "artifacts": [
+    {
+      "file": "main.js",
+      "built": "52fe9488d53dd1771de713c70a3e81b2869d91d6370d2a65cd3631958ae0175c",
+      "deployed": "52fe9488d53dd1771de713c70a3e81b2869d91d6370d2a65cd3631958ae0175c",
+      "matches": true
+    },
+    {
+      "file": "manifest.json",
+      "built": "236da1b1d1185193ac1e1bf462bed3c31da0f4f85ee06cdf924b2bf4a690a374",
+      "deployed": "236da1b1d1185193ac1e1bf462bed3c31da0f4f85ee06cdf924b2bf4a690a374",
+      "matches": true
+    },
+    {
+      "file": "styles.css",
+      "built": "a291459fc2164d7604222280b1ebd6847971a1bed6f3bdb92b9859a83678ab63",
+      "deployed": "a291459fc2164d7604222280b1ebd6847971a1bed6f3bdb92b9859a83678ab63",
+      "matches": true
+    },
+    {
+      "file": "pdf.worker.mjs",
+      "built": "7c237f83fa56bce645d8af51d183c9c56ba7b2d2928ff42754dc7020bea36323",
+      "deployed": "7c237f83fa56bce645d8af51d183c9c56ba7b2d2928ff42754dc7020bea36323",
+      "matches": true
+    }
+  ],
+  "verifyLog": ".obsidian-debug/final-verify-0.1.1-crop-host.log",
+  "verifyEvidenceLevel": "Independent complete log review; no concurrent rebuild or test rerun.",
+  "verifyLogSha256": "89254c3bcab155e5570f0f398be0f86972483dcd6c92a3430971c7770b49bd96",
+  "testsSummary": [
+    "Test Files  17 passed (17)",
+    "Tests  69 passed (69)"
+  ],
+  "verifyContainsBuild": true,
+  "lintCommand": [
+    "eslint --ext .ts src test --max-warnings=0"
+  ],
+  "startupLog": ".obsidian-debug/final-release-startup-proof-0.1.1-crop-host.log",
+  "startupBuildMatches": true,
+  "mappedSourceAbsent": [],
+  "comparisonExists": true,
+  "currentSourceSnapshot": {
+    "fileCount": 39,
+    "sha256": "539466dad0461692b796bd778e8c5922278576a1c2543d3f4a9856630f0bb179",
+    "algorithm": "SHA-256 of sorted UTF-8 lines: <file SHA-256><two spaces><repo-relative path><LF>, for every regular file under src/. This is the current read-only snapshot, not a retrospective build-input proof."
+  },
+  "finalRequirementEvidence": {
+    "completeOutline": {
+      "status": "PASS",
+      "nodes": 4,
+      "edges": 1,
+      "excerptCount": 0,
+      "repeatIdempotent": true,
+      "source": "docs/self-check/functional-complete-outline-select.json"
+    },
+    "cropTrustedDrop": {
+      "status": "PASS",
+      "pngBytes": 20679,
+      "pngSha256": "bc25700c11badbe117641e3c03a0b22feab97bb98319d1d4eb0d623b3a072324",
+      "chapterNodesRetained": 4,
+      "nativeFileNodePresent": true,
+      "source": "docs/self-check/functional-crop-trusted-drop-result.json"
+    }
+  }
+}

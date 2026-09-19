@@ -1,0 +1,105 @@
+{
+  "timestamp": "2026-09-18T16:05:58.415Z",
+  "command": "eval",
+  "target": "F5514A5BEFBB73BCDA0D08EFB70361A8",
+  "result": {
+    "storedId": "rd-excalidraw-d5cd567f-33f1-429e-82e3-6c5540b97bf7",
+    "actualId": "8z0bMFSa",
+    "selected": {
+      "8z0bMFSa": true
+    },
+    "link": "obsidian://reading-desk-highlight?file=Reading%20Desk%20Fixtures%2Ffunctional-excal-source.pdf&highlight=functional-excal-final-1789747516669",
+    "links": [
+      {
+        "tag": "BUTTON",
+        "label": "打开所选元素里的链接 \n（按住 Shift 在新面板打开）",
+        "title": "",
+        "rect": {
+          "x": 1465,
+          "y": 55.6640625,
+          "width": 28,
+          "height": 24,
+          "top": 55.6640625,
+          "right": 1493,
+          "bottom": 79.6640625,
+          "left": 1465
+        }
+      },
+      {
+        "tag": "BUTTON",
+        "label": "正以 RAW 模式显示链接\n点击切换到 PREVIEW 模式",
+        "title": "",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      {
+        "tag": "BUTTON",
+        "label": null,
+        "title": "打开所选元素里的链接",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      {
+        "tag": "BUTTON",
+        "label": null,
+        "title": "打开图像链接或 LaTeX 公式编辑器",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      {
+        "tag": "BUTTON",
+        "label": null,
+        "title": "单击=复制所选元素的 [[file#^id]] 链接\nCMD=复制元素所在分组为 [[file#^group=id]] 链接\nSHIFT=复制所选元素所在区域为 [[file#^area=id]] 链接",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      },
+      {
+        "tag": "BUTTON",
+        "label": null,
+        "title": "以链接形式插入文件",
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        }
+      }
+    ]
+  }
+}

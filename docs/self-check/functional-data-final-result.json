@@ -1,0 +1,127 @@
+{
+  "timestamp": "2026-09-18T15:06:25.355Z",
+  "hashes": {
+    "src/data/ReadingDeskRepository.ts": "f828d65803594116ef8b169a2d015b6f8b4efeecc3904a82b32d2ce9b0d7f6f8",
+    "src/data/defaults.ts": "8015d03c65ed6a0903900a65d0d4b31f69fcd97f7647b6120e48887b97c3d91b",
+    "src/library/MetadataExtractor.ts": "61fb4afb20c24ab326d173dd967250b03deb856e032589193e2020db6d9c3e9d"
+  },
+  "summary": {
+    "passed": 8,
+    "failed": 0
+  },
+  "checks": [
+    {
+      "name": "repository resumes after a single rejected save",
+      "pass": true,
+      "evidence": {
+        "attempts": 2,
+        "inMemory": "split",
+        "persisted": "split"
+      }
+    },
+    {
+      "name": "2.0 EPUB cover from actual ZIP/OPF books/epub2.epub",
+      "pass": true,
+      "evidence": {
+        "result": {
+          "title": "Science & Art",
+          "author": "Alice & Bob",
+          "coverPath": ".obsidian/plugins/obsidian-reading-desk/covers/aaca3a89095b81fc34727a4864dbd9de6d93841eeb06cd68801b4762a642b236.png"
+        },
+        "writes": [
+          {
+            "file": ".obsidian/plugins/obsidian-reading-desk/covers/aaca3a89095b81fc34727a4864dbd9de6d93841eeb06cd68801b4762a642b236.png",
+            "bytes": 68
+          }
+        ]
+      }
+    },
+    {
+      "name": "EPUB decodes XML entity values",
+      "pass": true,
+      "evidence": {
+        "title": "Science & Art",
+        "author": "Alice & Bob"
+      }
+    },
+    {
+      "name": "3.0 EPUB cover from actual ZIP/OPF 书籍/甲.epub",
+      "pass": true,
+      "evidence": {
+        "result": {
+          "title": "Science & Art",
+          "author": "Alice & Bob",
+          "coverPath": ".obsidian/plugins/obsidian-reading-desk/covers/3d57d76d205ea2615aacee5c0f1eec8c0ba49032e401b2d8c996f76a83d9cf26.png"
+        },
+        "writes": [
+          {
+            "file": ".obsidian/plugins/obsidian-reading-desk/covers/3d57d76d205ea2615aacee5c0f1eec8c0ba49032e401b2d8c996f76a83d9cf26.png",
+            "bytes": 68
+          }
+        ]
+      }
+    },
+    {
+      "name": "3.0 EPUB cover from actual ZIP/OPF 书籍/乙.epub",
+      "pass": true,
+      "evidence": {
+        "result": {
+          "title": "Science & Art",
+          "author": "Alice & Bob",
+          "coverPath": ".obsidian/plugins/obsidian-reading-desk/covers/b1c1eb495329ad89b5164eca6a133959ba3507ef6e90bb943e82f98203ba6190.png"
+        },
+        "writes": [
+          {
+            "file": ".obsidian/plugins/obsidian-reading-desk/covers/b1c1eb495329ad89b5164eca6a133959ba3507ef6e90bb943e82f98203ba6190.png",
+            "bytes": 68
+          }
+        ]
+      }
+    },
+    {
+      "name": "non-ASCII source book names do not share a cover cache path",
+      "pass": true,
+      "evidence": {
+        "lastTwoWrites": [
+          {
+            "file": ".obsidian/plugins/obsidian-reading-desk/covers/3d57d76d205ea2615aacee5c0f1eec8c0ba49032e401b2d8c996f76a83d9cf26.png",
+            "bytes": 68
+          },
+          {
+            "file": ".obsidian/plugins/obsidian-reading-desk/covers/b1c1eb495329ad89b5164eca6a133959ba3507ef6e90bb943e82f98203ba6190.png",
+            "bytes": 68
+          }
+        ]
+      }
+    },
+    {
+      "name": "cover cache key fits actual filesystem basename limit for a valid Unicode source",
+      "pass": true,
+      "evidence": {
+        "attempt": {
+          "sourceBasenameBytes": 137,
+          "coverBasenameBytes": 68
+        },
+        "result": {
+          "title": "Long but valid source filename",
+          "author": "Alice & Bob",
+          "coverPath": ".obsidian/plugins/obsidian-reading-desk/covers/ad060d892822a2b258ec39a60f4d4a955eb52e27fa0e758ffa90234ddac3e0a7.png"
+        },
+        "scope": "Writes only a temporary functional-cover-write-* output beside this script, removes it if successful"
+      }
+    },
+    {
+      "name": "PDF XMP dc:creator sequence is retained",
+      "pass": true,
+      "evidence": {
+        "actualPdfjsAuthors": [
+          "Alice",
+          "Bob"
+        ],
+        "extractedAuthor": "Alice, Bob",
+        "title": "XMP Book"
+      }
+    }
+  ],
+  "scope": "Isolated services with real JSZip and real pdfjs parsing; no UI, no main-vault fixtures, no actual cloud requests."
+}

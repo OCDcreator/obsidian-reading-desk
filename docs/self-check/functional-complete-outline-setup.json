@@ -1,0 +1,68 @@
+{
+  "timestamp": "2026-09-18T16:39:01.029Z",
+  "command": "eval",
+  "target": "F5514A5BEFBB73BCDA0D08EFB70361A8",
+  "result": {
+    "source": "Reading Desk Fixtures/functional-excal-source.pdf",
+    "outline": [
+      {
+        "title": "Introduction",
+        "page": 0,
+        "path": [
+          "Introduction"
+        ]
+      },
+      {
+        "title": "Methods",
+        "page": 1,
+        "path": [
+          "Methods"
+        ]
+      },
+      {
+        "title": "Details",
+        "page": 1,
+        "path": [
+          "Methods",
+          "Details"
+        ]
+      },
+      {
+        "title": "Results",
+        "page": 2,
+        "path": [
+          "Results"
+        ]
+      }
+    ],
+    "targetBefore": {
+      "nodes": [],
+      "edges": []
+    },
+    "highlightCount": 2,
+    "select": [
+      {
+        "options": [
+          "",
+          "Reading Desk/裁剪-1789743888920-vkkqb9.canvas",
+          "Reading Desk/摘录-1789743647081.canvas",
+          "Reading Desk/摘录-1789743834685.canvas",
+          "Reading Desk/摘录-1789745987343.canvas",
+          "Reading Desk Fixtures/functional-complete-outline.canvas",
+          "SynthNote/Canvas/Manual.canvas",
+          "SynthNote/Canvas/Runtime.canvas"
+        ],
+        "rect": {
+          "x": 862,
+          "y": 1226.7265625,
+          "width": 698,
+          "height": 30,
+          "top": 1226.7265625,
+          "right": 1560,
+          "bottom": 1256.7265625,
+          "left": 862
+        }
+      }
+    ]
+  }
+}
