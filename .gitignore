@@ -1,4 +1,7 @@
 main.js
+styles.css
 node_modules/
 lib/
 .impeccable/
+.opencode/
+.agents/
