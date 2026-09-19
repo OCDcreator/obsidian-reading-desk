@@ -1,0 +1,35 @@
+{
+  "timestamp": "2026-09-19T16:10:38.734Z",
+  "host": "macmini",
+  "checks": {
+    "reader": {
+      "paletteColors": [],
+      "drawerSwatchColors": [],
+      "drawerSwatchLabels": [],
+      "drawerRows": 0,
+      "rowHeights": [],
+      "rowCols": [],
+      "drawerClearsToolbar": null,
+      "commentButtonSvg": false,
+      "readerOverflowX": null,
+      "accent": null,
+      "hostAccent": "#aa1141",
+      "glyphIcons": [
+        "复制"
+      ]
+    }
+  },
+  "screenshots": [
+    ".obsidian-debug\\visual-audit-20260919\\MAC-verify-reader.png"
+  ],
+  "errors": [],
+  "path": {
+    "error": "no shelf card button",
+    "shelfCards": 4
+  },
+  "startupIdentifier": "[Reading Desk] Margin v0.1.1 build 0.1.1+2026-09-19T16:06:36.485Z",
+  "readingDeskConsole": [
+    "info: [Reading Desk] Margin v0.1.1 build 0.1.1+2026-09-19T16:06:36.485Z"
+  ],
+  "otherPluginConsole": 85
+}
