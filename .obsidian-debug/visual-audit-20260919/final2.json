@@ -1,0 +1,158 @@
+{
+  "timestamp": "2026-09-19T13:45:59.308Z",
+  "checks": {
+    "readerSplit": {
+      "layoutButtonLabel": "专注阅读",
+      "bodyColumns": "634.667px",
+      "hasTargetPanel": true,
+      "targetPanelRect": {
+        "x": 400.17,
+        "y": 1189.52,
+        "w": 634.67,
+        "h": 491.46
+      },
+      "panelRhythm": [
+        {
+          "sel": "h2",
+          "text": "摘录目标",
+          "above": 16,
+          "below": 12,
+          "ok": true
+        },
+        {
+          "sel": "h3",
+          "text": "本页摘录卡片",
+          "above": 16,
+          "below": 8,
+          "ok": true
+        }
+      ],
+      "excerptPresent": true,
+      "excerptRhythm": [
+        {
+          "sel": "h3",
+          "text": "本页摘录卡片",
+          "above": 16,
+          "below": 8,
+          "ok": true
+        }
+      ],
+      "excerptPaddingTop": "16px",
+      "excerptGap": "8px",
+      "pageHost": {
+        "overflow": "visible",
+        "scrollW": 765,
+        "clientW": 635,
+        "overflowX": true
+      },
+      "commentButtonSvg": false,
+      "commentButtonBg": null,
+      "pageCountNumerals": "tabular-nums",
+      "toolbarRows": 2,
+      "toolbarHeightVar": "85px"
+    },
+    "drawer": {
+      "found": true,
+      "drawerTop": 0,
+      "toolbarBottom": 172,
+      "gapPx": -172,
+      "overlapsToolbar": true,
+      "drawerTopVar": "",
+      "rowCols": [
+        "auto minmax(0px, 1fr)",
+        "auto minmax(0px, 1fr)",
+        "10px 276.667px",
+        "10px 276.667px"
+      ],
+      "rowHeights": [
+        0,
+        0,
+        192,
+        192
+      ],
+      "swatchColors": [
+        "rgb(8, 185, 78)",
+        "rgb(224, 172, 0)",
+        "rgb(233, 49, 71)",
+        "rgb(120, 82, 238)",
+        "rgb(0, 191, 188)"
+      ],
+      "tagPadding": "no tags",
+      "overscroll": "contain"
+    },
+    "shelf": {
+      "gridTop": 669,
+      "paneBottom": 879,
+      "gridVisiblePx": 211,
+      "visibleCards": 3,
+      "railHeight": 303,
+      "categoryPanelHeight": 30,
+      "sectionTitleRhythm": [
+        {
+          "sel": "h2.rd-section-title",
+          "text": "继续阅读",
+          "above": 20,
+          "below": 12,
+          "ok": true
+        }
+      ],
+      "shelfPaddingTop": "24px",
+      "headerMarginBottom": "16px",
+      "cardPad": [
+        12,
+        12,
+        12,
+        12
+      ],
+      "cardGap": "8px",
+      "bookTitleWeight": "500",
+      "spacingCensus": [
+        {
+          "value": 4,
+          "count": 77
+        },
+        {
+          "value": 8,
+          "count": 72
+        },
+        {
+          "value": 12,
+          "count": 24
+        },
+        {
+          "value": 6,
+          "count": 21
+        },
+        {
+          "value": 2,
+          "count": 10
+        },
+        {
+          "value": 24,
+          "count": 7
+        },
+        {
+          "value": 16,
+          "count": 6
+        },
+        {
+          "value": 1,
+          "count": 5
+        },
+        {
+          "value": 20,
+          "count": 1
+        }
+      ],
+      "offScale": [
+        "6px x21"
+      ]
+    }
+  },
+  "screenshots": [
+    ".obsidian-debug\\visual-audit-20260919\\final2-reader-split-light.png",
+    ".obsidian-debug\\visual-audit-20260919\\final2-drawer-light.png",
+    ".obsidian-debug\\visual-audit-20260919\\final2-shelf-light.png"
+  ],
+  "errors": []
+}

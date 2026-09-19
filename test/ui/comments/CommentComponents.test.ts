@@ -120,6 +120,7 @@ describe('CommentPopover', () => {
 		findByLabel(root, '跳转到此高亮').click();
 		findByLabel(root, '选择琥珀高亮色').click();
 		findByLabel(root, '删除评论：保留这个结论').click();
+		findByLabel(root, '确认删除评论：保留这个结论').click();
 		const tagInput = findByLabel(root, '添加标签');
 		tagInput.value = '研究';
 		findByLabel(root, '添加标签').emit('keydown', Object.assign(new FakeEvent(), { key: 'Enter' }));
@@ -197,6 +198,7 @@ describe('HighlightList', () => {
 		findByLabel(root, '跳转到高亮：一段中文原文').click();
 		findByLabel(root, '选择梅紫高亮色').click();
 		findByLabel(root, '删除此高亮').click();
+		findByLabel(root, '确认删除此高亮').click();
 		await flushActions();
 		expect(calls).toEqual(expect.arrayContaining(['jump:high light', 'color:high light:plum', 'delete:high light']));
 	});

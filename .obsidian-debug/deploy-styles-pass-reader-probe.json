@@ -1,0 +1,23 @@
+{
+  "timestamp": "2026-09-19T12:11:20.668Z",
+  "result": {
+    "cardAriaCurrentAfterClick": "true",
+    "cardSelectedClass": true,
+    "readerFound": true,
+    "toolbarHeightVar": "83px",
+    "drawerTopVar": "169.77084350585938px",
+    "readerTitleTag": "H1",
+    "readerTitleHidden": true,
+    "drawerToggleAriaExpanded": "false",
+    "drawerToggleAriaControls": "rd-highlight-drawer-00cfeb51-1d61-4c74-9931-50b9d1f35fb9",
+    "drawerFound": true,
+    "drawerIdMatches": true,
+    "pageHostRole": "region",
+    "pageHostTabIndex": "0",
+    "prevDisabledOnFirstPage": true,
+    "nextDisabled": false,
+    "loadingClearedAfterRender": true,
+    "highlightMarksFocusable": 0
+  },
+  "consoleErrors": []
+}

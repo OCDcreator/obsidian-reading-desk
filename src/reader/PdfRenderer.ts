@@ -159,18 +159,32 @@ export class PdfRenderer {
 					width: `${coordinates.width}px`,
 					height: `${coordinates.height}px`
 				});
-				if (index === highlight.rects.length - 1) this.renderCommentButton(layer, coordinates, highlight.id);
+				if (index === highlight.rects.length - 1) this.renderCommentButton(layer, coordinates, highlight);
 			});
 		}
 	}
 
-	private renderCommentButton(layer: HTMLElement, coordinates: { left: number; top: number; width: number; height: number }, highlightId: string): void {
+	private renderCommentButton(layer: HTMLElement, coordinates: { left: number; top: number; width: number; height: number }, highlight: PdfHighlight): void {
 		const button = document.createElement('button');
 		button.type = 'button';
 		button.className = 'rd-highlight-comment-button';
-		button.dataset.highlightId = highlightId;
-		button.setAttribute('aria-label', '打开高亮评论');
-		button.textContent = '评';
+		button.dataset.highlightId = highlight.id;
+		// Unique per highlight so screen readers can tell the buttons apart.
+		button.setAttribute('aria-label', commentButtonName(highlight));
+		// An authored mark, not a text glyph standing in for an icon.
+		const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+		svg.setAttribute('viewBox', '0 0 16 16');
+		svg.setAttribute('aria-hidden', 'true');
+		svg.setAttribute('focusable', 'false');
+		const bubble = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+		bubble.setAttribute('d', 'M3 3.5h10a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H8.5L5.5 13.5V10.5H3a1 1 0 0 1-1-1v-5a1 1 0 0 1 1-1z');
+		bubble.setAttribute('fill', 'none');
+		bubble.setAttribute('stroke', 'currentColor');
+		bubble.setAttribute('stroke-width', '1.4');
+		bubble.setAttribute('stroke-linejoin', 'round');
+		svg.append(bubble);
+		button.append(svg);
+		// Live geometry from the rendered viewport; keep the inline positioning.
 		Object.assign(button.style, { left: `${coordinates.left + coordinates.width + 3}px`, top: `${coordinates.top}px` });
 		layer.append(button);
 	}
@@ -187,4 +201,11 @@ export class PdfRenderer {
 		if (!reference) return null;
 		return this.requireDocument().getPageIndex(reference as never);
 	}
+}
+
+/** Builds a unique accessible name from the highlight text, or its page as a fallback. */
+function commentButtonName(highlight: PdfHighlight): string {
+	const text = highlight.text.replace(/\s+/g, ' ').trim();
+	const excerpt = text.length > 32 ? `${text.slice(0, 32)}…` : text;
+	return excerpt ? `打开高亮评论：${excerpt}` : `打开高亮评论：第 ${highlight.page + 1} 页`;
 }

@@ -1,0 +1,182 @@
+{
+  "timestamp": "2026-09-19T13:40:47.997Z",
+  "checks": {
+    "shelf": {
+      "paneRect": {
+        "x": 388.17,
+        "y": 86.75,
+        "w": 666.67,
+        "h": 792.58
+      },
+      "headerMarginBottom": "16px",
+      "headingRhythm": [
+        {
+          "sel": "h1.rd-shelf-heading",
+          "text": "书架",
+          "above": 0,
+          "below": 0,
+          "ok": false
+        },
+        {
+          "sel": "h2.rd-section-title",
+          "text": "继续阅读",
+          "above": 20,
+          "below": 12,
+          "ok": true
+        }
+      ],
+      "railRect": {
+        "x": 412.17,
+        "y": 287.42,
+        "w": 583.68,
+        "h": 303.09
+      },
+      "railCard": {
+        "x": 412.17,
+        "y": 287.42,
+        "w": 196,
+        "h": 299.09
+      },
+      "railCover": {
+        "x": 424.83,
+        "y": 300.08,
+        "w": 112,
+        "h": 160
+      },
+      "railHidden": [
+        "none",
+        "none",
+        "none"
+      ],
+      "categoryPanel": {
+        "x": 412.17,
+        "y": 614.51,
+        "w": 583.68,
+        "h": 30
+      },
+      "gridRect": {
+        "x": 412.17,
+        "y": 668.51,
+        "w": 583.68,
+        "h": 580.36
+      },
+      "gridCardH": 580,
+      "gridTop": 669,
+      "paneBottom": 879,
+      "gridVisiblePx": 211,
+      "visibleCards": 2,
+      "cardPad": [
+        12,
+        12,
+        12,
+        12
+      ],
+      "cardGap": "8px",
+      "bookTitleWeight": "500",
+      "spacingCensus": [
+        {
+          "value": 8,
+          "count": 51
+        },
+        {
+          "value": 4,
+          "count": 41
+        },
+        {
+          "value": 6,
+          "count": 12
+        },
+        {
+          "value": 12,
+          "count": 12
+        },
+        {
+          "value": 24,
+          "count": 7
+        },
+        {
+          "value": 16,
+          "count": 6
+        },
+        {
+          "value": 2,
+          "count": 4
+        },
+        {
+          "value": 1,
+          "count": 2
+        },
+        {
+          "value": 20,
+          "count": 1
+        }
+      ],
+      "gridColumns": "283.833px 283.844px"
+    },
+    "readerSplit": {
+      "__error": "TypeError: Failed to execute 'getComputedStyle' on 'Window': parameter 1 is not of type 'Element'.\n    at <anonymous>:8:21\n    at <anonymous>:14:6"
+    },
+    "drawer": {
+      "found": true,
+      "drawerRect": {
+        "x": 678.83,
+        "y": 131.33,
+        "w": 360,
+        "h": 482.36
+      },
+      "toolbarBottom": 170,
+      "overlapsToolbar": true,
+      "rowCols": [
+        "10px 276.667px",
+        "10px 276.667px"
+      ],
+      "rowHeights": [
+        192,
+        192
+      ],
+      "swatchGroupW": [
+        277,
+        277
+      ],
+      "swatches": [
+        {
+          "label": "苔绿",
+          "bg": "rgb(8, 185, 78)",
+          "color": "rgb(12, 14, 18)"
+        },
+        {
+          "label": "琥珀",
+          "bg": "rgb(224, 172, 0)",
+          "color": "rgb(12, 14, 18)"
+        },
+        {
+          "label": "砖红",
+          "bg": "rgb(233, 49, 71)",
+          "color": "rgb(12, 14, 18)"
+        },
+        {
+          "label": "靛青",
+          "bg": "rgb(120, 82, 238)",
+          "color": "rgb(248, 247, 244)"
+        },
+        {
+          "label": "梅紫",
+          "bg": "rgb(0, 191, 188)",
+          "color": "rgb(12, 14, 18)"
+        }
+      ],
+      "overscroll": "contain",
+      "jumpBg": "rgba(0, 0, 0, 0)"
+    }
+  },
+  "screenshots": [
+    ".obsidian-debug\\visual-audit-20260919\\final-shelf-light.png",
+    ".obsidian-debug\\visual-audit-20260919\\final-reader-split-light.png",
+    ".obsidian-debug\\visual-audit-20260919\\final-drawer-light.png"
+  ],
+  "errors": [],
+  "startup": {
+    "version": "0.1.1",
+    "enabled": true
+  }
+}

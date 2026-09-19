@@ -1,3 +1,4 @@
+import { Notice } from 'obsidian';
 import type { LibraryBook, LibraryCategory } from '../types/contracts';
 import {
 	categoryBookCount,
@@ -108,7 +109,7 @@ export class ShelfView {
 
 	private createHeader(): HTMLElement {
 		const header = element('header', 'rd-shelf-header');
-		header.append(element('div', 'rd-shelf-heading', '书架'));
+		header.append(element('h1', 'rd-shelf-heading', '书架'));
 		const actions = element('div', 'rd-shelf-actions');
 		actions.append(button('扫描书库', '重新扫描书库', () => void this.scan()));
 		header.append(actions);
@@ -289,13 +290,15 @@ export class ShelfView {
 				void this.openBook(book);
 			}
 		});
-		if (this.selectedBookId === book.id) card.classList.add('is-selected');
+		this.applySelection(card, book.id);
 		const cover = element('div', 'rd-book-cover');
 		const coverUrl = book.coverPath ? this.host.resolveCoverUrl?.(book.coverPath) ?? book.coverPath : null;
 		if (coverUrl) {
 			const image = card.ownerDocument.createElement('img');
 			image.src = coverUrl;
 			image.alt = `${book.title} 封面`;
+			image.loading = 'lazy';
+			image.decoding = 'async';
 			image.addEventListener('error', () => {
 				image.remove();
 				cover.append(element('span', 'rd-book-cover-unavailable', '无可用封面'));
@@ -304,7 +307,7 @@ export class ShelfView {
 		} else cover.append(element('span', 'rd-book-cover-unavailable', '无可用封面'));
 		const details = element('div', 'rd-book-details');
 		details.append(
-			element('h2', 'rd-book-title', book.title),
+			element('p', 'rd-book-title', book.title),
 			element('p', 'rd-book-author', book.author || '作者未填写'),
 			element('p', 'rd-book-meta', bookMeta(book)),
 			this.createProgress(book),
@@ -339,7 +342,7 @@ export class ShelfView {
 		for (const category of this.categories) select.append(option(select.ownerDocument, category.id, category.name));
 		select.value = book.categoryId ?? '';
 		select.addEventListener('click', event => event.stopPropagation());
-		select.addEventListener('change', () => void this.updateBook(book, { categoryId: select.value || undefined }));
+		select.addEventListener('change', () => void this.updateBook(book, { categoryId: select.value || undefined }, message => new Notice(message)));
 		wrapper.append(select);
 		return wrapper;
 	}
@@ -363,14 +366,14 @@ export class ShelfView {
 		const row = document.createElement('tr');
 		row.tabIndex = 0;
 		row.setAttribute('aria-label', `选择 ${book.title}`);
-		row.addEventListener('click', () => {
-			this.selectedBookId = book.id;
-			this.paint();
-		});
+		row.addEventListener('click', () => this.selectBook(book.id));
 		row.addEventListener('keydown', event => {
-			if (event.key === 'Enter') void this.openBook(book);
+			if (event.key === 'Enter' || event.key === ' ') {
+				event.preventDefault();
+				this.selectBook(book.id);
+			}
 		});
-		if (this.selectedBookId === book.id) row.classList.add('is-selected');
+		this.applySelection(row, book.id);
 		row.insertCell().append(button(book.title, `打开 ${book.title}`, () => void this.openBook(book)));
 		row.insertCell().append(this.inlineTextEditor(document, book, 'author', '作者'));
 		row.insertCell().append(this.inlineTextEditor(document, book, 'tags', '标签'));
@@ -381,6 +384,25 @@ export class ShelfView {
 		return row;
 	}
 
+	/** Updates the selection in place so the focused row or card is not rebuilt under the user. */
+	private selectBook(id: string): void {
+		this.selectedBookId = id;
+		const container = this.content;
+		if (!container) return;
+		for (const item of Array.from(container.querySelectorAll<HTMLElement>('[data-book-id]'))) {
+			this.applySelection(item, item.dataset.bookId ?? id);
+		}
+	}
+
+	private applySelection(item: HTMLElement, bookId: string): void {
+		item.dataset.bookId = bookId;
+		const selected = this.selectedBookId === bookId;
+		item.classList.toggle('is-selected', selected);
+		if (item.tagName === 'TR') item.setAttribute('aria-selected', String(selected));
+		else if (selected) item.setAttribute('aria-current', 'true');
+		else item.removeAttribute('aria-current');
+	}
+
 	private inlineTextEditor(document: Document, book: LibraryBook, field: 'author' | 'tags', label: string): HTMLInputElement {
 		const input = document.createElement('input');
 		input.className = 'rd-table-editor';
@@ -389,7 +411,7 @@ export class ShelfView {
 		const save = (): void => {
 			const value = field === 'tags' ? parseTags(input.value) : input.value.trim();
 			if (sameFieldValue(book, field, value)) return;
-			void this.updateBook(book, { [field]: value });
+			void this.updateBook(book, { [field]: value }, message => showEditorError(input, message));
 		};
 		input.addEventListener('blur', save);
 		input.addEventListener('keydown', event => {
@@ -410,7 +432,11 @@ export class ShelfView {
 		for (let value = 1; value <= 10; value += 1) select.append(option(document, String(value), `${value} 分`));
 		select.value = book.rating ? String(book.rating) : '';
 		select.addEventListener('click', event => event.stopPropagation());
-		select.addEventListener('change', () => void this.updateBook(book, { rating: select.value ? Number(select.value) : undefined }));
+		select.addEventListener('change', () => void this.updateBook(
+			book,
+			{ rating: select.value ? Number(select.value) : undefined },
+			message => showEditorError(select, message)
+		));
 		return select;
 	}
 
@@ -422,10 +448,24 @@ export class ShelfView {
 	}
 
 	private createEmptyState(): HTMLElement {
-		const message = this.query || this.categoryId ? '没有符合当前筛选的图书。' : '书架中还没有图书。请扫描已配置的书库文件夹。';
-		const state = element('div', 'rd-shelf-state rd-shelf-empty', message);
+		const state = element('div', 'rd-shelf-state rd-shelf-empty');
 		state.setAttribute('role', 'status');
+		if (!this.query && !this.categoryId) {
+			state.textContent = '书架中还没有图书。请扫描已配置的书库文件夹。';
+			return state;
+		}
+		state.textContent = this.query
+			? `没有与“${this.query}”匹配的图书。请清空上方搜索框，或选择其他分类。`
+			: '当前分类下没有图书。请选择其他分类，或清除筛选。';
+		state.append(button('清除筛选', '清除搜索与分类筛选', () => this.clearFilters()));
 		return state;
+	}
+
+	private clearFilters(): void {
+		this.query = '';
+		this.categoryId = undefined;
+		if (this.search) this.search.value = '';
+		this.refreshContent();
 	}
 
 	private createErrorState(): HTMLElement {
@@ -436,20 +476,27 @@ export class ShelfView {
 		return state;
 	}
 
-	private async updateBook(book: LibraryBook, patch: Partial<Pick<LibraryBook, 'title' | 'author' | 'tags' | 'rating' | 'categoryId'>>): Promise<void> {
+	private async updateBook(
+		book: LibraryBook,
+		patch: Partial<Pick<LibraryBook, 'title' | 'author' | 'tags' | 'rating' | 'categoryId'>>,
+		onError?: (message: string) => void
+	): Promise<void> {
 		try {
 			await this.host.updateBook(book.id, patch);
 			Object.assign(book, patch);
 			this.paint();
 		} catch (error) {
-			this.error = errorMessage(error, '无法保存图书信息');
-			this.paint();
+			const message = errorMessage(error, '无法保存图书信息');
+			if (onError) onError(message);
+			else {
+				this.error = message;
+				this.paint();
+			}
 		}
 	}
 
 	private async openBook(book: LibraryBook): Promise<void> {
-		this.selectedBookId = book.id;
-		this.paint();
+		this.selectBook(book.id);
 		try {
 			await this.host.openBook(book);
 		} catch (error) {
@@ -501,6 +548,18 @@ function option(document: Document, value: string, label: string): HTMLOptionEle
 	item.value = value;
 	item.textContent = label;
 	return item;
+}
+
+/** Surfaces an inline save failure beside the editor, keeping the row and its input intact. */
+function showEditorError(input: HTMLElement, message: string): void {
+	const cell = input.parentElement;
+	if (!cell) return;
+	cell.querySelector('.rd-table-error')?.remove();
+	const note = document.createElement('span');
+	note.className = 'rd-table-error';
+	note.setAttribute('role', 'alert');
+	note.textContent = message;
+	cell.append(note);
 }
 
 function bookMeta(book: LibraryBook): string {

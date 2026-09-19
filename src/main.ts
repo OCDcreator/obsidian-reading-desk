@@ -6,8 +6,8 @@ import { MetadataExtractor } from './library/MetadataExtractor';
 import { PdfRenderer } from './reader/PdfRenderer';
 import { AiIntegrationService, type AiBridge } from './ai/AiIntegrationService';
 import { exportBookshelf, importLegacyBookshelf, type BookshelfImportResult } from './portability/BookshelfPortabilityService';
-import { MarkdownImagePasteService } from './storage/MarkdownImagePasteService';
-import { ObjectStorageService } from './storage/ObjectStorageService';
+import { ClipboardImageError, MarkdownImagePasteService } from './storage/MarkdownImagePasteService';
+import { ObjectStorageConfigurationError, ObjectStorageRequestError, ObjectStorageService } from './storage/ObjectStorageService';
 import { ReadingDeskSettingTab } from './settings/ReadingDeskSettingTab';
 import { TargetService } from './targets';
 import type { PreparedCropDrag } from './ui/crop/CropDragTransport';
@@ -66,13 +66,13 @@ export default class ReadingDeskPlugin extends Plugin {
 			scan: () => this.scanLibrary(),
 			resourceUrl: path => this.app.vault.adapter.getResourcePath(path)
 		}));
-		this.addRibbonIcon('book-open', '打开 Reading Desk', () => this.openShelf());
+		this.addRibbonIcon('book-open', '打开 Reading Desk 书架', () => this.openShelf());
 		this.addCommand({ id: 'open-reading-desk', name: '打开 Reading Desk 书架', callback: () => this.openShelf() });
 		this.addCommand({ id: 'scan-library', name: '扫描 Reading Desk 书库', callback: () => this.scanLibrary() });
 		this.addCommand({ id: 'open-reader-in-focus-layout', name: '以专注布局打开 Reading Desk 阅读器', callback: () => this.openFocusedReader() });
 		this.addCommand({ id: 'import-legacy-bookshelf', name: '导入旧 Bookshelf 数据（一次性）', callback: () => this.importLegacyBookshelf() });
-		this.addCommand({ id: 'export-library-markdown', name: '导出 Reading Desk 书架 Markdown', callback: () => this.exportToVault('markdown') });
-		this.addCommand({ id: 'export-library-json', name: '导出 Reading Desk 书架 JSON', callback: () => this.exportToVault('json') });
+		this.addCommand({ id: 'export-library-markdown', name: '导出 Reading Desk 书架为 Markdown（写入仓库）', callback: () => this.exportToVault('markdown') });
+		this.addCommand({ id: 'export-library-json', name: '导出 Reading Desk 书架为 JSON（写入仓库）', callback: () => this.exportToVault('json') });
 		this.addCommand({ id: 'ask-ai-about-selection', name: '将当前 Reading Desk 选区交给 AI', checkCallback: checking => this.askAiAboutCurrentSelection(checking) });
 		this.addSettingTab(new ReadingDeskSettingTab(this));
 		this.registerObsidianProtocolHandler('reading-desk-highlight', params => void this.openReaderHighlight(params));
@@ -299,11 +299,12 @@ export default class ReadingDeskPlugin extends Plugin {
 	}
 
 	private focusNativeTarget(view: unknown, objectId: string): boolean {
+		const reduceMotion = prefersReducedMotion();
 		const canvas = (view as { canvas?: { nodes?: Map<string, unknown>; selectOnly?(node: unknown): void; zoomToSelection?(): void } }).canvas;
 		const node = canvas?.nodes?.get(objectId);
 		if (canvas && node && typeof canvas.selectOnly === 'function') {
 			canvas.selectOnly(node);
-			canvas.zoomToSelection?.();
+			if (!reduceMotion) canvas.zoomToSelection?.();
 			return true;
 		}
 		const excalidraw = view as {
@@ -315,7 +316,7 @@ export default class ReadingDeskPlugin extends Plugin {
 		const elementId = highlightId
 			? excalidraw.excalidrawAPI?.getSceneElements?.().find(element => readingDeskHighlightId(element) === highlightId)?.id ?? objectId
 			: objectId;
-		void excalidraw.zoomToElementId(elementId, false);
+		if (!reduceMotion) void excalidraw.zoomToElementId(elementId, false);
 		return true;
 	}
 
@@ -369,6 +370,8 @@ export default class ReadingDeskPlugin extends Plugin {
 	private async onVaultDelete(file: TAbstractFile): Promise<void> {
 		const path = file.path;
 		if (!isLibraryPath(path) && !isTargetPath(path)) return;
+		const removedBooks = Object.values(this.repository.readBooks()).filter(book => book.path === path).length;
+		const removedHighlights = this.annotations.listAll().filter(highlight => highlight.pdfPath === path || highlight.target?.path === path).length;
 		await this.repository.commit(() => {
 			for (const [id, book] of Object.entries(this.repository.readBooks())) if (book.path === path) delete this.repository.readBooks()[id];
 			for (const highlight of this.annotations.listAll()) {
@@ -381,6 +384,9 @@ export default class ReadingDeskPlugin extends Plugin {
 		});
 		if (isLibraryPath(path)) await this.refreshReaderSourceDelete(path);
 		await this.refreshShelves();
+		if (removedBooks > 0 || removedHighlights > 0) {
+			this.notice(`文件 ${path} 已删除，Reading Desk 已同步清理 ${removedBooks} 本书目与 ${removedHighlights} 条高亮及其评论、摘录卡片。`);
+		}
 	}
 
 	private async syncTargetDeletion(path: string): Promise<void> {
@@ -405,7 +411,7 @@ export default class ReadingDeskPlugin extends Plugin {
 			view.editor.replaceSelection(uploaded.markdown);
 			this.notice('图片已上传并插入 Markdown 外链。');
 		} catch (error) {
-			this.notice(error instanceof Error ? `图片上传失败：${error.message}` : '图片上传失败，请检查对象存储设置。');
+			this.notice(describeImageUploadFailure(error));
 		}
 	}
 
@@ -414,7 +420,11 @@ export default class ReadingDeskPlugin extends Plugin {
 		if (!text || !this.ai.availability().available) return false;
 		if (checking) return true;
 		const source = this.app.workspace.getActiveFile()?.path ?? 'Reading Desk PDF 选区';
-		void this.askAiWithSelection(text, source).then(() => this.notice('已把选区作为上下文交给兼容 AI 插件。')).catch(error => this.notice(error instanceof Error ? error.message : 'AI 集成调用失败。'));
+		void this.askAiWithSelection(text, source)
+			.then(() => this.notice('已把选区作为上下文交给兼容 AI 插件。'))
+			.catch(() => this.notice(this.ai.availability().available
+				? 'AI 调用失败：兼容 AI 插件已检测到，但这次调用没有完成。请确认该插件正在运行后重试。'
+				: 'AI 集成不可用：未检测到兼容的 AI 插件。请先安装并启用受支持的 AI 插件，再使用该命令。'));
 	}
 
 	private pluginRegistry(): PluginRegistry { return (this.app as unknown as { plugins: PluginRegistry }).plugins; }
@@ -439,7 +449,8 @@ export default class ReadingDeskPlugin extends Plugin {
 		const path = `Reading Desk/exports/reading-desk-${stamp}.${format === 'markdown' ? 'md' : 'json'}`;
 		await this.ensureFile(path, format === 'markdown' ? this.exportMarkdown() : this.exportJson());
 		await this.app.workspace.openLinkText(path, '', false);
-		this.notice(`书架已导出为 ${format === 'markdown' ? 'Markdown' : 'JSON'}。`);
+		const label = format === 'markdown' ? 'Markdown' : 'JSON';
+		this.notice(`书架已导出为 ${label}，已写入新文件 ${path}；导出只新建文件，不会覆盖已有内容。`);
 	}
 
 	private async readLegacyBookshelfData(): Promise<unknown | null> {
@@ -548,6 +559,24 @@ export default class ReadingDeskPlugin extends Plugin {
 
 function toLibraryFile(file: TFile): LibraryFile {
 	return { path: file.path, extension: file.extension, stat: { mtime: file.stat.mtime, size: file.stat.size } };
+}
+
+function prefersReducedMotion(): boolean {
+	return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+function describeImageUploadFailure(error: unknown): string {
+	if (error instanceof ObjectStorageConfigurationError) {
+		return '图片上传失败：对象存储配置不完整。请到 Reading Desk 设置的“对象存储与图床”中补全 Endpoint、Bucket 与密钥。';
+	}
+	if (error instanceof ObjectStorageRequestError) {
+		if (error.status === 401 || error.status === 403) return `图片上传失败：图床返回 HTTP ${error.status}，通常是 Access Key 或 Secret Key 不正确。请核对密钥后重试。`;
+		return `图片上传失败：图床返回 HTTP ${error.status}。请检查 Endpoint 与 Bucket 设置后重试，图片仍保留在剪贴板中。`;
+	}
+	if (error instanceof ClipboardImageError) {
+		return '图片上传失败：剪贴板中没有可上传的图片。';
+	}
+	return '图片上传失败：无法连接图床。请检查网络与对象存储设置后重试，图片仍保留在剪贴板中。';
 }
 
 function isLibraryPath(path: string): boolean { return /\.(pdf|epub)$/i.test(path); }

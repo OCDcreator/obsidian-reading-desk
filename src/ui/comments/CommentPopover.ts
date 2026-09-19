@@ -1,13 +1,14 @@
 import type { PdfHighlight } from '../../types/contracts';
 import {
 	CommentPopoverHost,
-	watchSwatchContrast,
 	createButton,
+	createConfirmDelete,
 	errorMessage,
 	formatCommentTimestamp,
 	HIGHLIGHT_COLORS,
 	setBusy,
-	targetLabel
+	targetLabel,
+	watchSwatchContrast
 } from './CommentUiTypes';
 
 export interface CommentPopoverOptions {
@@ -15,12 +16,15 @@ export interface CommentPopoverOptions {
 	onClose?: () => void;
 }
 
+const FAILURE_NEXT_STEP = '请重试；若持续失败，请关闭后重新打开此评论框。';
+
 /** A host-driven annotation popover that never reads or writes vault state itself. */
 export class CommentPopover {
 	private container: HTMLElement | null = null;
 	private options: CommentPopoverOptions | null = null;
 	private error = '';
 	private stopSwatchWatcher: (() => void) | null = null;
+	private liveRegion: HTMLParagraphElement | null = null;
 
 	constructor(private readonly host: CommentPopoverHost) { }
 
@@ -77,10 +81,31 @@ export class CommentPopover {
 		root.append(this.renderTags(highlight));
 		root.append(this.renderComments(highlight));
 		root.append(this.renderComposer(highlight));
-		if (this.error) root.append(this.renderError());
-
+		root.append(this.liveMessageNode());
 		this.container.replaceChildren(root);
+		this.setLiveMessage(this.failureText());
 		this.stopSwatchWatcher = watchSwatchContrast(root);
+	}
+
+	/**
+	 * The alert node survives renders and is mutated in place: replacing a
+	 * live-region node on every state change often silences announcements.
+	 */
+	private liveMessageNode(): HTMLParagraphElement {
+		if (!this.liveRegion) {
+			this.liveRegion = document.createElement('p');
+			this.liveRegion.className = 'rd-error';
+			this.liveRegion.setAttribute('role', 'alert');
+		}
+		return this.liveRegion;
+	}
+
+	private failureText(): string {
+		return this.error ? `操作失败：${this.error}。${FAILURE_NEXT_STEP}` : '';
+	}
+
+	private setLiveMessage(text: string): void {
+		if (this.liveRegion && this.liveRegion.textContent !== text) this.liveRegion.textContent = text;
 	}
 
 	private renderActions(highlight: PdfHighlight): HTMLElement {
@@ -89,12 +114,14 @@ export class CommentPopover {
 		actions.append(createButton('跳转到此高亮', 'rd-button rd-comment-popover__jump', async () => {
 			await this.run(() => this.host.jumpToHighlight(highlight));
 		}));
-		actions.append(createButton('删除此高亮', 'rd-button rd-comment-popover__delete-highlight', async () => {
+		// Deleting a highlight also deletes its linked target excerpt.
+		const deletion = createConfirmDelete('删除此高亮', 'rd-button rd-comment-popover__delete-highlight', '确认删除此高亮', async () => {
 			await this.run(async () => {
 				await this.host.deleteHighlight(highlight.id);
 				this.close();
 			});
-		}));
+		});
+		actions.append(deletion.confirm, deletion.cancel);
 		return actions;
 	}
 
@@ -122,11 +149,15 @@ export class CommentPopover {
 		const label = document.createElement('label');
 		const inputId = `rd-tag-${safeId(highlight.id)}`;
 		label.htmlFor = inputId;
-		label.textContent = '标签';
+		// Same text as the input's accessible name, so the announced label is
+		// exactly what sighted users read (WCAG 2.5.3 Label in Name).
+		label.textContent = '添加标签';
 		section.append(label);
 		const input = document.createElement('input');
 		input.id = inputId;
 		input.type = 'text';
+		// Class hook for the shared control chrome and :focus-visible styling.
+		input.className = 'rd-comment-popover__tag-input';
 		input.placeholder = '输入或选择已有标签';
 		input.setAttribute('aria-label', '添加标签');
 		const listId = `${inputId}-suggestions`;
@@ -143,7 +174,7 @@ export class CommentPopover {
 		const add = createButton('添加标签', 'rd-button rd-comment-popover__add-tag', async () => {
 			const tag = input.value.trim();
 			if (!tag || highlight.tags.includes(tag)) return;
-			await this.run(() => this.host.setTags(highlight.id, [...highlight.tags, tag]));
+			await this.run(() => this.host.setTags(highlight.id, [...highlight.tags, tag]), [add]);
 		});
 		input.addEventListener('keydown', event => {
 			if (event.key === 'Enter') {
@@ -162,7 +193,7 @@ export class CommentPopover {
 				tagEl.className = 'rd-tag';
 				tagEl.textContent = tag;
 				const remove = createButton(`删除标签：${tag}`, 'rd-tag__remove', async () => {
-					await this.run(() => this.host.setTags(highlight.id, highlight.tags.filter(item => item !== tag)));
+					await this.run(() => this.host.setTags(highlight.id, highlight.tags.filter(item => item !== tag)), [remove]);
 				});
 				tagEl.append(remove);
 				tags.append(tagEl);
@@ -199,11 +230,11 @@ export class CommentPopover {
 				time.textContent = formatCommentTimestamp(comment.createdAt);
 				item.append(time);
 			}
-			const remove = createButton(`删除评论：${comment.content}`, 'rd-button rd-comment-popover__delete-comment', async () => {
+			const deletion = createConfirmDelete('删除', 'rd-button rd-comment-popover__delete-comment', `确认删除评论：${comment.content}`, async () => {
 				await this.run(() => this.host.deleteComment(highlight.id, comment.id));
 			});
-			remove.textContent = '删除';
-			item.append(remove);
+			deletion.confirm.setAttribute('aria-label', `删除评论：${comment.content}`);
+			item.append(deletion.confirm, deletion.cancel);
 			list.append(item);
 		}
 		section.append(list);
@@ -220,14 +251,16 @@ export class CommentPopover {
 		section.append(label);
 		const input = document.createElement('textarea');
 		input.id = inputId;
+		// Class hook for the shared control chrome and :focus-visible styling.
+		input.className = 'rd-comment-popover__composer-input';
 		input.placeholder = '记录你的想法';
-		input.setAttribute('aria-label', '评论内容');
+		// Matches the visible 新增评论 label instead of overriding it.
+		input.setAttribute('aria-label', '新增评论');
 		section.append(input);
 		const add = createButton('添加评论', 'rd-button rd-comment-popover__add-comment', async () => {
 			const content = input.value.trim();
 			if (!content) return;
-			setBusy(add, true);
-			await this.run(() => this.host.addComment(highlight.id, content));
+			await this.run(() => this.host.addComment(highlight.id, content), [add]);
 		});
 		add.disabled = true;
 		input.addEventListener('input', () => { add.disabled = !input.value.trim(); });
@@ -238,22 +271,20 @@ export class CommentPopover {
 		return section;
 	}
 
-	private renderError(): HTMLElement {
-		const error = document.createElement('p');
-		error.className = 'rd-error';
-		error.setAttribute('role', 'alert');
-		error.textContent = `操作失败：${this.error}`;
-		return error;
-	}
-
-	private async run(operation: () => Promise<void> | void): Promise<void> {
+	private async run(operation: () => Promise<void> | void, controls: HTMLButtonElement[] = []): Promise<void> {
+		for (const control of controls) setBusy(control, true);
 		try {
 			this.error = '';
 			await operation();
 			this.render();
 		} catch (error) {
+			// Mutate the mounted alert instead of re-rendering: the live region
+			// must not be replaced, and a rebuild would also wipe the composer
+			// draft the user needs for the retry.
 			this.error = errorMessage(error);
-			this.render();
+			this.setLiveMessage(this.failureText());
+		} finally {
+			for (const control of controls) setBusy(control, false);
 		}
 	}
 }

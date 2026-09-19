@@ -1,0 +1,442 @@
+{
+  "timestamp": "2026-09-19T13:36:23.388Z",
+  "checks": {
+    "palette": {
+      "toolbarPalette": [
+        {
+          "cls": "rd-button rd-swatch--moss",
+          "bg": "rgb(8, 185, 78)"
+        },
+        {
+          "cls": "rd-button rd-swatch--amber",
+          "bg": "rgb(224, 172, 0)"
+        },
+        {
+          "cls": "rd-button rd-swatch--brick",
+          "bg": "rgb(233, 49, 71)"
+        },
+        {
+          "cls": "rd-button rd-swatch--indigo",
+          "bg": "rgb(120, 82, 238)"
+        },
+        {
+          "cls": "rd-button rd-swatch--plum",
+          "bg": "rgb(0, 191, 188)"
+        }
+      ],
+      "highlightMarks": []
+    },
+    "drawer": {
+      "rowCols": [],
+      "rowHeights": [],
+      "swatchGroupW": [],
+      "swatches": [],
+      "overscroll": "no drawer",
+      "toolbarBottom": 170,
+      "drawerTopVar": "82.66667175292969px"
+    },
+    "commentButton": {
+      "hasSvg": true,
+      "textContent": "",
+      "ariaLabel": "打开高亮评论：ReadingDeskselectionfixture",
+      "rect": {
+        "w": 24,
+        "h": 24
+      },
+      "display": "grid",
+      "svgSize": "12px",
+      "bg": "color(srgb 1 0.985098 0.985098)"
+    },
+    "pageHost": {
+      "overflow": "visible",
+      "scrollW": 635,
+      "clientW": 635,
+      "overflowX": false,
+      "readerScrollW": 659,
+      "readerClientW": 659
+    },
+    "headingRhythm": {
+      "panel": "no panel (focus layout)",
+      "excerpt": []
+    },
+    "popover": {
+      "found": true,
+      "swatches": [
+        {
+          "label": "苔绿",
+          "bg": "rgb(8, 185, 78)",
+          "color": "rgb(12, 14, 18)",
+          "radius": "5px"
+        },
+        {
+          "label": "琥珀",
+          "bg": "rgb(224, 172, 0)",
+          "color": "rgb(12, 14, 18)",
+          "radius": "5px"
+        },
+        {
+          "label": "砖红",
+          "bg": "rgb(233, 49, 71)",
+          "color": "rgb(12, 14, 18)",
+          "radius": "5px"
+        },
+        {
+          "label": "靛青",
+          "bg": "rgb(120, 82, 238)",
+          "color": "rgb(248, 247, 244)",
+          "radius": "5px"
+        },
+        {
+          "label": "梅紫",
+          "bg": "rgb(0, 191, 188)",
+          "color": "rgb(12, 14, 18)",
+          "radius": "5px"
+        }
+      ],
+      "addTagBtn": {
+        "x": 875.81,
+        "y": 474.73,
+        "w": 77.33,
+        "h": 30
+      },
+      "addCommentBtn": {
+        "x": 875.81,
+        "y": 748.02,
+        "w": 77.33,
+        "h": 30
+      },
+      "overscroll": "contain",
+      "numerals": "tabular-nums"
+    },
+    "shelf": {
+      "card": {
+        "sel": "article.rd-shelf-card",
+        "rect": {
+          "x": 412.17,
+          "y": 295.42,
+          "w": 196,
+          "h": 422.28
+        },
+        "pad": [
+          12,
+          12,
+          12,
+          12
+        ],
+        "mar": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "gap": "8px",
+        "borderTop": 0.67,
+        "borderRadius": "0px",
+        "font": {
+          "size": 15,
+          "weight": "400",
+          "lineHeight": "19.5px",
+          "family": "霞鹜文楷"
+        },
+        "color": "rgb(51, 51, 51)",
+        "background": "color(srgb 1 0.985098 0.985098)",
+        "hasText": false,
+        "contrast": null,
+        "overflowX": false,
+        "scrollW": 195,
+        "clientW": 195,
+        "overflowY": false,
+        "scrollH": 421,
+        "clientH": 421,
+        "display": "grid"
+      },
+      "gridCard": {
+        "sel": "article.rd-shelf-card",
+        "rect": {
+          "x": 412.17,
+          "y": 841.7,
+          "w": 283.83,
+          "h": 580.36
+        },
+        "pad": [
+          12,
+          12,
+          12,
+          12
+        ],
+        "mar": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "gap": "8px",
+        "borderTop": 0.67,
+        "borderRadius": "0px",
+        "font": {
+          "size": 15,
+          "weight": "400",
+          "lineHeight": "19.5px",
+          "family": "霞鹜文楷"
+        },
+        "color": "rgb(51, 51, 51)",
+        "background": "color(srgb 1 0.985098 0.985098)",
+        "hasText": false,
+        "contrast": null,
+        "overflowX": false,
+        "scrollW": 283,
+        "clientW": 283,
+        "overflowY": false,
+        "scrollH": 579,
+        "clientH": 579,
+        "display": "grid"
+      },
+      "cover": {
+        "sel": "div.rd-book-cover",
+        "rect": {
+          "x": 424.83,
+          "y": 854.36,
+          "w": 258.5,
+          "h": 369.28
+        },
+        "pad": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "mar": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "gap": null,
+        "borderTop": 0,
+        "borderRadius": "0px",
+        "font": {
+          "size": 12,
+          "weight": "400",
+          "lineHeight": "15.6px",
+          "family": "霞鹜文楷"
+        },
+        "color": "rgb(135, 14, 14)",
+        "background": "oklch(0.985 0.006 90)",
+        "hasText": false,
+        "contrast": null,
+        "overflowX": false,
+        "scrollW": 259,
+        "clientW": 259,
+        "overflowY": false,
+        "scrollH": 369,
+        "clientH": 369,
+        "display": "grid"
+      },
+      "railCard": {
+        "sel": "article.rd-shelf-card",
+        "rect": {
+          "x": 412.17,
+          "y": 295.42,
+          "w": 196,
+          "h": 422.28
+        },
+        "pad": [
+          12,
+          12,
+          12,
+          12
+        ],
+        "mar": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "gap": "8px",
+        "borderTop": 0.67,
+        "borderRadius": "0px",
+        "font": {
+          "size": 15,
+          "weight": "400",
+          "lineHeight": "19.5px",
+          "family": "霞鹜文楷"
+        },
+        "color": "rgb(51, 51, 51)",
+        "background": "color(srgb 1 0.985098 0.985098)",
+        "hasText": false,
+        "contrast": null,
+        "overflowX": false,
+        "scrollW": 195,
+        "clientW": 195,
+        "overflowY": false,
+        "scrollH": 421,
+        "clientH": 421,
+        "display": "grid"
+      },
+      "railCover": {
+        "sel": "div.rd-book-cover",
+        "rect": {
+          "x": 424.83,
+          "y": 308.08,
+          "w": 168,
+          "h": 240
+        },
+        "pad": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "mar": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "gap": null,
+        "borderTop": 0,
+        "borderRadius": "0px",
+        "font": {
+          "size": 12,
+          "weight": "400",
+          "lineHeight": "15.6px",
+          "family": "霞鹜文楷"
+        },
+        "color": "rgb(135, 14, 14)",
+        "background": "oklch(0.985 0.006 90)",
+        "hasText": false,
+        "contrast": null,
+        "overflowX": false,
+        "scrollW": 168,
+        "clientW": 168,
+        "overflowY": false,
+        "scrollH": 240,
+        "clientH": 240,
+        "display": "grid"
+      },
+      "railCategoryHidden": "none",
+      "grid": {
+        "sel": "div.rd-shelf-grid",
+        "rect": {
+          "x": 412.17,
+          "y": 841.7,
+          "w": 583.68,
+          "h": 1135.16
+        },
+        "pad": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "mar": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "gap": "16px",
+        "borderTop": 0,
+        "borderRadius": "0px",
+        "font": {
+          "size": 15,
+          "weight": "400",
+          "lineHeight": "19.5px",
+          "family": "霞鹜文楷"
+        },
+        "color": "rgb(51, 51, 51)",
+        "background": "rgba(0, 0, 0, 0)",
+        "hasText": false,
+        "contrast": null,
+        "overflowX": false,
+        "scrollW": 584,
+        "clientW": 584,
+        "overflowY": false,
+        "scrollH": 1135,
+        "clientH": 1135,
+        "display": "grid"
+      },
+      "bookTitleWeight": "500",
+      "numerals": "tabular-nums",
+      "headingRhythm": [
+        {
+          "sel": "h1.rd-shelf-heading",
+          "text": "书架",
+          "above": 0,
+          "below": 0,
+          "ok": false
+        },
+        {
+          "sel": "h2.rd-section-title",
+          "text": "继续阅读",
+          "above": 20,
+          "below": 12,
+          "ok": true
+        }
+      ],
+      "spacingCensus": [
+        {
+          "value": 4,
+          "count": 81
+        },
+        {
+          "value": 8,
+          "count": 69
+        },
+        {
+          "value": 12,
+          "count": 27
+        },
+        {
+          "value": 6,
+          "count": 21
+        },
+        {
+          "value": 2,
+          "count": 10
+        },
+        {
+          "value": 24,
+          "count": 8
+        },
+        {
+          "value": 1,
+          "count": 5
+        },
+        {
+          "value": 16,
+          "count": 5
+        },
+        {
+          "value": 20,
+          "count": 1
+        }
+      ],
+      "visibleCards": 3,
+      "railBottom": 722,
+      "gridTop": 842,
+      "paneBottom": 879
+    }
+  },
+  "screenshots": [
+    ".obsidian-debug\\visual-audit-20260919\\confirm-reader-light.png",
+    ".obsidian-debug\\visual-audit-20260919\\confirm-drawer-light.png",
+    ".obsidian-debug\\visual-audit-20260919\\confirm-popover-light.png",
+    ".obsidian-debug\\visual-audit-20260919\\confirm-shelf-light.png"
+  ],
+  "errors": [],
+  "buildId": "0.1.1",
+  "readerReady": {
+    "host": true,
+    "marks": 0,
+    "rows": 0
+  },
+  "diag": {
+    "readerLeaves": 1,
+    "hasRoot": true,
+    "toolbarButtons": 13,
+    "hasHost": true,
+    "readerText": "阅读：原子结构与化学键核心问题详解（Atomic Structure and Chemical Bonding）.pdf"
+  },
+  "marksReady": null
+}

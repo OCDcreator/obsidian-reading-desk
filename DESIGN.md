@@ -2,20 +2,21 @@
 name: "Reading Desk"
 description: "融入 Obsidian 主题的密集研究阅读与摘录工作台。"
 colors:
-  surface: "oklch(from var(--background-primary) l c h)"
-  surface-raised: "oklch(from var(--background-secondary) l c h)"
+  surface: "var(--background-primary, oklch(0.98 0.005 250))"
+  surface-raised: "var(--background-secondary, oklch(0.96 0.01 250))"
   surface-document-light: "oklch(0.985 0.006 90)"
   surface-document-dark: "oklch(0.22 0.012 75)"
-  ink: "oklch(from var(--text-normal) l c h)"
-  ink-muted: "oklch(from var(--text-muted) l c h)"
-  line: "oklch(from var(--background-modifier-border) l c h)"
-  accent-light: "oklch(0.62 0.13 235)"
-  accent-dark: "oklch(0.75 0.11 235)"
+  ink: "var(--text-normal, oklch(0.24 0.02 250))"
+  ink-muted: "var(--text-muted, oklch(0.48 0.02 250))"
+  line: "var(--background-modifier-border, oklch(0.75 0.02 250))"
+  accent-light: "var(--interactive-accent, oklch(0.62 0.13 235))"
+  accent-dark: "var(--interactive-accent, oklch(0.62 0.13 235))"
   moss: "var(--canvas-color-4, oklch(0.68 0.12 145))"
   amber: "var(--canvas-color-3, oklch(0.77 0.14 80))"
   brick: "var(--canvas-color-1, oklch(0.62 0.15 30))"
   indigo: "var(--canvas-color-6, oklch(0.61 0.13 275))"
   plum: "var(--canvas-color-5, oklch(0.62 0.13 325))"
+  elevation: "oklch(0.2 0.02 250 / 0.2)"
 typography:
   page:
     fontFamily: "inherit"
@@ -98,12 +99,12 @@ components:
 
 Reading Desk 是一个 desktop Obsidian 操作表面：像长期置于书桌上的研究工具，安静、紧凑、可预测。秩序来自可检索的书目、PDF 页边、相邻目标和可见的原文锚点，而不是英雄区、生活方式封面或仪表盘式指标。
 
-它不拥有一套脱离宿主的固定明暗主题。插件表面从 Obsidian 的背景、文字、边线和 interactive accent 变量派生；浅色与深色只为 PDF 文档面和 accent 提供明确覆写。真实 Canvas、Excalidraw 与 Markdown 仍是相邻的原生宿主表面，Reading Desk 只渲染自己的目标面板、锚点和控制，不仿制宿主画布。
+它不拥有一套脱离宿主的固定明暗主题。插件表面从 Obsidian 的背景、文字、边线和 interactive accent 变量派生；浅色与深色只为 PDF 文档面提供明确覆写。真实 Canvas、Excalidraw 与 Markdown 仍是相邻的原生宿主表面，Reading Desk 只渲染自己的目标面板、锚点和控制，不仿制宿主画布。
 
 **Key Characteristics:**
 
 - 25/20/16 的阅读标题层级，配合 14/12 的正文和元数据，服务密集研究任务。
-- 24/16/8 的工作区、面板和紧凑控件节奏；正文与空态说明最多 75ch。
+- 24/16/8 的工作区、面板和紧凑控件节奏；正文与空态说明最多 75ch。间距刻度为 `4/8/12/16/20/24`，不引入刻度外的一次性数值。
 - PDF 高亮、Canvas 节点颜色和评论色盘使用同一组语义 palette key；色彩从不单独承担状态含义。
 - 锚点、评论、裁剪和章节结构是操作反馈，不是装饰性图形。
 
@@ -115,7 +116,7 @@ Reading Desk 是一个 desktop Obsidian 操作表面：像长期置于书桌上�
 
 ### Primary
 
-- **Research Accent** (`accent-light` / `accent-dark`): 主操作、选中边界、进度填充与 keyboard focus。浅色用 `accent-light`，`.theme-dark` 覆写为 `accent-dark`；不能把它铺成大面积背景。
+- **Research Accent** (`accent-light` / `accent-dark`): 主操作、选中边界、进度填充与 keyboard focus。直接引用 Obsidian `--interactive-accent`，在浅色与深色主题中都跟随用户选择的原生 accent，仅保留 OKLCH 回退；不能把它铺成大面积背景。
 
 ### Secondary
 
@@ -127,16 +128,16 @@ Reading Desk 是一个 desktop Obsidian 操作表面：像长期置于书桌上�
 
 ### Neutral
 
-- **Host Surface** (`surface`): Obsidian `--background-primary` 的 OKLCH 派生值，作为 Shelf 和 Reader 的应用底面。
-- **Raised Host Surface** (`surface-raised`): Obsidian `--background-secondary` 的 OKLCH 派生值，用于工具栏、卡片、抽屉、目标面板和评论浮层。
+- **Host Surface** (`surface`): Obsidian `--background-primary` 的直接引用，作为 Shelf 和 Reader 的应用底面。
+- **Raised Host Surface** (`surface-raised`): Obsidian `--background-secondary` 的直接引用，用于工具栏、卡片、抽屉、目标面板和评论浮层。
 - **Document Surface** (`surface-document-light` / `surface-document-dark`): PDF 页与封面的浅/深模式背景；PDF 本身可以保留原有纸白，它不是插件 UI 白色 token。
-- **Host Ink / Muted Ink / Line** (`ink`, `ink-muted`, `line`): 分别从 `--text-normal`、`--text-muted`、`--background-modifier-border` 派生，保持与当前 Obsidian 主题一致。
+- **Host Ink / Muted Ink / Line** (`ink`, `ink-muted`, `line`): 分别直接引用 `--text-normal`、`--text-muted`、`--background-modifier-border`，保持与当前 Obsidian 主题一致。
 
-**The Host-First Rule.** 插件通过语义 token 适配宿主；不得把宿主色彩复制为新的固定 hex，也不得在本地覆写 Canvas 原生 palette。评论浮层脱离 Reader DOM 时，必须在 portal host 上重复声明所需的 `--rd-*` token，并为深色使用 `--background-secondary-alt` 回退，避免继承链断裂。
+**The Host-First Rule.** 插件通过语义 token 适配宿主；不得把宿主色彩复制为新的固定 hex，也不得在本地覆写 Canvas 原生 palette。评论 portal host 自带 `.reading-desk-shell`，直接继承共享 token 块，深色 raised surface 用 `--background-secondary-alt` 覆写；设置页 `.reading-desk-settings` 同样声明该 token 块，避免脱离 Reader/Shelf 继承树后断链。
 
 **The Shared-Marking Rule.** 一次摘录的 PDF 高亮、色盘选择和 Canvas 节点使用同一 palette key；文字标签、aria-label、焦点环和选中边界同时说明状态。
 
-**The Dynamic Contrast Rule.** Canvas palette 是宿主主题变量，评论 swatch 必须在挂载和宿主主题 class/style 改变后，依据浏览器已解析的实际背景色重新选择带色偏的深/浅前景；不得硬编码某个 palette key 或某一主题的前景。文字与背景在每个实际主题状态下须达到至少 4.5:1。
+**The Dynamic Contrast Rule.** Canvas palette 是宿主主题变量，评论 swatch 必须在挂载和宿主主题 class/style 改变后，依据浏览器已解析的实际背景色重新选择带色偏的深/浅前景；不得硬编码某个 palette key 或某一主题的前景。样式表中的 swatch 前景只是 `--rd-ink` 主题回退，实际前景由运行时采样写入。文字与背景在每个实际主题状态下须达到至少 4.5:1。
 
 ## Typography
 
@@ -156,17 +157,19 @@ Reading Desk 是一个 desktop Obsidian 操作表面：像长期置于书桌上�
 
 **The 25/20/16 Rule.** 页面、区段、卡片的宏观相邻层级固定为 1.25；14/12 仅用于密集工具和元数据，不能倒灌为主信息层级。
 
+**The Heading-Root Rule.** Shelf 的 `书架` 是可见 `h1`，区段是 `h2`；书名在一格书库网格里不是文档区段，用同字号的非标题元素承载。Reader 的标题已由 Obsidian leaf header 呈现，源码内的 `h1` 只提供语义根，用 `.rd-visually-hidden` 隐藏，避免重复标题。目标面板为 `h2`，其摘录卡片分组为 `h3`，不跳级。
+
 ## Layout
 
 Shelf 和 Reader 的外层各保留 `24px` 工作区 padding。Reader 的 sticky 工具栏使用 `12px 16px`，分栏 PDF/目标面板间距为 `16px`；目标面板自身 `16px` padding、`12px` 内部 gap。列表、摘录卡和工具组以 `8px` 为基本节奏。
 
 Shelf 的主书库采用 `repeat(auto-fill, minmax(184px, 1fr))`，卡片不是营销式的固定等高网格：封面容器保持 `0.7` aspect ratio，继续阅读轨单卡限定为 `clamp(152px, 22vw, 196px)` / 最大 `196px`，其余高度由真实元数据、标题与进度决定。表格是数据密集布局，不套用正文行宽规则。
 
-Reader 在常规 desktop leaf 中为 PDF 单列；`split` 是 `minmax(0, 1fr)` 加 `minmax(220px, 32%)` 的目标列。窄 leaf 由 `@container (max-width: 800px)` 与 `760px` fallback 改为单列，目标面板从 sticky 变为正常流。高亮抽屉和评论浮层是有边界的 overlay，不是模态替身。
+Reader 在常规 desktop leaf 中为 PDF 单列；`split` 是 `minmax(0, 1fr)` 加 `minmax(220px, 32%)` 的目标列。窄 leaf 由 `@container (max-width: 800px)` 与 `760px` fallback 改为单列，目标面板从 sticky 变为正常流。高亮抽屉和评论浮层是有边界的 overlay，不是模态替身。工具栏在窄 leaf 中会换行，所以抽屉与 sticky 目标面板的偏移不写死常量：目标面板读取工具栏实测高度（`--rd-toolbar-height`），抽屉则在每次显示时按自身解析原点自校准（`--rd-drawer-top`）。抽屉是 `fixed`，而 Obsidian 给 workspace leaf 加了 `contain: strict`，包含块因此是那个 leaf 而不是视口，用视口坐标会把抽屉压到工具栏上。PDF 页宿主保留自身 `overflow: auto` 作为容纳盒，避免过宽的页面溅到 Reader 上；Reader 仍是主滚动容器。
 
 ## Elevation & Depth
 
-默认用宿主 surface、1px `line` 和空间分组建立层级，不给 Shelf 卡片增加装饰性阴影。唯一阴影是功能性深度：PDF 页以 `0 8px 22px oklch(0.2 0.02 250 / 0.18)` 脱离工作底面；高亮抽屉与评论 portal 以 `0 12px 28px oklch(0.2 0.02 250 / 0.20–0.22)` 表明临时浮层。
+默认用宿主 surface、1px `line` 和空间分组建立层级，不给 Shelf 卡片增加装饰性阴影。唯一阴影是功能性深度，且只有一档 `--rd-elevation`（`oklch(0.2 0.02 250 / 0.2)`）：PDF 页以 `0 8px 22px` 脱离工作底面，高亮抽屉与评论 portal 以 `0 12px 28px` 表明临时浮层。三处各写一个 alpha 是噪音，不是一个纵深系统。
 
 **The Structural-Only Rule.** 阴影只用于文档纸面和越过滚动/宿主边界的 overlay；卡片、chips 和普通控件保持扁平，以边线、选中边界和空间表达结构。
 
@@ -180,11 +183,11 @@ Reader 在常规 desktop leaf 中为 PDF 单列；`split` 是 `minmax(0, 1fr)` �
 
 ### Controls
 
-**紧凑、可键盘识别的原生感控制。** `rd-button`、Reader toolbar 的 select/input 和 Shelf controls 使用 `surface`、`ink`、1px `line`、`5px` 圆角、最小 `30px` 高和 `4px 8px` padding。hover 改变边线为 accent；focus-visible 为 `2px` accent outline 加 `2px` offset。disabled、loading、empty、error 和 selected 必须有中文文案或形态，不能只换色。
+**紧凑、可键盘识别的原生感控制。** `rd-button`、Reader toolbar 的 select/input、Shelf 与裁剪控件以及评论浮层的 input/textarea 使用 `surface`、`ink`、1px `line`、`5px` 圆角、最小 `30px` 高和 `4px 8px` padding。hover 改变边线为 accent；focus-visible 为 `2px` accent outline 加 `2px` offset；disabled 降低不透明度并改用 muted ink，不响应 hover accent。disabled、loading、empty、error 和 selected 必须有中文文案或形态，不能只换色。
 
 ### Shelf Cards and Table
 
-**真实书目优先于宣传封面。** `rd-shelf-card` 使用 raised surface、1px line、`10px` 内边距和 `10px` gap；封面容器不控制书目正文的高度。hover/selected 只以 accent 边线和低比例 accent 混色提示，键盘焦点仍保留 outline。`rd-library-table` 使用行底边、`8px` 单元格 padding 和就地编辑，不把数据行伪装成卡片。
+**真实书目优先于宣传封面。** `rd-shelf-card` 使用 raised surface、1px line、`12px` 内边距和 `8px` gap；封面容器不控制书目正文的高度。hover/selected 只以 accent 边线和低比例 accent 混色提示，键盘焦点仍保留 outline。`rd-library-table` 使用行底边、`8px` 单元格 padding 和就地编辑，不把数据行伪装成卡片。继续阅读轨是「继续」入口而不是第二个书架：轨内卡片只保留封面、书名与进度（封面限高 `160px`，不渲染作者、元数据与分类编辑器），分类筛选与新建分类共用一行 wrap 排布。两者叠放会让单本轨道加分类面板吃掉首屏，把主书库挤到折叠线以下。
 
 ### Reader Toolbar and Target Panel
 
@@ -192,7 +195,9 @@ Reader 在常规 desktop leaf 中为 PDF 单列；`split` 是 `minmax(0, 1fr)` �
 
 ### Highlights, Palette and Comments
 
-**标记颜色是锚点身份，不是唯一状态。** 高亮透明度为 `0.33`，`rd-highlight-row` 以类型、片段、色点、标签和跳转组成两列可换行条目。toolbar 色盘是 28px 圆形 palette control；评论浮层中的 swatch 是带文字的 `52px` 最小宽度、28px 高 control。高亮末端评论入口的源码样式为 `24px` 圆形；运行时命中区仍以当前 visual audit 的后续 verdict 为准。
+**标记颜色是锚点身份，不是唯一状态。** 高亮透明度为 `0.33`，`rd-highlight-row` 以类型、片段、色点、标签和跳转组成两列可换行条目；色点独占第一列，其余（含跳转控件）都归属内容列，否则跳转控件会把 auto 轨道撑到约 196px，把色板挤成竖排。toolbar 色盘是 28px 圆形 palette control，是唯一没有可见文字标签的色控，名称只走 `aria-label`；浮层与抽屉里的 swatch 是带颜色文字的 `52px` 最小宽度、28px 高 control，选中态由 `aria-pressed` 与 accent 轮廓共同表达。高亮末端评论入口是 `24px` 圆形，内含自绘 SVG 气泡而不是文字字符；运行时命中区仍以当前 visual audit 的后续 verdict 为准。
+
+**The Button-Restore Rule.** Obsidian 全局的 `button:not(.clickable-icon)` 以 `(0,1,1)` 指定 `--interactive-normal`，压过插件任何单类名按钮规则。因此 `.rd-button`、`.rd-link`、`.rd-tag__remove`、`.rd-crop-drag-handle`、`.rd-highlight-comment-button` 与 button 载体的 palette key 都必须以带根作用域的复合选择器复述，否则工具栏色盘、抽屉与浮层的色板会全部退化成主题按钮底色，颜色彻底消失。
 
 `CommentPopover` 通过 `ownerDocument.body` 开 portal。portal host 同时带 `.reading-desk-shell` 与其自有 `--rd-*` token，因而能在离开 Reader/Shelf 继承树后继续获得正确的 raised surface、ink、line、accent 与 Canvas palette；浮层有 `fixed` 定位、viewport 尺寸上限和独立滚动，不依赖 PDF 页的 overflow。其 swatch 前景会随宿主主题切换重新采样实际背景色，以保持至少 4.5:1 的文字对比。
 
@@ -202,7 +207,7 @@ Reader 在常规 desktop leaf 中为 PDF 单列；`split` 是 `minmax(0, 1fr)` �
 
 ### Progress
 
-**页码语境下的细线反馈。** `rd-progress` 是 `3px` line 底轨，fill 使用 accent 并仅为宽度变化定义 `180ms ease-out`；`prefers-reduced-motion: reduce` 取消该过渡。不得改为环形 KPI 或大数字摘要。
+**页码语境下的细线反馈。** `rd-progress` 是 `3px` line 底轨，fill 使用 accent，自身保持 `100%` 宽度并以 `transform: scaleX()` 加 `180ms` 指数 ease-out 做合成器过渡；`prefers-reduced-motion: reduce` 取消过渡。不得改为环形 KPI 或大数字摘要。
 
 ## Do's and Don'ts
 

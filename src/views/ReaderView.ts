@@ -11,6 +11,7 @@ import { CropSelectionOverlay, type CropSelectionPayload } from '../ui/crop/Crop
 import { handleCropDrop, type PreparedCropDrag } from '../ui/crop/CropDragTransport';
 import { ExcerptTargetPanel, type ExcerptCard } from '../ui/targets/ExcerptTargetPanel';
 import { ReaderSessionState } from '../reader/ReaderSessionState';
+import { anchorBelowToolbar, trackToolbarHeight } from '../reader/ReaderChromeMetrics';
 
 export const READER_VIEW_TYPE = 'reading-desk-reader';
 
@@ -44,11 +45,15 @@ export class ReaderView extends ItemView {
 	private outline: PdfOutlineEntry[] = [];
 	private pageEl: HTMLElement | null = null;
 	private drawer: HTMLElement | null = null;
+	private drawerToggle: HTMLButtonElement | null = null;
+	private drawerOpen = false;
+	private readonly drawerId = createId('rd-highlight-drawer');
 	private excerptContainer: HTMLElement | null = null;
 	private sourceMissing = false;
 	private crop: CropSelectionOverlay | null = null;
 	private fitWidthLocked = true;
 	private fitObserver: ResizeObserver | null = null;
+	private stopToolbarTracking: (() => void) | null = null;
 	private pendingFitFrame: number | null = null;
 	private lastFittedColumnWidth = 0;
 	/** Target paths already populated from the current PDF outline. */
@@ -73,7 +78,7 @@ export class ReaderView extends ItemView {
 	}
 
 	getViewType(): string { return READER_VIEW_TYPE; }
-	getDisplayText(): string { const path = this.activePath(); return path ? `阅读：${path.split('/').pop()}` : 'Reading Desk 阅读器'; }
+	getDisplayText(): string { return this.readerTitle(); }
 	getState(): Record<string, unknown> { return { ...this.session.serialize() }; }
 
 	async setState(state: unknown, _result: ViewStateResult): Promise<void> {
@@ -82,6 +87,8 @@ export class ReaderView extends ItemView {
 
 	async onClose(): Promise<void> {
 		this.stopFitWidthObserver();
+		this.stopToolbarTracking?.();
+		this.stopToolbarTracking = null;
 		this.crop?.destroy();
 		await this.pdf.close();
 	}
@@ -114,7 +121,10 @@ export class ReaderView extends ItemView {
 		const path = this.activePath();
 		if (!path || this.sourceMissing) return;
 		const highlights = this.host.annotations.list(path);
-		if (this.pageEl) this.pdf.updateHighlights(this.pageEl, highlights);
+		if (this.pageEl) {
+			this.pdf.updateHighlights(this.pageEl, highlights);
+			this.exposeHighlightKeys();
+		}
 		this.renderDrawer();
 		if (this.excerptContainer) await this.excerptPanel.render(this.excerptContainer, path);
 	}
@@ -146,17 +156,25 @@ export class ReaderView extends ItemView {
 		this.stopFitWidthObserver();
 		const root = this.containerEl.children[1] as HTMLElement;
 		this.excerptContainer = null;
+		// containerEl's children can be replaced between renders, so replaceChildren may miss the previous drawer and leave a stale duplicate sharing the toggle's id.
+		this.drawer?.remove();
+		this.drawer = null;
+		this.drawerToggle = null;
 		root.replaceChildren();
 		root.className = 'rd-reader';
 		if (!this.activePath()) {
-			root.createEl('p', { cls: this.sourceMissing ? 'rd-error' : 'rd-empty', text: this.sourceMissing ? '源 PDF 已删除，无法继续摘录。请从书架重新选择文件。' : '从书架选择一本 PDF 开始阅读。' });
+			const missing = this.sourceMissing;
+			root.createEl('p', { cls: missing ? 'rd-error' : 'rd-empty', text: missing ? '源 PDF 已删除，无法继续摘录。请从书架重新选择文件。' : '从书架选择一本 PDF 开始阅读。', attr: { role: missing ? 'alert' : 'status' } });
 			return;
 		}
+		root.createEl('h1', { cls: 'rd-reader-title rd-visually-hidden', text: this.readerTitle() });
 		const toolbar = root.createDiv({ cls: 'rd-reader-toolbar' });
 		this.button(toolbar, '缩小', () => this.changeScale(-0.15));
 		this.button(toolbar, '放大', () => this.changeScale(0.15));
 		this.button(toolbar, '适应宽度', () => this.fitWidth());
-		this.button(toolbar, '高亮列表', () => this.toggleDrawer());
+		this.drawerToggle = this.button(toolbar, '高亮列表', () => this.toggleDrawer());
+		this.drawerToggle.setAttribute('aria-controls', this.drawerId);
+		this.drawerToggle.setAttribute('aria-expanded', String(this.drawerOpen));
 		this.button(toolbar, '裁剪', () => this.enterCropMode());
 		this.button(toolbar, this.layout === 'split' ? '专注阅读' : '分栏目标', () => void this.toggleLayout());
 		const target = toolbar.createEl('select', { attr: { 'aria-label': '摘录目标类型' } });
@@ -164,15 +182,21 @@ export class ReaderView extends ItemView {
 		target.value = this.selectedTarget;
 		target.addEventListener('change', () => { this.selectedTarget = target.value as TargetType; this.selectedTargetPath = ''; void this.render(); });
 		this.createColorPalette(toolbar);
-		this.button(toolbar, '上一页', () => this.goTo(this.page - 1));
-		const input = toolbar.createEl('input', { type: 'number', value: String(this.page), attr: { min: '1', max: String(this.pages), 'aria-label': '页码' } });
-		input.addEventListener('change', () => this.goTo(Number(input.value)));
+		const previous = this.button(toolbar, '上一页', () => void this.goTo(this.page - 1));
+		previous.disabled = this.page <= 1;
+		const input = toolbar.createEl('input', { type: 'number', value: String(this.page), attr: { min: '1', max: String(Math.max(this.pages, 1)), 'aria-label': '页码' } });
+		input.disabled = this.pages === 0;
+		input.addEventListener('change', () => void this.goTo(input.value.trim() === '' ? this.page : Number(input.value)));
 		toolbar.createEl('span', { cls: 'rd-page-count', text: `/ ${this.pages}` });
-		this.button(toolbar, '下一页', () => this.goTo(this.page + 1));
+		const next = this.button(toolbar, '下一页', () => void this.goTo(this.page + 1));
+		next.disabled = this.page >= Math.max(this.pages, 1);
+		this.stopToolbarTracking?.();
+		this.stopToolbarTracking = trackToolbarHeight(root, toolbar);
 
 		const body = root.createDiv({ cls: ['rd-reader-body', `rd-reader-body--${this.layout}`] });
-		this.pageEl = body.createDiv({ cls: 'rd-pdf-page-host', attr: { 'aria-label': `PDF 第 ${this.page} 页` } });
+		this.pageEl = body.createDiv({ cls: 'rd-pdf-page-host', attr: { role: 'region', tabindex: '0', 'aria-label': `PDF 第 ${this.page} 页` } });
 		this.pageEl.addEventListener('contextmenu', event => this.openSelectionMenu(event));
+		this.pageEl.addEventListener('keydown', event => this.handlePageHostKeys(event));
 		this.pageEl.addEventListener('dblclick', event => this.jumpFromHighlight(event));
 		this.pageEl.addEventListener('click', event => this.openComment(event));
 		this.pageEl.addEventListener('dragstart', event => this.beginExcerptDrag(event));
@@ -180,17 +204,21 @@ export class ReaderView extends ItemView {
 		// one-column render is retained after the grid shrinks to split mode.
 		if (this.layout === 'split') body.append(this.createTargetPanel());
 		const highlights = this.host.annotations.list(this.activePath());
+		this.pageEl.createEl('p', { cls: 'rd-loading', text: '正在渲染页面…', attr: { role: 'status' } });
 		try {
 			await this.pdf.renderPage(this.page, this.pageEl, highlights);
 			await this.fitRenderedPageToHost(highlights);
+			this.exposeHighlightKeys();
 			await this.host.updateProgress(this.activePath(), this.pages ? this.page / this.pages : 0);
 		} catch (error) {
+			console.error('[Reading Desk] PDF 页面渲染失败', error);
 			this.pageEl.replaceChildren();
-			this.pageEl.createEl('p', { cls: 'rd-error', text: error instanceof Error ? `PDF 载入失败：${error.message}` : 'PDF 载入失败。' });
+			this.pageEl.createEl('p', { cls: 'rd-error', text: 'PDF 页面载入失败。请回到书架重新打开该文件，或重新扫描书库后再试。', attr: { role: 'alert' } });
 		}
 		this.startFitWidthObserver(body);
-		this.drawer = root.createDiv({ cls: 'rd-highlight-drawer is-hidden' });
+		this.drawer = root.createDiv({ cls: 'rd-highlight-drawer', attr: { id: this.drawerId } });
 		this.renderDrawer();
+		this.syncDrawerState();
 	}
 
 	private button(parent: HTMLElement, label: string, action: () => void): HTMLButtonElement {
@@ -203,6 +231,7 @@ export class ReaderView extends ItemView {
 	private createColorPalette(parent: HTMLElement): void {
 		const group = document.createElement('div');
 		group.className = 'rd-toolbar-palette';
+		group.setAttribute('role', 'group');
 		group.setAttribute('aria-label', '摘录颜色');
 		for (const [color, label] of [['moss', '苔'], ['amber', '琥'], ['brick', '砖'], ['indigo', '靛'], ['plum', '梅']] as Array<[PdfHighlight['color'], string]>) {
 			const button = this.button(group, label, () => void this.createExcerptFromSelection(color));
@@ -215,7 +244,10 @@ export class ReaderView extends ItemView {
 	}
 
 	private async goTo(page: number): Promise<void> {
-		this.page = Math.max(1, Math.min(this.pages, Math.round(page)));
+		const requested = Number.isFinite(page) ? Math.round(page) : this.page;
+		const bounded = Math.max(1, Math.min(Math.max(this.pages, 1), requested));
+		if (requested !== bounded) new Notice(`页码超出范围，已改为第 ${bounded} 页。`);
+		this.page = bounded;
 		this.session.setPage(this.page);
 		await this.render();
 	}
@@ -245,6 +277,7 @@ export class ReaderView extends ItemView {
 		}
 		this.pdf.setScale(nextScale);
 		await this.pdf.renderPage(this.page, this.pageEl, highlights);
+		this.exposeHighlightKeys();
 		await afterLayout(pageEl);
 		this.lastFittedColumnWidth = pageEl.clientWidth;
 	}
@@ -277,7 +310,19 @@ export class ReaderView extends ItemView {
 		}
 		this.lastFittedColumnWidth = 0;
 	}
-	private toggleDrawer(): void { this.drawer?.classList.toggle('is-hidden'); }
+	private toggleDrawer(): void {
+		this.drawerOpen = !this.drawerOpen;
+		this.syncDrawerState();
+	}
+
+	private syncDrawerState(): void {
+		if (!this.drawer || !this.drawerToggle) return;
+		this.drawer.classList.toggle('is-hidden', !this.drawerOpen);
+		this.drawerToggle.setAttribute('aria-expanded', String(this.drawerOpen));
+		const toolbar = this.containerEl.children[1]?.querySelector<HTMLElement>('.rd-reader-toolbar');
+		if (toolbar) anchorBelowToolbar(this.drawer, toolbar);
+	}
+
 	private enterCropMode(): void {
 		if (!this.pageEl) return;
 		this.crop?.destroy();
@@ -297,15 +342,32 @@ export class ReaderView extends ItemView {
 		this.highlightList.render(this.drawer, { highlights: this.host.annotations.list(this.activePath()) });
 	}
 
-	private openSelectionMenu(event: MouseEvent): void {
+	private openSelectionMenu(event?: MouseEvent): void {
 		const selection = window.getSelection()?.toString().trim() ?? '';
-		if (!selection) return;
-		event.preventDefault();
+		if (!selection) {
+			if (event) return;
+			new Notice('请先选择 PDF 原文，再按 Enter 打开摘录菜单。');
+			return;
+		}
+		event?.preventDefault();
 		const menu = new Menu();
 		for (const type of ['canvas', 'markdown', 'excalidraw'] as TargetType[]) {
 			menu.addItem(item => item.setTitle(`添加到${targetName(type)}`).onClick(() => this.createExcerpt(selection, type)));
 		}
-		menu.showAtMouseEvent(event);
+		if (event) menu.showAtMouseEvent(event);
+		else if (this.pageEl) {
+			const bounds = this.pageEl.getBoundingClientRect();
+			menu.showAtPosition({ x: Math.round(bounds.left + bounds.width / 2), y: Math.round(bounds.top + bounds.height / 2) });
+		}
+	}
+
+	/** Keyboard path for the page host: Enter mirrors the right-click excerpt menu. */
+	private handlePageHostKeys(event: KeyboardEvent): void {
+		if (event.key !== 'Enter') return;
+		const target = event.target as HTMLElement | null;
+		if (target?.closest('button, a, input, select, textarea')) return;
+		event.preventDefault();
+		this.openSelectionMenu();
 	}
 
 	private async createExcerpt(text: string, type = this.selectedTarget, color: PdfHighlight['color'] = 'moss', frozenRects?: PdfHighlight['rects']): Promise<void> {
@@ -337,7 +399,12 @@ export class ReaderView extends ItemView {
 	private async createExcerptFromSelection(color: PdfHighlight['color']): Promise<void> {
 		const text = window.getSelection()?.toString().trim() ?? '';
 		if (!text) { new Notice('请先选择 PDF 原文。'); return; }
-		await this.createExcerpt(text, this.selectedTarget, color);
+		try {
+			await this.createExcerpt(text, this.selectedTarget, color);
+		} catch (error) {
+			console.error('[Reading Desk] 创建摘录失败', error);
+			new Notice('创建摘录失败。请确认目标文档可用，然后重试一次。');
+		}
 	}
 
 	private async prepareCropDrag(payload: CropSelectionPayload): Promise<PreparedCropDrag> {
@@ -357,21 +424,36 @@ export class ReaderView extends ItemView {
 		const panel = document.createElement('aside');
 		panel.className = 'rd-target-panel';
 		panel.setAttribute('aria-label', '摘录目标面板');
-		const heading = document.createElement('h3');
+		const heading = document.createElement('h2');
 		heading.textContent = '摘录目标';
 		panel.append(heading);
 		const select = document.createElement('select');
 		select.setAttribute('aria-label', '选择已有目标文档');
-		select.append(new Option('加载已有目标…', ''));
-		void this.host.listTargets(this.selectedTarget).then(targets => {
-			for (const target of targets) select.append(new Option(target.label, target.path));
-			select.value = this.selectedTargetPath;
-		});
-		select.addEventListener('change', () => void this.selectTargetPath(select.value));
-		panel.append(select);
-		panel.append(this.button(panel, '打开实际目标', () => {
+		select.append(new Option('正在加载已有目标…', ''));
+		const openTarget = this.button(panel, '打开实际目标', () => {
 			if (this.selectedTargetPath) void this.host.openTargetInSplit(this.selectedTargetPath);
-		}));
+		});
+		openTarget.disabled = !this.selectedTargetPath;
+		select.addEventListener('change', () => {
+			openTarget.disabled = !select.value;
+			void this.selectTargetPath(select.value);
+		});
+		void this.host.listTargets(this.selectedTarget).then(targets => {
+			select.replaceChildren();
+			if (targets.length === 0) select.append(new Option('暂无已有目标，创建摘录时会自动生成', ''));
+			else {
+				select.append(new Option('选择已有目标…', ''));
+				for (const target of targets) select.append(new Option(target.label, target.path));
+			}
+			select.value = this.selectedTargetPath;
+			openTarget.disabled = !this.selectedTargetPath;
+		}).catch(() => {
+			select.replaceChildren();
+			select.append(new Option('目标列表加载失败，仍可直接创建摘录', ''));
+			openTarget.disabled = true;
+		});
+		panel.append(select);
+		panel.append(openTarget);
 		const description = document.createElement('p');
 		description.textContent = '将选中文本拖到此处，或使用右键和色盘创建摘录。';
 		panel.append(description);
@@ -439,15 +521,37 @@ export class ReaderView extends ItemView {
 
 	private async focusHighlight(highlight: PdfHighlight, openTarget = true): Promise<void> {
 		await this.goTo(highlight.page + 1);
-		this.pageEl?.querySelector<HTMLElement>(`[data-highlight-id="${highlight.id}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+		const reduced = this.pageEl?.ownerDocument.defaultView?.matchMedia('(prefers-reduced-motion: reduce)').matches ?? false;
+		this.pageEl?.querySelector<HTMLElement>(`[data-highlight-id="${highlight.id}"]`)?.scrollIntoView({ block: 'center', behavior: reduced ? 'auto' : 'smooth' });
 		if (openTarget && highlight.target) await this.host.showTarget(highlight.target.path, highlight.target.objectId);
 	}
 
 	private async jumpFromHighlight(event: MouseEvent): Promise<void> {
 		const mark = (event.target as HTMLElement).closest<HTMLElement>('[data-highlight-id]');
 		if (!mark) return;
-		const highlight = this.host.annotations.get(mark.dataset.highlightId ?? '');
+		await this.jumpToHighlightTarget(mark.dataset.highlightId ?? '');
+	}
+
+	private async jumpToHighlightTarget(id: string): Promise<void> {
+		const highlight = this.host.annotations.get(id);
 		if (highlight?.target) await this.host.showTarget(highlight.target.path, highlight.target.objectId);
+	}
+
+	/** Makes rendered highlight marks focusable and gives Enter and Space the double-click jump path. */
+	private exposeHighlightKeys(): void {
+		const pageEl = this.pageEl;
+		if (!pageEl) return;
+		for (const mark of Array.from(pageEl.querySelectorAll<HTMLElement>('[data-highlight-id]'))) {
+			mark.tabIndex = 0;
+			if (mark.dataset.rdKeysBound === 'true') continue;
+			mark.dataset.rdKeysBound = 'true';
+			mark.addEventListener('keydown', event => {
+				if (event.target !== mark || (event.key !== 'Enter' && event.key !== ' ')) return;
+				event.preventDefault();
+				event.stopPropagation();
+				void this.jumpToHighlightTarget(mark.dataset.highlightId ?? '');
+			});
+		}
 	}
 
 	private openComment(event: MouseEvent): void {
@@ -471,9 +575,8 @@ export class ReaderView extends ItemView {
 		const host = ownerDocument.createElement('div');
 		host.className = 'rd-comment-popover-host reading-desk-shell';
 		if (ownerDocument.body.classList.contains('theme-dark') || ownerDocument.documentElement.classList.contains('theme-dark')) host.classList.add('theme-dark');
-		Object.assign(host.style, { zIndex: '20' });
-		ownerDocument.body.append(host);
-		this.drawer?.classList.add('is-hidden');
+		ownerDocument.body.append(host);		this.drawerOpen = false;
+		this.syncDrawerState();
 		this.comments.open(host, {
 			highlight,
 			onClose: () => { host.remove(); commentAnchor.focus(); }
@@ -494,13 +597,13 @@ export class ReaderView extends ItemView {
 			addComment: async (id: string, content: string) => { await this.host.annotations.addComment(id, content, 'pdf'); },
 			deleteComment: async (id: string, commentId: string) => { await this.host.annotations.deleteComment(id, commentId); },
 			setTags: async (id: string, tags: string[]) => { await this.host.annotations.setTags(id, tags); },
-			recolorHighlight: async (id: string, color: PdfHighlight['color']) => { await this.recolorHighlight(id, color); },
-			deleteHighlight: async (id: string) => { const highlight = this.host.annotations.get(id); if (highlight?.target) await this.host.targets.deleteExcerpt(highlight.target, id); await this.host.annotations.remove(id); await this.render(); },
-			jumpToHighlight: (highlight: PdfHighlight) => this.focusHighlight(highlight)
+			...this.excerptHostActions()
 		};
 	}
 
-	private highlightHost() {
+	private highlightHost() { return this.excerptHostActions(); }
+
+	private excerptHostActions() {
 		return {
 			recolorHighlight: async (id: string, color: PdfHighlight['color']) => { await this.recolorHighlight(id, color); },
 			deleteHighlight: async (id: string) => { const highlight = this.host.annotations.get(id); if (highlight?.target) await this.host.targets.deleteExcerpt(highlight.target, id); await this.host.annotations.remove(id); await this.render(); },
@@ -509,6 +612,8 @@ export class ReaderView extends ItemView {
 	}
 
 	private activePath(): string { return this.session.path(); }
+
+	private readerTitle(): string { const path = this.activePath(); return path ? `阅读：${path.split('/').pop()}` : 'Reading Desk 阅读器'; }
 
 	private async recolorHighlight(id: string, color: PdfHighlight['color']): Promise<void> {
 		const highlight = this.host.annotations.get(id);

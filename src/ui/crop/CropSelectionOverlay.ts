@@ -45,10 +45,23 @@ export interface CropSelectionOverlayOptions {
 	message?: string;
 }
 
+const STATUS_ID = 'rd-crop-status';
+const SELECTION_ACTIVE_CLASS = 'rd-crop-selection--active';
+const KEYBOARD_FINE_STEP = 0.02;
+const KEYBOARD_COARSE_STEP = 0.1;
+const KEYBOARD_PREVIEW_DELAY_MS = 220;
+const DEFAULT_KEYBOARD_RECT: NormalizedPdfRect = { x: 0.32, y: 0.38, width: 0.36, height: 0.24 };
+const ARROW_KEYS = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
+
 /**
  * A DOM-only crop selector. It creates no target on pointer-up: the host must
  * first return a token for a real renderer-produced bitmap, which is then
  * draggable to a Canvas target or committed through the button alternative.
+ *
+ * Presentation (position, chrome, colors, focus rings) lives in styles.css.
+ * This class only writes live geometry (selection pixel offsets) and state
+ * attributes; keyboard users seed a default selection and adjust it with the
+ * arrow keys because pointer drawing is not keyboard reachable.
  */
 export class CropSelectionOverlay {
 	private readonly root: HTMLElement;
@@ -63,12 +76,11 @@ export class CropSelectionOverlay {
 	private prepared: PreparedCropDrag | null = null;
 	private startPoint: CropPoint | null = null;
 	private activePointerId: number | null = null;
-	private changedHostPosition = false;
+	private keyboardPreviewTimer: number | null = null;
 	private destroyed = false;
 
 	constructor(private readonly pageHost: HTMLElement, private readonly options: CropSelectionOverlayOptions) {
 		this.state = options.state ?? 'ready';
-		this.preparePageHost();
 		this.root = this.createRoot();
 		this.selection = this.createSelection();
 		this.status = this.createStatus();
@@ -76,7 +88,7 @@ export class CropSelectionOverlay {
 		this.targetInput = this.createTargetInput();
 		this.submitButton = this.makeButton('创建裁剪对象', () => void this.createCrop());
 		this.dragHandle = this.createDragHandle();
-		this.makeButton('重新框选', () => this.clearSelection('请在 PDF 页面上重新框选。'));
+		this.makeButton('重新框选', () => this.clearSelection('请在 PDF 页面上重新框选，或按 Enter 创建默认选区。'));
 		this.makeButton('取消裁剪', () => this.cancel());
 		this.root.append(this.selection, this.status, this.controls);
 		this.pageHost.append(this.root);
@@ -92,57 +104,53 @@ export class CropSelectionOverlay {
 		this.root.setAttribute('aria-busy', String(state === 'loading'));
 		this.root.classList.toggle('is-disabled', disabled);
 		this.submitButton.disabled = disabled || !this.prepared;
+		this.submitButton.classList.toggle('is-disabled', disabled);
 		this.targetInput.disabled = disabled;
+		this.targetInput.classList.toggle('is-disabled', disabled);
 		this.controls.toggleAttribute('hidden', !this.selectedRect);
 		this.dragHandle.hidden = !this.prepared || this.targetInput.value !== 'canvas';
+		// The status node is created once and only mutated in place so that
+		// screen readers keep announcing updates from the same live region.
 		this.status.textContent = message ?? this.defaultMessage(state);
 		this.status.setAttribute('role', state === 'error' ? 'alert' : 'status');
+		this.status.setAttribute('aria-live', state === 'error' ? 'assertive' : 'polite');
 	}
 
 	destroy(): void {
 		this.destroyed = true;
+		this.clearKeyboardPreviewTimer();
 		this.discardPreparedCrop();
 		this.root.remove();
-		if (this.changedHostPosition) this.pageHost.style.position = '';
-	}
-
-	private preparePageHost(): void {
-		if (getComputedStyle(this.pageHost).position === 'static') {
-			this.pageHost.style.position = 'relative';
-			this.changedHostPosition = true;
-		}
 	}
 
 	private createRoot(): HTMLElement {
 		const root = element('div', 'rd-crop-overlay');
 		root.setAttribute('role', 'group');
 		root.setAttribute('aria-label', 'PDF 裁剪区域选择');
-		root.tabIndex = -1;
-		Object.assign(root.style, { position: 'absolute', inset: '0', zIndex: '2', cursor: 'crosshair', touchAction: 'none' });
+		root.setAttribute('aria-describedby', STATUS_ID);
+		// Tabbable so keyboard users can reach the crop surface; the arrow key
+		// flow in handleKeydown replaces pointer drawing for them.
+		root.tabIndex = 0;
 		return root;
 	}
 
 	private createSelection(): HTMLElement {
 		const selection = element('div', 'rd-crop-selection');
 		selection.setAttribute('aria-hidden', 'true');
-		Object.assign(selection.style, { display: 'none', position: 'absolute' });
 		return selection;
 	}
 
 	private createStatus(): HTMLElement {
 		const status = element('div', 'rd-crop-status');
+		status.id = STATUS_ID;
 		status.setAttribute('role', 'status');
 		status.setAttribute('aria-live', 'polite');
-		Object.assign(status.style, { position: 'absolute', top: '8px', left: '8px', pointerEvents: 'none' });
 		return status;
 	}
 
 	private createControls(): HTMLElement {
 		const controls = element('div', 'rd-crop-controls');
 		controls.setAttribute('data-crop-control', 'true');
-		Object.assign(controls.style, {
-			position: 'absolute', left: '8px', bottom: '8px', display: 'flex', gap: '8px', alignItems: 'center', cursor: 'default'
-		});
 		return controls;
 	}
 
@@ -151,6 +159,9 @@ export class CropSelectionOverlay {
 		label.textContent = '创建到';
 		label.setAttribute('data-crop-control', 'true');
 		const input = document.createElement('select');
+		// rd-button supplies the shared control chrome and focus ring; the
+		// crop class lets styles.css adjust select specific presentation.
+		input.className = 'rd-button rd-crop-target-select';
 		input.setAttribute('aria-label', '裁剪目标类型');
 		input.setAttribute('data-crop-control', 'true');
 		input.append(option('canvas', 'Canvas 图片卡片'), option('image', '图片目标'));
@@ -183,7 +194,6 @@ export class CropSelectionOverlay {
 		handle.textContent = '拖到 Canvas';
 		handle.setAttribute('data-crop-control', 'true');
 		handle.setAttribute('aria-label', '拖动真实裁剪预览到 Canvas 目标');
-		Object.assign(handle.style, { position: 'absolute', right: '0', bottom: '0', cursor: 'grab' });
 		handle.addEventListener('dragstart', event => this.beginCropDrag(event));
 		this.selection.append(handle);
 		return handle;
@@ -194,11 +204,11 @@ export class CropSelectionOverlay {
 		this.root.addEventListener('pointermove', event => this.updateSelection(event));
 		this.root.addEventListener('pointerup', event => this.finishSelection(event));
 		this.root.addEventListener('pointercancel', event => this.finishSelection(event));
-		this.root.addEventListener('keydown', event => { if (event.key === 'Escape') this.cancel(); });
+		this.root.addEventListener('keydown', event => this.handleKeydown(event));
 	}
 
 	private beginSelection(event: PointerEvent): void {
-		if (!this.canSelect() || event.button !== 0 || this.isControlEvent(event)) return;
+		if (!this.canSelect() || event.button !== 0 || this.isControlTarget(event.target)) return;
 		event.preventDefault();
 		this.startPoint = { x: event.clientX, y: event.clientY };
 		this.activePointerId = event.pointerId;
@@ -230,6 +240,88 @@ export class CropSelectionOverlay {
 		void this.prepareSelectedCrop();
 	}
 
+	private handleKeydown(event: KeyboardEvent): void {
+		if (event.key === 'Escape') {
+			this.cancel();
+			return;
+		}
+		if (this.isControlTarget(event.target) || !ARROW_KEYS.includes(event.key) || !this.canSelect()) return;
+		event.preventDefault();
+		if (!this.selectedRect) {
+			this.seedSelection();
+			return;
+		}
+		const step = event.shiftKey ? KEYBOARD_COARSE_STEP : KEYBOARD_FINE_STEP;
+		if (event.altKey) this.resizeSelection(event.key, step);
+		else this.moveSelection(event.key, step);
+	}
+
+	private seedSelection(): void {
+		this.applyKeyboardRect(clampCropRect({ ...DEFAULT_KEYBOARD_RECT }), '已创建默认选区。方向键移动选区，Alt 加方向键调整边缘，Shift 加大步长。');
+	}
+
+	private moveSelection(key: string, step: number): void {
+		const rect = this.selectedRect;
+		if (!rect) return;
+		const offset = this.keyboardOffset(key, step);
+		this.applyKeyboardRect(clampCropRect({ ...rect, x: rect.x + offset.x, y: rect.y + offset.y }), '选区已移动。');
+	}
+
+	private resizeSelection(key: string, step: number): void {
+		const rect = this.selectedRect;
+		if (!rect) return;
+		// Left and Right adjust the right edge; Up and Down adjust the bottom edge.
+		let width = rect.width;
+		let height = rect.height;
+		if (key === 'ArrowLeft') width = rect.width - step;
+		else if (key === 'ArrowRight') width = rect.width + step;
+		else if (key === 'ArrowUp') height = rect.height - step;
+		else height = rect.height + step;
+		const next = clampCropRect({ ...rect, width: Math.max(0, width), height: Math.max(0, height) });
+		if (!isCropRectLargeEnough(next, this.pageBounds())) {
+			this.setState('ready', '选区过小，已保持原选区；请按相反方向调整。');
+			return;
+		}
+		this.applyKeyboardRect(next, '选区边缘已调整。');
+	}
+
+	private applyKeyboardRect(rect: NormalizedPdfRect, message: string): void {
+		this.discardPreparedCrop();
+		this.selectedRect = rect;
+		this.renderSelection(rect);
+		this.setState('ready', `${message}${this.describeBounds()}`);
+		this.scheduleKeyboardPreview();
+	}
+
+	private keyboardOffset(key: string, step: number): CropPoint {
+		if (key === 'ArrowLeft') return { x: -step, y: 0 };
+		if (key === 'ArrowRight') return { x: step, y: 0 };
+		if (key === 'ArrowUp') return { x: 0, y: -step };
+		return { x: 0, y: step };
+	}
+
+	private describeBounds(): string {
+		const rect = this.selectedRect;
+		if (!rect) return '';
+		const percent = (value: number): string => `${Math.round(value * 100)}%`;
+		return `当前选区：左 ${percent(rect.x)}，上 ${percent(rect.y)}，宽 ${percent(rect.width)}，高 ${percent(rect.height)}。`;
+	}
+
+	private scheduleKeyboardPreview(): void {
+		this.clearKeyboardPreviewTimer();
+		this.keyboardPreviewTimer = window.setTimeout(() => {
+			this.keyboardPreviewTimer = null;
+			void this.prepareSelectedCrop();
+		}, KEYBOARD_PREVIEW_DELAY_MS);
+	}
+
+	private clearKeyboardPreviewTimer(): void {
+		if (this.keyboardPreviewTimer !== null) {
+			window.clearTimeout(this.keyboardPreviewTimer);
+			this.keyboardPreviewTimer = null;
+		}
+	}
+
 	private async createCrop(): Promise<void> {
 		if (!this.selectedRect || this.state === 'loading' || this.state === 'disabled') return;
 		if (!this.prepared) await this.prepareSelectedCrop();
@@ -240,8 +332,7 @@ export class CropSelectionOverlay {
 			this.consumePreparedCrop();
 			this.clearSelection('裁剪对象已创建。', false);
 		} catch (error) {
-			const detail = error instanceof Error ? `：${error.message}` : '。';
-			this.setState('error', `无法创建裁剪对象${detail} 请检查目标与存储配置后重试。`);
+			this.setState('error', `无法创建裁剪对象${cropFailureHint(error)}。请检查目标与存储配置后重试。`);
 		}
 	}
 
@@ -263,8 +354,7 @@ export class CropSelectionOverlay {
 				: '真实裁剪数据已就绪。可拖到 Canvas，或按创建裁剪对象。');
 		} catch (error) {
 			if (this.destroyed) return;
-			const detail = error instanceof Error ? `：${error.message}` : '。';
-			this.setState('error', `无法生成真实裁剪预览${detail} 请检查 PDF 页面后重试。`);
+			this.setState('error', `无法生成真实裁剪预览${cropFailureHint(error)}。请检查 PDF 页面后重试。`);
 		}
 	}
 
@@ -283,9 +373,9 @@ export class CropSelectionOverlay {
 		this.dragHandle.replaceChildren();
 		if (prepared.previewUrl) {
 			const image = document.createElement('img');
+			image.className = 'rd-crop-drag-preview';
 			image.src = prepared.previewUrl;
 			image.alt = '已生成的 PDF 裁剪预览';
-			Object.assign(image.style, { display: 'block', maxWidth: '112px', maxHeight: '72px' });
 			this.dragHandle.append(image);
 		} else {
 			this.dragHandle.textContent = '拖到 Canvas';
@@ -300,7 +390,7 @@ export class CropSelectionOverlay {
 	private clearSelection(message: string, discardPrepared = true): void {
 		if (discardPrepared) this.discardPreparedCrop();
 		this.selectedRect = null;
-		this.selection.style.display = 'none';
+		this.selection.classList.remove(SELECTION_ACTIVE_CLASS);
 		this.setState('ready', message);
 	}
 
@@ -310,11 +400,13 @@ export class CropSelectionOverlay {
 
 	private renderSelection(rect: NormalizedPdfRect): void {
 		const rendered = denormalizeCropRect(rect, this.localPageBounds());
-		Object.assign(this.selection.style, {
-			display: 'block', left: `${rendered.left}px`, top: `${rendered.top}px`, width: `${rendered.width}px`, height: `${rendered.height}px`,
-			border: '1px solid var(--rd-accent, var(--interactive-accent))',
-			background: 'color-mix(in oklch, var(--rd-accent, var(--interactive-accent)) 16%, transparent)', pointerEvents: 'auto'
-		});
+		this.selection.classList.add(SELECTION_ACTIVE_CLASS);
+		// Live geometry only: the border, background and pointer behavior come
+		// from styles.css through the active modifier class.
+		this.selection.style.left = `${rendered.left}px`;
+		this.selection.style.top = `${rendered.top}px`;
+		this.selection.style.width = `${rendered.width}px`;
+		this.selection.style.height = `${rendered.height}px`;
 	}
 
 	private cropPayload(): CropSelectionPayload {
@@ -362,16 +454,28 @@ export class CropSelectionOverlay {
 		return this.state === 'ready' || this.state === 'error';
 	}
 
-	private isControlEvent(event: PointerEvent): boolean {
-		return (event.target as HTMLElement).closest('[data-crop-control]') !== null;
+	private isControlTarget(target: EventTarget | null): boolean {
+		return target instanceof HTMLElement && target.closest('[data-crop-control]') !== null;
 	}
 
 	private defaultMessage(state: CropOverlayState): string {
 		if (state === 'loading') return '正在准备裁剪。';
 		if (state === 'disabled') return '裁剪当前不可用。请先打开可渲染的 PDF 页面。';
 		if (state === 'error') return '裁剪发生错误。请调整选区后重试。';
-		return '在 PDF 页面上拖拽，框选要裁剪的区域。';
+		return '在 PDF 页面上拖拽框选要裁剪的区域；也可按 Tab 聚焦后用方向键框选。';
 	}
+}
+
+/**
+ * Maps an internal failure to a short, user meaningful hint. The raw
+ * exception text is never shown; only permission and path problems survive,
+ * because those are the details a reader can actually act on.
+ */
+function cropFailureHint(error: unknown): string {
+	const raw = error instanceof Error ? error.message : '';
+	if (/EACCES|EPERM|permission denied/i.test(raw)) return '（存储位置没有写入权限）';
+	if (/ENOENT|no such file|not found/i.test(raw)) return '（存储位置不存在或已被移动）';
+	return '';
 }
 
 function element(tagName: string, className?: string): HTMLElement {

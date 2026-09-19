@@ -1,0 +1,1358 @@
+{
+  "task": "highlight-ui",
+  "timestamp": "2026-09-19T13:21:49.478Z",
+  "screenshots": [
+    ".obsidian-debug\\visual-audit-20260919\\audit-drawer-rows-light.png",
+    ".obsidian-debug\\visual-audit-20260919\\audit-popover-light.png"
+  ],
+  "consoleErrors": [],
+  "commentButton": null,
+  "marks": [],
+  "drawer": {
+    "drawer": {
+      "sel": "div.rd-highlight-drawer",
+      "rect": {
+        "x": 678.83,
+        "y": 218.19,
+        "w": 360,
+        "h": 598.36
+      },
+      "pad": [
+        12,
+        12,
+        12,
+        12
+      ],
+      "mar": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "gap": null,
+      "borderTop": 0.67,
+      "borderRadius": "0px",
+      "font": {
+        "size": 15,
+        "weight": "400",
+        "lineHeight": "19.5px",
+        "family": "霞鹜文楷"
+      },
+      "color": "rgb(51, 51, 51)",
+      "background": "color(srgb 1 0.985098 0.985098)",
+      "hasText": false,
+      "contrast": null,
+      "overflowX": false,
+      "scrollW": 359,
+      "clientW": 359,
+      "overflowY": false,
+      "scrollH": 597,
+      "clientH": 597,
+      "display": "block"
+    },
+    "overlap": {
+      "drawerTop": 218,
+      "toolbarBottom": 170,
+      "overlaps": false
+    },
+    "rows": [
+      {
+        "sel": "li.rd-highlight-row",
+        "rect": {
+          "x": 731.5,
+          "y": 288.55,
+          "w": 294.67,
+          "h": 284.17
+        },
+        "pad": [
+          8,
+          0,
+          8,
+          0
+        ],
+        "mar": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "gap": "8px",
+        "borderTop": 0,
+        "borderRadius": "0px",
+        "font": {
+          "size": 15,
+          "weight": "400",
+          "lineHeight": "19.5px",
+          "family": "霞鹜文楷"
+        },
+        "color": "rgb(51, 51, 51)",
+        "background": "rgba(0, 0, 0, 0)",
+        "hasText": false,
+        "contrast": null,
+        "overflowX": false,
+        "scrollW": 295,
+        "clientW": 295,
+        "overflowY": false,
+        "scrollH": 284,
+        "clientH": 284,
+        "display": "grid"
+      },
+      {
+        "sel": "li.rd-highlight-row",
+        "rect": {
+          "x": 731.5,
+          "y": 572.72,
+          "w": 294.67,
+          "h": 216.17
+        },
+        "pad": [
+          8,
+          0,
+          8,
+          0
+        ],
+        "mar": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "gap": "8px",
+        "borderTop": 0,
+        "borderRadius": "0px",
+        "font": {
+          "size": 15,
+          "weight": "400",
+          "lineHeight": "19.5px",
+          "family": "霞鹜文楷"
+        },
+        "color": "rgb(51, 51, 51)",
+        "background": "rgba(0, 0, 0, 0)",
+        "hasText": false,
+        "contrast": null,
+        "overflowX": false,
+        "scrollW": 295,
+        "clientW": 295,
+        "overflowY": false,
+        "scrollH": 216,
+        "clientH": 216,
+        "display": "grid"
+      }
+    ],
+    "rowContent": [
+      {
+        "text": "Canvas 摘录ReadingDeskselectionfixture苔绿琥珀砖红靛青梅紫删除此高亮取消删除",
+        "rect": {
+          "x": 731.5,
+          "y": 288.55,
+          "w": 294.67,
+          "h": 284.17
+        },
+        "display": "grid",
+        "cols": "196.49px 90.1771px"
+      },
+      {
+        "text": "Markdown 摘录paragraphexistssolely苔绿琥珀砖红靛青梅紫删除此高亮取消删除",
+        "rect": {
+          "x": 731.5,
+          "y": 572.72,
+          "w": 294.67,
+          "h": 216.17
+        },
+        "display": "grid",
+        "cols": "156.917px 129.75px"
+      }
+    ],
+    "swatches": [
+      {
+        "label": "苔绿",
+        "aria": "选择苔绿高亮色",
+        "pressed": "true",
+        "bg": "rgb(255, 255, 255)",
+        "color": "rgb(12, 14, 18)",
+        "rect": {
+          "x": 935.99,
+          "y": 362.05,
+          "w": 52,
+          "h": 28
+        },
+        "contrast": null
+      },
+      {
+        "label": "琥珀",
+        "aria": "选择琥珀高亮色",
+        "pressed": "false",
+        "bg": "rgb(255, 255, 255)",
+        "color": "rgb(12, 14, 18)",
+        "rect": {
+          "x": 935.99,
+          "y": 396.05,
+          "w": 52,
+          "h": 28
+        },
+        "contrast": null
+      },
+      {
+        "label": "砖红",
+        "aria": "选择砖红高亮色",
+        "pressed": "false",
+        "bg": "rgb(255, 255, 255)",
+        "color": "rgb(12, 14, 18)",
+        "rect": {
+          "x": 935.99,
+          "y": 430.05,
+          "w": 52,
+          "h": 28
+        },
+        "contrast": null
+      },
+      {
+        "label": "靛青",
+        "aria": "选择靛青高亮色",
+        "pressed": "false",
+        "bg": "rgb(255, 255, 255)",
+        "color": "rgb(12, 14, 18)",
+        "rect": {
+          "x": 935.99,
+          "y": 464.05,
+          "w": 52,
+          "h": 28
+        },
+        "contrast": null
+      },
+      {
+        "label": "梅紫",
+        "aria": "选择梅紫高亮色",
+        "pressed": "false",
+        "bg": "rgb(255, 255, 255)",
+        "color": "rgb(12, 14, 18)",
+        "rect": {
+          "x": 935.99,
+          "y": 498.05,
+          "w": 52,
+          "h": 28
+        },
+        "contrast": null
+      },
+      {
+        "label": "苔绿",
+        "aria": "选择苔绿高亮色",
+        "pressed": "true",
+        "bg": "rgb(255, 255, 255)",
+        "color": "rgb(12, 14, 18)",
+        "rect": {
+          "x": 896.42,
+          "y": 646.22,
+          "w": 52,
+          "h": 28
+        },
+        "contrast": null
+      },
+      {
+        "label": "琥珀",
+        "aria": "选择琥珀高亮色",
+        "pressed": "false",
+        "bg": "rgb(255, 255, 255)",
+        "color": "rgb(12, 14, 18)",
+        "rect": {
+          "x": 954.42,
+          "y": 646.22,
+          "w": 52,
+          "h": 28
+        },
+        "contrast": null
+      },
+      {
+        "label": "砖红",
+        "aria": "选择砖红高亮色",
+        "pressed": "false",
+        "bg": "rgb(255, 255, 255)",
+        "color": "rgb(12, 14, 18)",
+        "rect": {
+          "x": 896.42,
+          "y": 680.22,
+          "w": 52,
+          "h": 28
+        },
+        "contrast": null
+      },
+      {
+        "label": "靛青",
+        "aria": "选择靛青高亮色",
+        "pressed": "false",
+        "bg": "rgb(255, 255, 255)",
+        "color": "rgb(12, 14, 18)",
+        "rect": {
+          "x": 954.42,
+          "y": 680.22,
+          "w": 52,
+          "h": 28
+        },
+        "contrast": null
+      },
+      {
+        "label": "梅紫",
+        "aria": "选择梅紫高亮色",
+        "pressed": "false",
+        "bg": "rgb(255, 255, 255)",
+        "color": "rgb(12, 14, 18)",
+        "rect": {
+          "x": 896.42,
+          "y": 714.22,
+          "w": 52,
+          "h": 28
+        },
+        "contrast": null
+      }
+    ],
+    "swatchGroup": {
+      "sel": "div.rd-swatch-group",
+      "rect": {
+        "x": 935.99,
+        "y": 362.05,
+        "w": 90.18,
+        "h": 164
+      },
+      "pad": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "mar": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "gap": "6px",
+      "borderTop": 0,
+      "borderRadius": "0px",
+      "font": {
+        "size": 15,
+        "weight": "400",
+        "lineHeight": "19.5px",
+        "family": "霞鹜文楷"
+      },
+      "color": "rgb(51, 51, 51)",
+      "background": "rgba(0, 0, 0, 0)",
+      "hasText": false,
+      "contrast": null,
+      "overflowX": false,
+      "scrollW": 90,
+      "clientW": 90,
+      "overflowY": false,
+      "scrollH": 164,
+      "clientH": 164,
+      "display": "flex"
+    },
+    "deleteBtn": {
+      "sel": "button.rd-button rd-highlight-row__delete",
+      "rect": {
+        "x": 935.99,
+        "y": 534.05,
+        "w": 90.18,
+        "h": 30
+      },
+      "pad": [
+        4,
+        8,
+        4,
+        8
+      ],
+      "mar": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "gap": null,
+      "borderTop": 0.67,
+      "borderRadius": "5px",
+      "font": {
+        "size": 15,
+        "weight": "400",
+        "lineHeight": "19.5px",
+        "family": "霞鹜文楷"
+      },
+      "color": "rgb(51, 51, 51)",
+      "background": "rgb(255, 255, 255)",
+      "hasText": true,
+      "contrast": null,
+      "overflowX": false,
+      "scrollW": 89,
+      "clientW": 89,
+      "overflowY": false,
+      "scrollH": 29,
+      "clientH": 29,
+      "display": "flex"
+    },
+    "jumpBtn": {
+      "sel": "button.rd-link rd-highlight-row__jump",
+      "rect": {
+        "x": 731.5,
+        "y": 324.05,
+        "w": 196.49,
+        "h": 30
+      },
+      "pad": [
+        4,
+        12,
+        4,
+        12
+      ],
+      "mar": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "gap": null,
+      "borderTop": 0,
+      "borderRadius": "5px",
+      "font": {
+        "size": 13,
+        "weight": "400",
+        "lineHeight": "normal",
+        "family": "霞鹜文楷"
+      },
+      "color": "rgb(51, 51, 51)",
+      "background": "rgb(255, 255, 255)",
+      "hasText": true,
+      "contrast": null,
+      "overflowX": false,
+      "scrollW": 196,
+      "clientW": 196,
+      "overflowY": false,
+      "scrollH": 30,
+      "clientH": 30,
+      "display": "flex"
+    },
+    "targetLabel": {
+      "sel": "span.rd-highlight-row__target",
+      "rect": {
+        "x": 935.99,
+        "y": 296.55,
+        "w": 90.18,
+        "h": 19.5
+      },
+      "pad": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "mar": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "gap": null,
+      "borderTop": 0,
+      "borderRadius": "0px",
+      "font": {
+        "size": 15,
+        "weight": "400",
+        "lineHeight": "19.5px",
+        "family": "霞鹜文楷"
+      },
+      "color": "rgb(51, 51, 51)",
+      "background": "rgba(0, 0, 0, 0)",
+      "hasText": true,
+      "contrast": null,
+      "overflowX": false,
+      "scrollW": 90,
+      "clientW": 90,
+      "overflowY": false,
+      "scrollH": 20,
+      "clientH": 20,
+      "display": "block"
+    },
+    "colorDot": {
+      "sel": "span.rd-color-dot rd-color-moss",
+      "rect": {
+        "x": 731.5,
+        "y": 296.55,
+        "w": 10,
+        "h": 10
+      },
+      "pad": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "mar": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "gap": null,
+      "borderTop": 0,
+      "borderRadius": "50%",
+      "font": {
+        "size": 15,
+        "weight": "400",
+        "lineHeight": "19.5px",
+        "family": "霞鹜文楷"
+      },
+      "color": "rgb(51, 51, 51)",
+      "background": "rgb(8, 185, 78)",
+      "hasText": false,
+      "contrast": null,
+      "overflowX": false,
+      "scrollW": 10,
+      "clientW": 10,
+      "overflowY": false,
+      "scrollH": 10,
+      "clientH": 10,
+      "display": "block"
+    },
+    "tags": [
+      {
+        "text": "",
+        "rect": {
+          "x": 935.99,
+          "y": 324.05,
+          "w": 90.18,
+          "h": 0
+        }
+      },
+      {
+        "text": "",
+        "rect": {
+          "x": 896.42,
+          "y": 608.22,
+          "w": 129.75,
+          "h": 0
+        }
+      }
+    ],
+    "targets": [
+      {
+        "sel": "button.rd-link rd-highlight-row__jump",
+        "text": "ReadingDeskselec",
+        "w": 196.49,
+        "h": 30,
+        "below44": true
+      },
+      {
+        "sel": "button.rd-swatch rd-swatch--moss",
+        "text": "苔绿",
+        "w": 52,
+        "h": 28,
+        "below44": true
+      },
+      {
+        "sel": "button.rd-swatch rd-swatch--amber",
+        "text": "琥珀",
+        "w": 52,
+        "h": 28,
+        "below44": true
+      },
+      {
+        "sel": "button.rd-swatch rd-swatch--brick",
+        "text": "砖红",
+        "w": 52,
+        "h": 28,
+        "below44": true
+      },
+      {
+        "sel": "button.rd-swatch rd-swatch--indigo",
+        "text": "靛青",
+        "w": 52,
+        "h": 28,
+        "below44": true
+      },
+      {
+        "sel": "button.rd-swatch rd-swatch--plum",
+        "text": "梅紫",
+        "w": 52,
+        "h": 28,
+        "below44": true
+      },
+      {
+        "sel": "button.rd-button rd-highlight-row__delete",
+        "text": "删除此高亮",
+        "w": 90.18,
+        "h": 30,
+        "below44": true
+      },
+      {
+        "sel": "button.rd-button",
+        "text": "取消删除",
+        "w": 0,
+        "h": 0,
+        "below44": true
+      },
+      {
+        "sel": "button.rd-link rd-highlight-row__jump",
+        "text": "paragraphexistss",
+        "w": 156.92,
+        "h": 30,
+        "below44": true
+      },
+      {
+        "sel": "button.rd-swatch rd-swatch--moss",
+        "text": "苔绿",
+        "w": 52,
+        "h": 28,
+        "below44": true
+      },
+      {
+        "sel": "button.rd-swatch rd-swatch--amber",
+        "text": "琥珀",
+        "w": 52,
+        "h": 28,
+        "below44": true
+      },
+      {
+        "sel": "button.rd-swatch rd-swatch--brick",
+        "text": "砖红",
+        "w": 52,
+        "h": 28,
+        "below44": true
+      },
+      {
+        "sel": "button.rd-swatch rd-swatch--indigo",
+        "text": "靛青",
+        "w": 52,
+        "h": 28,
+        "below44": true
+      },
+      {
+        "sel": "button.rd-swatch rd-swatch--plum",
+        "text": "梅紫",
+        "w": 52,
+        "h": 28,
+        "below44": true
+      },
+      {
+        "sel": "button.rd-button rd-highlight-row__delete",
+        "text": "删除此高亮",
+        "w": 129.75,
+        "h": 30,
+        "below44": true
+      },
+      {
+        "sel": "button.rd-button",
+        "text": "取消删除",
+        "w": 0,
+        "h": 0,
+        "below44": true
+      }
+    ],
+    "scrollbar": {
+      "scrollbarWidth": "auto",
+      "overscrollBehavior": "auto"
+    }
+  },
+  "popover": {
+    "found": true,
+    "host": {
+      "sel": "div.rd-comment-popover-host reading-desk-shell",
+      "rect": {
+        "x": 857.46,
+        "y": 199.82,
+        "w": 360,
+        "h": 576.63
+      },
+      "pad": [
+        12,
+        12,
+        12,
+        12
+      ],
+      "mar": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "gap": null,
+      "borderTop": 0.67,
+      "borderRadius": "0px",
+      "font": {
+        "size": 15,
+        "weight": "400",
+        "lineHeight": "19.5px",
+        "family": "霞鹜文楷"
+      },
+      "color": "rgb(51, 51, 51)",
+      "background": "color(srgb 1 0.985098 0.985098)",
+      "hasText": false,
+      "contrast": null,
+      "overflowX": false,
+      "scrollW": 359,
+      "clientW": 359,
+      "overflowY": false,
+      "scrollH": 575,
+      "clientH": 575,
+      "display": "block"
+    },
+    "popover": {
+      "sel": "section.rd-comment-popover",
+      "rect": {
+        "x": 870.13,
+        "y": 212.49,
+        "w": 334.67,
+        "h": 551.29
+      },
+      "pad": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "mar": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "gap": "10px",
+      "borderTop": 0,
+      "borderRadius": "0px",
+      "font": {
+        "size": 15,
+        "weight": "400",
+        "lineHeight": "19.5px",
+        "family": "霞鹜文楷"
+      },
+      "color": "rgb(51, 51, 51)",
+      "background": "rgba(0, 0, 0, 0)",
+      "hasText": false,
+      "contrast": null,
+      "overflowX": false,
+      "scrollW": 335,
+      "clientW": 335,
+      "overflowY": false,
+      "scrollH": 551,
+      "clientH": 551,
+      "display": "grid"
+    },
+    "header": {
+      "sel": "div.rd-comment-popover__header",
+      "rect": {
+        "x": 870.13,
+        "y": 212.49,
+        "w": 334.67,
+        "h": 30
+      },
+      "pad": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "mar": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "gap": "12px",
+      "borderTop": 0,
+      "borderRadius": "0px",
+      "font": {
+        "size": 15,
+        "weight": "400",
+        "lineHeight": "19.5px",
+        "family": "霞鹜文楷"
+      },
+      "color": "rgb(51, 51, 51)",
+      "background": "rgba(0, 0, 0, 0)",
+      "hasText": false,
+      "contrast": null,
+      "overflowX": false,
+      "scrollW": 335,
+      "clientW": 335,
+      "overflowY": false,
+      "scrollH": 30,
+      "clientH": 30,
+      "display": "flex"
+    },
+    "closeBtn": {
+      "sel": "button.rd-button rd-comment-popover__close",
+      "rect": {
+        "x": 1127.46,
+        "y": 212.49,
+        "w": 77.33,
+        "h": 30
+      },
+      "pad": [
+        4,
+        8,
+        4,
+        8
+      ],
+      "mar": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "gap": null,
+      "borderTop": 0.67,
+      "borderRadius": "5px",
+      "font": {
+        "size": 15,
+        "weight": "400",
+        "lineHeight": "19.5px",
+        "family": "霞鹜文楷"
+      },
+      "color": "rgb(51, 51, 51)",
+      "background": "rgb(255, 255, 255)",
+      "hasText": true,
+      "contrast": null,
+      "overflowX": false,
+      "scrollW": 76,
+      "clientW": 76,
+      "overflowY": false,
+      "scrollH": 29,
+      "clientH": 29,
+      "display": "flex"
+    },
+    "excerpt": {
+      "sel": "p.rd-comment-popover__excerpt",
+      "rect": {
+        "x": 870.13,
+        "y": 252.49,
+        "w": 334.67,
+        "h": 21
+      },
+      "pad": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "mar": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "gap": null,
+      "borderTop": 0,
+      "borderRadius": "0px",
+      "font": {
+        "size": 14,
+        "weight": "400",
+        "lineHeight": "21px",
+        "family": "霞鹜文楷"
+      },
+      "color": "rgb(51, 51, 51)",
+      "background": "rgba(0, 0, 0, 0)",
+      "hasText": true,
+      "contrast": null,
+      "overflowX": false,
+      "scrollW": 335,
+      "clientW": 335,
+      "overflowY": false,
+      "scrollH": 21,
+      "clientH": 21,
+      "display": "block"
+    },
+    "target": {
+      "sel": "p.rd-comment-popover__target",
+      "rect": {
+        "x": 870.13,
+        "y": 283.49,
+        "w": 334.67,
+        "h": 18
+      },
+      "pad": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "mar": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "gap": null,
+      "borderTop": 0,
+      "borderRadius": "0px",
+      "font": {
+        "size": 12,
+        "weight": "400",
+        "lineHeight": "18px",
+        "family": "霞鹜文楷"
+      },
+      "color": "rgb(135, 14, 14)",
+      "background": "rgba(0, 0, 0, 0)",
+      "hasText": true,
+      "contrast": null,
+      "overflowX": false,
+      "scrollW": 335,
+      "clientW": 335,
+      "overflowY": false,
+      "scrollH": 18,
+      "clientH": 18,
+      "display": "block"
+    },
+    "swatches": [
+      {
+        "label": "苔绿",
+        "aria": "选择苔绿高亮色",
+        "pressed": "true",
+        "bg": "rgb(255, 255, 255)",
+        "color": "rgb(12, 14, 18)",
+        "rect": {
+          "x": 870.13,
+          "y": 370.99,
+          "w": 52,
+          "h": 28
+        },
+        "contrast": null,
+        "radius": "5px",
+        "border": "0.666667px"
+      },
+      {
+        "label": "琥珀",
+        "aria": "选择琥珀高亮色",
+        "pressed": "false",
+        "bg": "rgb(255, 255, 255)",
+        "color": "rgb(12, 14, 18)",
+        "rect": {
+          "x": 928.13,
+          "y": 370.99,
+          "w": 52,
+          "h": 28
+        },
+        "contrast": null,
+        "radius": "5px",
+        "border": "0.666667px"
+      },
+      {
+        "label": "砖红",
+        "aria": "选择砖红高亮色",
+        "pressed": "false",
+        "bg": "rgb(255, 255, 255)",
+        "color": "rgb(12, 14, 18)",
+        "rect": {
+          "x": 986.13,
+          "y": 370.99,
+          "w": 52,
+          "h": 28
+        },
+        "contrast": null,
+        "radius": "5px",
+        "border": "0.666667px"
+      },
+      {
+        "label": "靛青",
+        "aria": "选择靛青高亮色",
+        "pressed": "false",
+        "bg": "rgb(255, 255, 255)",
+        "color": "rgb(12, 14, 18)",
+        "rect": {
+          "x": 1044.13,
+          "y": 370.99,
+          "w": 52,
+          "h": 28
+        },
+        "contrast": null,
+        "radius": "5px",
+        "border": "0.666667px"
+      },
+      {
+        "label": "梅紫",
+        "aria": "选择梅紫高亮色",
+        "pressed": "false",
+        "bg": "rgb(255, 255, 255)",
+        "color": "rgb(12, 14, 18)",
+        "rect": {
+          "x": 1102.13,
+          "y": 370.99,
+          "w": 52,
+          "h": 28
+        },
+        "contrast": null,
+        "radius": "5px",
+        "border": "0.666667px"
+      }
+    ],
+    "swatchGroup": {
+      "sel": "fieldset.rd-swatch-group",
+      "rect": {
+        "x": 870.13,
+        "y": 351.49,
+        "w": 334.67,
+        "h": 47.5
+      },
+      "pad": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "mar": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "gap": "6px",
+      "borderTop": 0,
+      "borderRadius": "0px",
+      "font": {
+        "size": 15,
+        "weight": "400",
+        "lineHeight": "19.5px",
+        "family": "霞鹜文楷"
+      },
+      "color": "rgb(51, 51, 51)",
+      "background": "rgba(0, 0, 0, 0)",
+      "hasText": false,
+      "contrast": null,
+      "overflowX": false,
+      "scrollW": 335,
+      "clientW": 335,
+      "overflowY": false,
+      "scrollH": 28,
+      "clientH": 48,
+      "display": "flex"
+    },
+    "actions": {
+      "sel": "div.rd-comment-popover__actions",
+      "rect": {
+        "x": 870.13,
+        "y": 311.49,
+        "w": 334.67,
+        "h": 30
+      },
+      "pad": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "mar": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "gap": "6px",
+      "borderTop": 0,
+      "borderRadius": "0px",
+      "font": {
+        "size": 15,
+        "weight": "400",
+        "lineHeight": "19.5px",
+        "family": "霞鹜文楷"
+      },
+      "color": "rgb(51, 51, 51)",
+      "background": "rgba(0, 0, 0, 0)",
+      "hasText": false,
+      "contrast": null,
+      "overflowX": false,
+      "scrollW": 335,
+      "clientW": 335,
+      "overflowY": false,
+      "scrollH": 30,
+      "clientH": 30,
+      "display": "flex"
+    },
+    "tagInput": {
+      "sel": "input.rd-comment-popover__tag-input",
+      "rect": {
+        "x": 870.13,
+        "y": 434.49,
+        "w": 334.67,
+        "h": 30
+      },
+      "pad": [
+        4,
+        8,
+        4,
+        8
+      ],
+      "mar": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "gap": null,
+      "borderTop": 0.67,
+      "borderRadius": "5px",
+      "font": {
+        "size": 15,
+        "weight": "400",
+        "lineHeight": "19.5px",
+        "family": "霞鹜文楷"
+      },
+      "color": "rgb(51, 51, 51)",
+      "background": "color(srgb 1 0.984627 0.984627)",
+      "hasText": false,
+      "contrast": null,
+      "overflowX": false,
+      "scrollW": 333,
+      "clientW": 333,
+      "overflowY": false,
+      "scrollH": 29,
+      "clientH": 29,
+      "display": "block"
+    },
+    "textarea": {
+      "sel": "textarea.rd-comment-popover__composer-input",
+      "rect": {
+        "x": 870.13,
+        "y": 643.78,
+        "w": 334.67,
+        "h": 84
+      },
+      "pad": [
+        4,
+        8,
+        4,
+        8
+      ],
+      "mar": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "gap": null,
+      "borderTop": 0.67,
+      "borderRadius": "5px",
+      "font": {
+        "size": 15,
+        "weight": "400",
+        "lineHeight": "19.5px",
+        "family": "霞鹜文楷"
+      },
+      "color": "rgb(51, 51, 51)",
+      "background": "color(srgb 1 0.984627 0.984627)",
+      "hasText": false,
+      "contrast": null,
+      "overflowX": false,
+      "scrollW": 333,
+      "clientW": 333,
+      "overflowY": false,
+      "scrollH": 83,
+      "clientH": 83,
+      "display": "block"
+    },
+    "addTagBtn": {
+      "sel": "button.rd-button rd-comment-popover__add-tag",
+      "rect": {
+        "x": 870.13,
+        "y": 470.49,
+        "w": 334.67,
+        "h": 30
+      },
+      "pad": [
+        4,
+        8,
+        4,
+        8
+      ],
+      "mar": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "gap": null,
+      "borderTop": 0.67,
+      "borderRadius": "5px",
+      "font": {
+        "size": 15,
+        "weight": "400",
+        "lineHeight": "19.5px",
+        "family": "霞鹜文楷"
+      },
+      "color": "rgb(51, 51, 51)",
+      "background": "rgb(255, 255, 255)",
+      "hasText": true,
+      "contrast": null,
+      "overflowX": false,
+      "scrollW": 333,
+      "clientW": 333,
+      "overflowY": false,
+      "scrollH": 29,
+      "clientH": 29,
+      "display": "flex"
+    },
+    "deleteHighlightBtn": {
+      "sel": "button.rd-button rd-comment-popover__delete-highlight",
+      "rect": {
+        "x": 983.46,
+        "y": 311.49,
+        "w": 92.33,
+        "h": 30
+      },
+      "pad": [
+        4,
+        8,
+        4,
+        8
+      ],
+      "mar": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "gap": null,
+      "borderTop": 0.67,
+      "borderRadius": "5px",
+      "font": {
+        "size": 15,
+        "weight": "400",
+        "lineHeight": "19.5px",
+        "family": "霞鹜文楷"
+      },
+      "color": "rgb(51, 51, 51)",
+      "background": "rgb(255, 255, 255)",
+      "hasText": true,
+      "contrast": null,
+      "overflowX": false,
+      "scrollW": 91,
+      "clientW": 91,
+      "overflowY": false,
+      "scrollH": 29,
+      "clientH": 29,
+      "display": "flex"
+    },
+    "targets": [
+      {
+        "sel": "button.rd-button rd-comment-popover__close",
+        "text": "关闭评论",
+        "w": 77.33,
+        "h": 30,
+        "below44": true
+      },
+      {
+        "sel": "button.rd-button rd-comment-popover__jump",
+        "text": "跳转到此高亮",
+        "w": 107.33,
+        "h": 30,
+        "below44": true
+      },
+      {
+        "sel": "button.rd-button rd-comment-popover__delete-highlight",
+        "text": "删除此高亮",
+        "w": 92.33,
+        "h": 30,
+        "below44": true
+      },
+      {
+        "sel": "button.rd-button",
+        "text": "取消删除",
+        "w": 0,
+        "h": 0,
+        "below44": true
+      },
+      {
+        "sel": "button.rd-swatch rd-swatch--moss",
+        "text": "苔绿",
+        "w": 52,
+        "h": 28,
+        "below44": true
+      },
+      {
+        "sel": "button.rd-swatch rd-swatch--amber",
+        "text": "琥珀",
+        "w": 52,
+        "h": 28,
+        "below44": true
+      },
+      {
+        "sel": "button.rd-swatch rd-swatch--brick",
+        "text": "砖红",
+        "w": 52,
+        "h": 28,
+        "below44": true
+      },
+      {
+        "sel": "button.rd-swatch rd-swatch--indigo",
+        "text": "靛青",
+        "w": 52,
+        "h": 28,
+        "below44": true
+      },
+      {
+        "sel": "button.rd-swatch rd-swatch--plum",
+        "text": "梅紫",
+        "w": 52,
+        "h": 28,
+        "below44": true
+      },
+      {
+        "sel": "button.rd-button rd-comment-popover__add-tag",
+        "text": "添加标签",
+        "w": 334.67,
+        "h": 30,
+        "below44": true
+      },
+      {
+        "sel": "button.rd-button rd-comment-popover__delete-comment",
+        "text": "删除",
+        "w": 47.33,
+        "h": 30,
+        "below44": true
+      },
+      {
+        "sel": "button.rd-button",
+        "text": "取消删除",
+        "w": 0,
+        "h": 0,
+        "below44": true
+      },
+      {
+        "sel": "button.rd-button rd-comment-popover__add-comment",
+        "text": "添加评论",
+        "w": 334.67,
+        "h": 30,
+        "below44": true
+      }
+    ],
+    "measure": [
+      {
+        "sel": "p.rd-comment-popover__excerpt",
+        "chWidth": 3.22,
+        "contentW": 334.67,
+        "ch": 104
+      },
+      {
+        "sel": "p.rd-comment-popover__target",
+        "chWidth": 4.82,
+        "contentW": 334.67,
+        "ch": 69.4
+      }
+    ],
+    "headingRhythm": [
+      {
+        "sel": "h3",
+        "text": "评论与标注",
+        "above": 0,
+        "below": 12.16,
+        "ok": false
+      },
+      {
+        "sel": "h4",
+        "text": "评论列表",
+        "above": 10,
+        "below": 6,
+        "ok": true
+      }
+    ],
+    "scrollbar": {
+      "scrollbarWidth": "auto",
+      "overscrollBehavior": "auto",
+      "maxHeight": "856px",
+      "position": "fixed"
+    }
+  }
+}

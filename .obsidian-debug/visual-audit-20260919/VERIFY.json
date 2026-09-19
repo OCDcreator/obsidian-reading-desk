@@ -1,0 +1,112 @@
+{
+  "timestamp": "2026-09-19T14:23:28.506Z",
+  "checks": {
+    "shelf": {
+      "gridTop": 669,
+      "paneBottom": 879,
+      "gridVisiblePx": 211,
+      "visibleCards": 3,
+      "railHeight": 303,
+      "categoryPanelHeight": 30,
+      "rhythm": [
+        {
+          "sel": "h2.rd-section-title",
+          "text": "继续阅读",
+          "above": 20,
+          "below": 12,
+          "ok": true
+        }
+      ],
+      "cardPad": [
+        12,
+        12,
+        12,
+        12
+      ],
+      "cardGap": "8px",
+      "titleWeight": "500",
+      "numerals": "tabular-nums",
+      "offScale": [
+        "6px x21"
+      ],
+      "selectChrome": {
+        "border": "0.666667px",
+        "minHeight": "30px",
+        "radius": "5px"
+      },
+      "glyphIcons": []
+    },
+    "reader": {
+      "drawerCount": 1,
+      "duplicateIds": false,
+      "drawerGapBelowToolbar": 8,
+      "overlapsToolbar": false,
+      "drawerRows": 2,
+      "rowHeights": [
+        192,
+        192
+      ],
+      "swatchColors": [
+        "rgb(8, 185, 78)",
+        "rgb(224, 172, 0)",
+        "rgb(233, 49, 71)",
+        "rgb(120, 82, 238)",
+        "rgb(0, 191, 188)"
+      ],
+      "deleteBtnW": 92,
+      "paletteColors": [
+        "rgb(8, 185, 78)",
+        "rgb(224, 172, 0)",
+        "rgb(233, 49, 71)",
+        "rgb(120, 82, 238)",
+        "rgb(0, 191, 188)"
+      ],
+      "pageHostOverflowX": true,
+      "readerOverflowX": false,
+      "commentButtonSvg": true,
+      "commentLabel": "打开高亮评论：ReadingDeskselectionfixture",
+      "panelHeadingSize": "16px",
+      "panelRhythm": [
+        {
+          "sel": "h2",
+          "text": "摘录目标",
+          "above": 16,
+          "below": 12,
+          "ok": true
+        }
+      ],
+      "excerptRhythm": [
+        {
+          "sel": "h3",
+          "text": "本页摘录卡片",
+          "above": 16,
+          "below": 8,
+          "ok": true
+        }
+      ],
+      "overscroll": "contain",
+      "shadow": "oklch(0.2 0.02 250 / 0.2) 0px 12px 28px 0px"
+    }
+  },
+  "screenshots": [
+    ".obsidian-debug\\visual-audit-20260919\\VERIFY-shelf-light.png",
+    ".obsidian-debug\\visual-audit-20260919\\VERIFY-shelf-dark.png",
+    ".obsidian-debug\\visual-audit-20260919\\VERIFY-reader-drawer-light.png",
+    ".obsidian-debug\\visual-audit-20260919\\VERIFY-reader-drawer-dark.png"
+  ],
+  "errors": [],
+  "startup": {
+    "version": "0.1.1",
+    "enabled": true
+  },
+  "load": {
+    "toolbar": 13,
+    "drawer": true,
+    "marks": 2,
+    "pages": 1
+  },
+  "layout": {
+    "panel": true,
+    "drawer": true
+  }
+}

@@ -1,12 +1,14 @@
 import type { PdfHighlight } from '../../types/contracts';
 import {
 	colorLabel,
-	watchSwatchContrast,
 	createButton,
+	createConfirmDelete,
 	errorMessage,
 	HIGHLIGHT_COLORS,
 	HighlightListHost,
-	targetLabel
+	setBusy,
+	targetLabel,
+	watchSwatchContrast
 } from './CommentUiTypes';
 
 export interface HighlightListState {
@@ -15,12 +17,15 @@ export interface HighlightListState {
 	error?: string;
 }
 
+const FAILURE_NEXT_STEP = '请重试；若持续失败，请重新打开阅读视图。';
+
 /** A reusable, host-driven highlighter drawer with explicit empty/loading/error states. */
 export class HighlightList {
 	private container: HTMLElement | null = null;
 	private state: HighlightListState = { highlights: [] };
 	private actionError = '';
 	private stopSwatchWatcher: (() => void) | null = null;
+	private liveRegion: HTMLParagraphElement | null = null;
 
 	constructor(private readonly host: HighlightListHost) { }
 
@@ -41,25 +46,45 @@ export class HighlightList {
 		const heading = document.createElement('h3');
 		heading.textContent = '高亮列表';
 		root.append(heading);
-		if (this.state.loading) {
-			const loading = document.createElement('p');
-			loading.className = 'rd-loading';
-			loading.setAttribute('role', 'status');
-			loading.textContent = '正在加载高亮…';
-			root.append(loading);
-		} else if (this.state.error) {
-			root.append(this.renderMessage('rd-error', `高亮加载失败：${this.state.error}`, 'alert'));
-		} else if (!this.state.highlights.length) {
-			root.append(this.renderMessage('rd-empty', '本书还没有高亮。', 'status'));
-		} else {
-			const list = document.createElement('ol');
-			list.className = 'rd-highlight-list__items';
-			for (const highlight of this.state.highlights) list.append(this.renderRow(highlight));
-			root.append(list);
+		if (!this.state.error) {
+			if (this.state.loading) {
+				root.append(this.renderMessage('rd-loading', '正在加载高亮…', 'status'));
+			} else if (!this.state.highlights.length) {
+				root.append(this.renderMessage('rd-empty', '本书还没有高亮。选中 PDF 正文并创建高亮后，它会显示在这里。', 'status'));
+			} else {
+				const list = document.createElement('ol');
+				list.className = 'rd-highlight-list__items';
+				for (const highlight of this.state.highlights) list.append(this.renderRow(highlight));
+				root.append(list);
+			}
 		}
-		if (this.actionError) root.append(this.renderMessage('rd-error', `操作失败：${this.actionError}`, 'alert'));
+		root.append(this.liveMessageNode());
 		this.container.replaceChildren(root);
+		this.setLiveMessage(this.failureText());
 		this.stopSwatchWatcher = watchSwatchContrast(root);
+	}
+
+	/**
+	 * The alert node survives renders and is mutated in place: replacing a
+	 * live-region node on every state change often silences announcements.
+	 */
+	private liveMessageNode(): HTMLParagraphElement {
+		if (!this.liveRegion) {
+			this.liveRegion = document.createElement('p');
+			this.liveRegion.className = 'rd-error';
+			this.liveRegion.setAttribute('role', 'alert');
+		}
+		return this.liveRegion;
+	}
+
+	private failureText(): string {
+		if (this.actionError) return `操作失败：${this.actionError}。${FAILURE_NEXT_STEP}`;
+		if (this.state.error) return `高亮加载失败：${this.state.error}。${FAILURE_NEXT_STEP}`;
+		return '';
+	}
+
+	private setLiveMessage(text: string): void {
+		if (this.liveRegion && this.liveRegion.textContent !== text) this.liveRegion.textContent = text;
 	}
 
 	private renderRow(highlight: PdfHighlight): HTMLElement {
@@ -75,7 +100,7 @@ export class HighlightList {
 		target.textContent = targetLabel(highlight);
 		row.append(target);
 		const jump = createButton(highlight.text || '未命名高亮', 'rd-link rd-highlight-row__jump', async () => {
-			await this.run(() => this.host.jumpToHighlight(highlight));
+			await this.run(() => this.host.jumpToHighlight(highlight), [jump]);
 		});
 		jump.setAttribute('aria-label', `跳转到高亮：${highlight.text || '未命名高亮'}`);
 		row.append(jump);
@@ -88,20 +113,29 @@ export class HighlightList {
 			tags.append(tagEl);
 		}
 		row.append(tags);
+		const swatchButtons: HTMLButtonElement[] = [];
 		const swatches = document.createElement('div');
 		swatches.className = 'rd-swatch-group';
+		swatches.setAttribute('role', 'group');
 		swatches.setAttribute('aria-label', '更改高亮颜色');
 		for (const option of HIGHLIGHT_COLORS) {
 			const button = createButton(`选择${option.label}高亮色`, `rd-swatch rd-swatch--${option.value}`, async () => {
-				await this.run(() => this.host.recolorHighlight(highlight.id, option.value));
+				await this.run(() => this.host.recolorHighlight(highlight.id, option.value), swatchButtons);
 			});
+			// Visible short colour label; the full action stays the accessible name.
+			button.textContent = option.label;
+			// Recomputed on every repaint so the pressed state tracks the applied colour.
 			button.setAttribute('aria-pressed', String(option.value === highlight.color));
+			button.dataset.color = option.value;
 			swatches.append(button);
+			swatchButtons.push(button);
 		}
 		row.append(swatches);
-		row.append(createButton('删除此高亮', 'rd-button rd-highlight-row__delete', async () => {
+		// Deleting a highlight also deletes its linked target excerpt.
+		const deletion = createConfirmDelete('删除此高亮', 'rd-button rd-highlight-row__delete', '确认删除此高亮', async () => {
 			await this.run(() => this.host.deleteHighlight(highlight.id));
-		}));
+		});
+		row.append(deletion.confirm, deletion.cancel);
 		return row;
 	}
 
@@ -113,14 +147,19 @@ export class HighlightList {
 		return message;
 	}
 
-	private async run(operation: () => Promise<void> | void): Promise<void> {
+	private async run(operation: () => Promise<void> | void, controls: HTMLButtonElement[] = []): Promise<void> {
+		for (const control of controls) setBusy(control, true);
 		try {
 			this.actionError = '';
 			await operation();
 			this.renderCurrent();
 		} catch (error) {
+			// Mutate the mounted alert instead of re-rendering so the live
+			// region is not replaced while the failure is being announced.
 			this.actionError = errorMessage(error);
-			this.renderCurrent();
+			this.setLiveMessage(this.failureText());
+		} finally {
+			for (const control of controls) setBusy(control, false);
 		}
 	}
 }
