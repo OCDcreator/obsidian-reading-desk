@@ -1,22 +1,23 @@
 # 书架 A/B/C 改版布局测量证据
 
-- 采集时间:2026-09-20 23:50–23:52(本地)
-- 宿主:Obsidian 1.13.7,testvault,Reading Desk Margin v0.2.0 build 0.2.0+2026-09-20T15:46:49.744Z
+- 采集时间:2026-09-20 23:50–2026-09-21 00:5x(本地;含评审修复轮复测)
+- 宿主:Obsidian 1.13.7,testvault,Reading Desk Margin v0.2.0 build 0.2.0+2026-09-20T15:46:49.744Z(首轮)/ 0.2.0+2026-09-20T16:5x(修复轮)
 - 方法:CDP `getComputedStyle` / `getBoundingClientRect`(obsidian eval,主窗口书架 leaf)
-- 截图目录:`docs/self-check/shelf-rework-screens/`(14 帧,浅/暗 × A/B/C × 场景)
+- 截图目录:`docs/self-check/shelf-rework-screens/`(17 帧,浅/暗 × A/B/C × 场景)
 
 ## A 卡片布局(浅色,卡片态)
 
 ```json
 {
-  "container": { "frameWidth": 732.06, "frameMaxWidth": "1368px", "shelfPadding": "24px 24px 72px", "note": "leaf 宽 732 < 1368 上限,居中生效" },
+  "container": { "frameWidth": 732.06", "frameMaxWidth": "1368px", "framePadding": "24px 24px 72px(≤880 容器降 16px 16px 56px)", "note": "leaf 宽 732 < 1368 上限,居中生效" },
   "typography": { "page": "25px", "section": "20px", "card": "16px", "body": "14px", "meta": "12px", "badge": "12px(--font-ui-smaller 在本宿主解析为 12px)", "valueFont": "12px", "valueNumeric": "tabular-nums" },
-  "rhythm": { "gridGap": "16px", "railGap": "16px", "chipsGap": "8px", "detailsGap": "7px(登记的微节奏)", "railColumns": "3 × 233.35px" },
+  "rhythm": { "gridGap": "16px", "railGap": "16px", "chipsGap": "8px", "detailsGap": "7px(登记的微节奏)", "railColumns": "2 × 358px(容器 <1180,窄屏两列生效)" },
   "cover": { "aspect": "0.7000", "coverShadow": "oklch(0.2 0.02 250 / 0.2) 0px 8px 22px(唯一功能性阴影)", "badgeRadius": "999px", "cardRadius": "0px", "cardShadow": "none" },
   "progress": { "height": "3px", "fillTransform": "scaleX(0.9333)" },
   "titleSlot": { "clamp": "2", "slotMinHeight": "41.6px(2.6em)", "longRectHeight": "41.59", "longClamped": true, "shortRectHeight": "41.59(空槽同样占位,保证等高)" },
   "equalHeights": ["466.9", "466.9", "466.9", "466.9", "466.9"],
-  "continueRail": { "coverWidth": 88, "coverMinHeight": "118px", "cardCols": "88px 143.35px" }
+  "continueRail": { "coverWidth": 88, "coverMinHeight": "118px", "cardCols": "88px 143.35px" },
+  "authorLine": { "placeholderWidth": "96px / detailsWidth 231px(fit-content 贴文本)", "focusOutlineRule": "2px accent + 2px offset" }
 }
 ```
 
@@ -24,8 +25,8 @@
 
 ```json
 {
-  "ledger": { "summaryColumns": "4 × 182.52px", "ledgerCoverWidth": 42, "cellPadding": "10px 12px" },
-  "navigation": { "navColumns": "224px 484.06px", "sidebarPosition": "sticky", "focusColumns": "172px 258.06px", "focusCoverWidth": 172, "compactColumns": "4 × 109.02px", "selectedInset": "inset 2px(accent rgb(170,17,65) 为宿主当前主题 accent)" }
+  "ledger": { "summaryColumns": "4 × 182.52px(≤880 容器降 2 × 2)", "ledgerCoverWidth": 42, "ledgerCoverBorder": "1px", "cellPadding": "10px 12px", "titleClip": "display:block + text-align:left + ellipsis(client 166 < scroll 523,左起截断)" },
+  "navigation": { "navColumns": "224px 484.06px(≤880 容器单列+侧栏转横排)", "sidebarPosition": "sticky", "focusColumns": "172px 258.06px", "focusCoverWidth": 172, "focusButtonWidth": "78px(align-self: flex-start)", "compactColumns": "3 × 233px(容器 <1180;宽容器为 4 列)", "selectedInset": "inset 2px(accent 为宿主当前主题 accent)" }
 }
 ```
 

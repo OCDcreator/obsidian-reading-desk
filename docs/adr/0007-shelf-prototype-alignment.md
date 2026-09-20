@@ -1,6 +1,6 @@
 # ADR 0007:书架对齐原型稿(A 紧凑研究书架 + B 分类导航工作台 + C 书目台账)
 
-状态:Proposed(2026-09-20 grilling 会话产出;同日依 `reading-desk-bookshelf-prototype.md` 契约与 html-a/b/c 原型修订,用户裁决 B、C 均纳入本轮;待实施后改 Accepted)
+状态:Accepted(2026-09-20 grilling 会话产出;同日依 `reading-desk-bookshelf-prototype.md` 契约与 html-a/b/c 原型修订,用户裁决 B、C 均纳入本轮;2026-09-21 于 `zcode/shelf-abc-rework` 分支实施完毕并通过三阶段验收——verify 48 文件 181 测试全绿、四件套部署+SHA-256 核对、impeccable detect 清零、两轮独立设计评审+终验「通过」、行为人肉模拟全绿;证据见 `docs/self-check/shelf-rework/`)
 
 ## 背景
 

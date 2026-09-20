@@ -359,7 +359,6 @@
  * workspace padding lives on the frame so the container query can shrink it. */
 .rd-shelf { container-type: inline-size; }
 .rd-shelf-frame { max-width: 1368px; margin: 0 auto; min-width: 0; padding: 24px 24px 72px; }
-.rd-shelf-frame { max-width: 1368px; margin: 0 auto; min-width: 0; }
 .rd-shelf-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; margin-bottom: 16px; }
 .rd-shelf-title-wrap { min-width: 0; }
 .rd-shelf-heading { margin: 0; font-size: 25px; font-weight: 600; line-height: 1.25; }
@@ -586,7 +585,7 @@
 	.rd-target-panel { position: static; }
 	.rd-highlight-drawer { right: 8px; width: calc(100vw - 16px); }
 	.rd-shelf-toolbar { flex-wrap: wrap; }
-	.rd-shelf-search { min-width: 0; width: 100%; }
+	.rd-shelf-search { min-width: 0; flex-basis: 100%; }
 }
 @container (max-width: 800px) {
 	.rd-reader-toolbar { align-items: center; padding: 8px; gap: 8px; }
