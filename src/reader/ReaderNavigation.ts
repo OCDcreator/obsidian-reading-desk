@@ -64,7 +64,7 @@ export function activeOutlinePath(entries: readonly PdfOutlineEntry[], currentPa
 }
 
 export class ReaderNavigation {
-	private mode: ReaderNavigationMode = 'outline';
+	private mode: ReaderNavigationMode;
 	private outline: readonly PdfOutlineEntry[] = [];
 	private outlineState: OutlineLoadState = 'loading';
 	private outlineError = '';
@@ -73,7 +73,8 @@ export class ReaderNavigation {
 	private readonly panelId = createId('rd-pdf-navigation-panel');
 	private readonly tabIds = { thumbnails: createId('rd-pdf-thumbnails-tab'), outline: createId('rd-pdf-outline-tab') };
 
-	constructor(private readonly pdf: PdfRenderer, private readonly pages: number, private readonly currentPage: () => number, private readonly goTo: (page: number) => Promise<void>) { }
+	constructor(private readonly pdf: PdfRenderer, private readonly pages: number, private readonly currentPage: () => number, private readonly goTo: (page: number) => Promise<void>, mode: ReaderNavigationMode = 'thumbnails') { this.mode = mode; }
+	getMode(): ReaderNavigationMode { return this.mode; }
 
 	render(container: HTMLElement): void {
 		this.thumbnailLifecycle?.destroy();

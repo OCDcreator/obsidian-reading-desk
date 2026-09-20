@@ -4,7 +4,7 @@
 
 /* Tokens. The comment portal host and the settings page carry these roots too,
  * so detached surfaces inherit the same derivation without a second block. */
-.reading-desk-shell, .rd-reader, .rd-shelf, .reading-desk-settings {
+.reading-desk-shell, .rd-reader, .rd-shelf, .reading-desk-settings, .reading-desk-pdf-navigation-host {
 	--rd-surface: var(--background-primary, oklch(0.98 0.005 250));
 	--rd-surface-raised: var(--background-secondary, oklch(0.96 0.01 250));
 	--rd-surface-document: oklch(0.985 0.006 90);
@@ -21,7 +21,7 @@
 	color: var(--rd-ink);
 }
 
-.theme-dark .reading-desk-shell, .theme-dark .rd-reader, .theme-dark .rd-shelf {
+.theme-dark .reading-desk-shell, .theme-dark .rd-reader, .theme-dark .rd-shelf, .theme-dark .reading-desk-pdf-navigation-host {
 	--rd-surface-document: oklch(0.22 0.012 75);
 }
 
@@ -30,6 +30,7 @@
 .reading-desk-shell, .reading-desk-shell *,
 .rd-reader, .rd-reader *,
 .rd-shelf, .rd-shelf *,
+.reading-desk-pdf-navigation-host, .reading-desk-pdf-navigation-host *,
 .rd-settings-portability, .rd-settings-portability * {
 	box-sizing: border-box;
 }
@@ -107,27 +108,42 @@
 .rd-shelf { overflow: auto; }
 .rd-reader { container-type: inline-size; display: grid; grid-template-rows: auto minmax(0, 1fr); overflow: hidden; }
 .rd-reader-toolbar {
-	display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-	padding: 12px 16px; position: sticky; top: 0; z-index: 4;
+	display: flex; align-items: center; gap: 8px; flex-wrap: nowrap;
+	padding: 8px; position: sticky; top: 0; z-index: 4;
 	border-bottom: 1px solid var(--rd-line); background: var(--rd-surface-raised);
-	max-width: 100%;
+	max-width: 100%; overflow-x: auto;
 }
 .rd-reader-toolbar > * { min-width: 0; }
+.rd-reader-toolbar__group {
+	display: flex; align-items: center; flex: 0 0 auto; gap: 4px; min-width: 0;
+	white-space: nowrap;
+}
+.rd-reader .rd-reader-toolbar .rd-icon-button {
+	width: 30px; min-width: 30px; height: 30px; min-height: 30px; padding: 5px;
+	display: inline-grid; place-items: center; border: 0; background: transparent; box-shadow: none;
+	color: var(--rd-ink-muted);
+}
+.rd-reader .rd-reader-toolbar .rd-icon-button:hover:not(:disabled) { background: color-mix(in oklch, var(--rd-surface-raised) 85%, var(--rd-accent)); color: var(--rd-ink); }
+.rd-reader-toolbar .rd-icon-button svg { width: 18px; height: 18px; }
+.rd-reader .rd-reader-toolbar .rd-reader-toolbar__more { display: none; margin-left: auto; }
 .rd-page-count { align-self: center; color: var(--rd-ink-muted); font: inherit; white-space: nowrap; }
 .rd-page-control { display: flex; align-items: center; gap: 4px; min-width: 0; white-space: nowrap; }
-.rd-page-control input { width: 64px; min-width: 52px; font-variant-numeric: tabular-nums; text-align: center; }
-.rd-page-control__prefix, .rd-page-control__suffix { color: var(--rd-ink-muted); }
+.rd-reader-toolbar .rd-page-control input { width: 42px; min-width: 42px; height: 30px; min-height: 30px; padding: 2px; font-variant-numeric: tabular-nums; text-align: center; }
+.rd-page-control__prefix, .rd-page-control__suffix { display: none; }
 .rd-reader-body {
-	display: grid; grid-template-columns: minmax(224px, 256px) minmax(520px, 1fr);
+	display: grid; grid-template-columns: minmax(0, 1fr);
 	align-items: stretch; gap: 16px; padding: 24px;
 	min-height: 0; height: 100%; min-width: 0; overflow: hidden;
 }
 .rd-pdf-stage { min-width: 0; min-height: 0; height: 100%; overflow: auto; display: grid; place-items: start center; padding: 24px; }
 .rd-reader-navigation {
 	min-width: 0; max-height: calc(100vh - var(--rd-toolbar-height, 54px) - 48px); overflow: hidden;
-	border: 1px solid var(--rd-line); background: var(--rd-surface-raised); display: grid; grid-template-rows: auto minmax(0, 1fr);
+	border: 1px solid var(--rd-line); background: var(--rd-surface); display: grid; grid-template-rows: auto minmax(0, 1fr);
 }
-.rd-reader-navigation__tabs { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--rd-line); padding: 8px; gap: 8px; }
+.reading-desk-pdf-navigation-host { padding: 0; overflow: hidden; }
+.reading-desk-pdf-navigation-host > div { height: 100%; }
+.reading-desk-pdf-navigation-host .rd-reader-navigation { height: 100%; max-height: none; border: 0; }
+.rd-reader-navigation__tabs { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--rd-line); background: var(--rd-surface-raised); padding: 8px; gap: 8px; }
 .rd-reader-navigation__tab, .rd-reader-thumbnail, .rd-reader-outline__item {
 	border: 1px solid transparent; border-radius: 5px; background: transparent; color: var(--rd-ink); font: inherit;
 }
@@ -135,14 +151,19 @@
 .rd-reader-navigation__tab[aria-selected='true'] { border-color: var(--rd-accent); background: color-mix(in oklch, var(--rd-surface) 90%, var(--rd-accent)); }
 .rd-reader-navigation__panel { min-height: 0; overflow: auto; padding: 8px; }
 .rd-reader-thumbnails, .rd-reader-outline { list-style: none; margin: 0; padding: 0; }
-.rd-reader-thumbnails { display: grid; gap: 16px; }
-.rd-reader .rd-reader-thumbnail {
+.rd-reader-thumbnails { display: grid; gap: 8px; }
+.reading-desk-pdf-navigation-host .rd-reader-thumbnail {
 	width: 100%; height: auto; min-height: 0; overflow: hidden;
-	padding: 8px; display: grid; align-content: start; justify-items: center; gap: 8px;
-	background: var(--rd-surface); cursor: pointer;
+	padding: 4px; display: grid; align-content: start; justify-items: center; gap: 4px;
+	background: var(--rd-surface); border-color: transparent; cursor: pointer;
 }
-.rd-reader .rd-reader-thumbnail canvas {
-	display: block; width: 100%; max-width: 136px; height: auto; flex: none;
+.reading-desk-pdf-navigation-host .rd-reader-outline__item { background: transparent; border-color: transparent; }
+.reading-desk-pdf-navigation-host .rd-reader-thumbnail[aria-current='page'],
+.reading-desk-pdf-navigation-host .rd-reader-outline__item[aria-current='location'] {
+	border-color: var(--rd-accent); background: color-mix(in oklch, var(--rd-surface) 90%, var(--rd-accent));
+}
+.reading-desk-pdf-navigation-host .rd-reader-thumbnail canvas {
+	display: block; width: 100%; max-width: 120px; height: auto; flex: none;
 	background: var(--rd-surface-document); box-shadow: 0 4px 12px var(--rd-elevation);
 }
 .rd-reader-thumbnail span, .rd-reader-outline__page { color: var(--rd-ink-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
@@ -154,10 +175,9 @@
 /* The host keeps its own overflow so an over-wide page stays contained instead of
  * spilling across the Reader; the Reader remains the primary scroll container. */
 .rd-pdf-page-host { position: relative; background: var(--rd-surface-document); box-shadow: 0 8px 22px var(--rd-elevation); max-width: 100%; overflow: auto; }
-.rd-reader[data-rd-size='medium'] .rd-reader-body { grid-template-columns: minmax(192px, 224px) minmax(400px, 1fr); padding: 16px; }
+.rd-reader[data-rd-size='medium'] .rd-reader-body { grid-template-columns: minmax(0, 1fr); padding: 16px; }
 .rd-reader[data-rd-size='medium'] .rd-pdf-stage { padding: 16px; }
-.rd-reader[data-rd-size='narrow'] .rd-reader-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(120px, 240px) minmax(320px, 1fr); padding: 16px; overflow: hidden; }
-.rd-reader[data-rd-size='narrow'] .rd-reader-navigation { max-height: 240px; }
+.rd-reader[data-rd-size='narrow'] .rd-reader-body { grid-template-columns: minmax(0, 1fr); padding: 16px; overflow: hidden; }
 .rd-reader[data-rd-size='narrow'] .rd-pdf-stage { min-width: 0; min-height: 320px; padding: 16px 0; overflow: auto; }
 .rd-pdf-canvas, .rd-pdf-text-layer, .rd-highlight-layer { inset: 0; position: absolute; }
 .rd-pdf-canvas { position: relative; display: block; }
@@ -181,15 +201,16 @@
 .rd-swatch.rd-swatch--brick, .rd-button.rd-swatch--brick { background: var(--rd-brick); }
 .rd-swatch.rd-swatch--indigo, .rd-button.rd-swatch--indigo { background: var(--rd-indigo); }
 .rd-swatch.rd-swatch--plum, .rd-button.rd-swatch--plum { background: var(--rd-plum); }
-.rd-toolbar-palette { display: flex; gap: 5px; }
+.rd-toolbar-palette { display: flex; align-items: center; gap: 4px; }
 /* The toolbar palette is the one colour control without a text label: its glyph
  * is a single character, so the name travels on aria-label alone. Every other
  * swatch is a labelled control and keeps its visible colour name. */
 .rd-toolbar-palette .rd-button {
-	width: 28px; min-width: 28px; height: 28px; min-height: 28px;
-	border: 2px solid var(--rd-ink); border-radius: 50%;
+	width: 22px; min-width: 22px; height: 22px; min-height: 22px;
+	border: 1px solid var(--rd-line); border-radius: 50%; box-shadow: none;
 	font-size: 0; padding: 0;
 }
+.rd-reader .rd-reader-toolbar .rd-toolbar-palette__more { display: none; }
 .rd-swatch {
 	min-width: 52px; height: 28px; min-height: 28px; padding: 0 8px;
 	border: 1px solid var(--rd-line); border-radius: 5px;
@@ -409,7 +430,7 @@
 /* The Reader often occupies a narrow Obsidian leaf inside a wide window, so a
  * container query guards the PDF column; the media query covers narrow windows. */
 @media (max-width: 760px) {
-	.rd-reader-toolbar { align-items: flex-start; padding: 8px; gap: 8px; }
+	.rd-reader-toolbar { align-items: center; padding: 8px; gap: 8px; }
 	.rd-reader-toolbar .rd-button, .rd-reader-toolbar select, .rd-reader-toolbar input { flex: 0 1 auto; }
 	.rd-reader-body, .rd-reader-body--split { grid-template-columns: minmax(0, 1fr); padding: 12px; }
 	.rd-target-panel { position: static; }
@@ -418,9 +439,19 @@
 	.rd-shelf-search { min-width: 0; width: 100%; }
 }
 @container (max-width: 800px) {
-	.rd-reader-toolbar { align-items: flex-start; padding: 8px; gap: 8px; }
+	.rd-reader-toolbar { align-items: center; padding: 8px; gap: 8px; }
 	.rd-reader-toolbar .rd-button, .rd-reader-toolbar select, .rd-reader-toolbar input { flex: 0 1 auto; }
 	.rd-reader-body, .rd-reader-body--split { grid-template-columns: minmax(0, 1fr); padding: 12px; }
 	.rd-target-panel { position: static; }
 	.rd-pdf-page-host { justify-self: stretch; }
+}
+@container (max-width: 680px) {
+	.rd-reader .rd-reader-toolbar [data-rd-overflow='secondary'] { display: none; }
+	.rd-reader .rd-reader-toolbar .rd-reader-toolbar__more { display: inline-grid; }
+}
+@container (max-width: 500px) {
+	.rd-reader .rd-reader-toolbar [data-rd-overflow='tight'],
+	.rd-reader .rd-reader-toolbar__group[data-rd-toolbar-group='annotation'],
+	.rd-reader .rd-toolbar-palette { display: none; }
+	.rd-reader .rd-reader-toolbar .rd-toolbar-palette__more { display: inline-grid; }
 }

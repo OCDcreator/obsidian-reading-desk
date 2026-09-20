@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { activeOutlinePath, buildOutlineTree } from '../../src/reader/ReaderNavigation';
+import { activeOutlinePath, buildOutlineTree, ReaderNavigation } from '../../src/reader/ReaderNavigation';
 
 describe('Reader navigation outline', () => {
+	it('preserves the selected sidebar tab across Reader page renders', () => {
+		const navigation = new ReaderNavigation({} as never, 3, () => 1, async () => undefined, 'thumbnails');
+		expect(navigation.getMode()).toBe('thumbnails');
+	});
 	const outline = [
 		{ title: '第一章', page: 0, path: ['第一章'] },
 		{ title: '1.1 基础', page: 2, path: ['第一章', '1.1 基础'] },

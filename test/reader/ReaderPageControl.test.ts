@@ -28,7 +28,9 @@ describe('Reader page control', () => {
 		createReaderPageControl(root as unknown as HTMLElement, { page: 42, pages: 286, goTo });
 		const group = root.children[0];
 		expect(group.attributes).toMatchObject({ role: 'group', 'aria-label': 'PDF 页码导航' });
-		expect(group.children.map(child => child.text)).toEqual(['上一页', '第', '', '/ 286', '页', '下一页']);
+		expect(group.children.map(child => child.text)).toEqual(['', '第', '', '/ 286', '页', '']);
+		expect(group.children[0].attributes['aria-label']).toBe('上一页');
+		expect(group.children[5].attributes['aria-label']).toBe('下一页');
 		const input = group.children[2];
 		expect(input.attributes['aria-label']).toBe('当前页，共 286 页');
 		input.value = '57';

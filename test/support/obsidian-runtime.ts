@@ -34,11 +34,13 @@ export class ItemView {
 }
 
 export class Notice { constructor(message: string) { void message; } }
+export function setIcon(element: unknown, icon: string): void { void element; void icon; }
 
 export class Menu {
+	setUseNativeMenu(_value: boolean): this { return this; }
 	addItem(_builder: (item: { setTitle(title: string): unknown; onClick(action: () => void): unknown }) => void): this { return this; }
 	showAtMouseEvent(event: unknown): void { void event; }
-	showAtPosition(position: { x: number; y: number }): void { void position; }
+	showAtPosition(position: { x: number; y: number }, document?: unknown): void { void position; void document; }
 }
 
 export async function requestUrl(): Promise<never> {

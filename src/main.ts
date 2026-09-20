@@ -13,6 +13,7 @@ import { TargetService } from './targets';
 import type { PreparedCropDrag } from './ui/crop/CropDragTransport';
 import type { NormalizedPdfRect, ObjectStorageSettings, PdfHighlight, TargetType } from './types/contracts';
 import { ReaderView, READER_VIEW_TYPE } from './views/ReaderView';
+import { PdfNavigationView, PDF_NAVIGATION_VIEW_TYPE } from './views/PdfNavigationView';
 import { ShelfItemView, SHELF_VIEW_TYPE } from './views/ShelfItemView';
 import { createHighlightLink, createPageLink, writeReadingDeskLink } from './reader/ReadingDeskLinks';
 import { canCopyReaderPage, executeCopyReaderPage } from './reader/ReaderCopyCommand';
@@ -61,13 +62,19 @@ export default class ReadingDeskPlugin extends Plugin {
 			readExcerptCards: path => this.readExcerptCards(path),
 			updateExcerptCard: (highlightId, patch) => this.updateExcerptCard(highlightId, patch),
 			copyPageLink: (path, page) => this.copyPageLink(path, page),
-			copyHighlightLink: highlight => this.copyHighlightLink(highlight)
+			copyHighlightLink: highlight => this.copyHighlightLink(highlight),
+			openNavigation: () => this.openPdfNavigation()
+		}));
+		this.registerView(PDF_NAVIGATION_VIEW_TYPE, leaf => new PdfNavigationView(leaf, () => {
+			const current = this.app.workspace.getActiveViewOfType(ReaderView);
+			return current ?? this.app.workspace.getLeavesOfType(READER_VIEW_TYPE).map(item => item.view).find(view => view instanceof ReaderView && !!view.getState().pdfPath) as ReaderView | undefined ?? null;
 		}));
 		this.registerView(SHELF_VIEW_TYPE, leaf => new ShelfItemView(leaf, this.library, {
 			open: path => this.openReader(path),
 			scan: () => this.scanLibrary(),
 			resourceUrl: path => this.app.vault.adapter.getResourcePath(path)
 		}));
+		this.app.workspace.onLayoutReady(() => { if (this.app.workspace.getLeavesOfType(READER_VIEW_TYPE).some(leaf => !!leaf.view.getState().pdfPath)) void this.openPdfNavigation(false); });
 		this.addRibbonIcon('book-open', '打开 Reading Desk 书架', () => this.openShelf());
 		this.addCommand({ id: 'open-reading-desk', name: '打开 Reading Desk 书架', callback: () => this.openShelf() });
 		this.addCommand({ id: 'scan-library', name: '扫描 Reading Desk 书库', callback: () => this.scanLibrary() });
@@ -136,7 +143,7 @@ export default class ReadingDeskPlugin extends Plugin {
 		const leaf = this.app.workspace.getLeaf(true);
 		await leaf.setViewState({ type: READER_VIEW_TYPE, state: {}, active: true });
 		const reader = leaf.view instanceof ReaderView ? leaf.view : null;
-		if (reader) await reader.openPdf(path);
+		if (reader) { await reader.openPdf(path); await this.openPdfNavigation(false); }
 	}
 
 	private async openReaderHighlight(params: Record<string, string>): Promise<void> {
@@ -155,6 +162,7 @@ export default class ReadingDeskPlugin extends Plugin {
 		if (!(leaf.view instanceof ReaderView)) return;
 		if (highlightId) await leaf.view.openPdfAtHighlight(path, highlightId);
 		else await leaf.view.openPdf(path, page);
+		await this.openPdfNavigation(false);
 	}
 
 	private copyActiveReaderPage(checking: boolean): boolean | void {
@@ -189,14 +197,22 @@ export default class ReadingDeskPlugin extends Plugin {
 			await this.refreshShelves();
 		}
 	}
-
 	private async openReaderFromActiveFile(): Promise<void> {
 		const active = this.app.workspace.getActiveFile();
 		const path = active?.extension.toLowerCase() === 'pdf' ? active.path : this.library.list().find(book => book.format === 'pdf')?.path;
 		if (!path) throw new Error('没有可打开的 PDF。请先扫描书库或打开一个 PDF。');
 		await this.openReader(path);
 	}
-
+	private async openPdfNavigation(focus = true): Promise<void> {
+		let leaf = this.app.workspace.getLeavesOfType(PDF_NAVIGATION_VIEW_TYPE)[0];
+		if (!leaf) {
+			leaf = this.app.workspace.getLeftLeaf(true) ?? undefined;
+			if (!leaf) return;
+			await leaf.setViewState({ type: PDF_NAVIGATION_VIEW_TYPE, state: {}, active: focus });
+		}
+		if (leaf.view instanceof PdfNavigationView) leaf.view.refresh();
+		if (focus) await this.app.workspace.revealLeaf(leaf);
+	}
 	private createPdfRenderer(): PdfRenderer {
 		return new PdfRenderer({
 			readBinary: path => this.app.vault.adapter.readBinary(path),
