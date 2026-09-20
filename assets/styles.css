@@ -355,8 +355,10 @@
 .rd-crop-drag-handle img, .rd-crop-drag-preview { display: block; max-width: 112px; max-height: 72px; }
 
 /* Shelf. The leaf, not the window, is the responsive surface, so the shelf
- * declares its own inline-size container (same pattern as the Reader). */
-.rd-shelf { padding: 24px 24px 72px; container-type: inline-size; }
+ * declares its own inline-size container (same pattern as the Reader); the
+ * workspace padding lives on the frame so the container query can shrink it. */
+.rd-shelf { container-type: inline-size; }
+.rd-shelf-frame { max-width: 1368px; margin: 0 auto; min-width: 0; padding: 24px 24px 72px; }
 .rd-shelf-frame { max-width: 1368px; margin: 0 auto; min-width: 0; }
 .rd-shelf-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; margin-bottom: 16px; }
 .rd-shelf-title-wrap { min-width: 0; }
@@ -445,7 +447,9 @@
 .rd-ledger-book { display: grid; grid-template-columns: 42px minmax(0, 1fr); gap: 10px; align-items: center; min-width: 220px; }
 .rd-book-cover--ledger { width: 42px; box-shadow: none; border: 1px solid var(--rd-line); }
 .rd-ledger-book-text { min-width: 0; display: grid; gap: 2px; }
-.rd-shelf .rd-ledger-title { min-height: 0; padding: 0; border-color: transparent; background: transparent; box-shadow: none; font-weight: 500; justify-self: start; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; }
+/* Host buttons render as centered flex boxes, which center-clips overflowing
+ * titles and defeats ellipsis; a block title clips from the left instead. */
+.rd-shelf .rd-ledger-title { display: block; min-height: 0; padding: 0; border-color: transparent; background: transparent; box-shadow: none; font-weight: 500; justify-self: start; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; }
 .rd-ledger-path { color: var(--rd-ink-muted); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 44ch; }
 .rd-ledger .rd-progress-row { min-width: 130px; }
 .rd-table-editor, .rd-rating-select, .rd-ledger-category-select { min-width: 0; max-width: 100%; }
@@ -514,10 +518,10 @@
 	.rd-shelf-navigation { grid-template-columns: 190px minmax(0, 1fr); }
 }
 @container (max-width: 880px) {
-	.rd-shelf { padding: 16px 16px 56px; }
+	.rd-shelf-frame { padding: 16px 16px 56px; }
 	.rd-shelf-header, .rd-shelf-toolbar { flex-wrap: wrap; }
 	.rd-shelf-actions { width: 100%; }
-	.rd-shelf-search { min-width: 0; width: 100%; max-width: none; }
+	.rd-shelf-search { min-width: 0; flex-basis: 100%; max-width: none; }
 	.rd-shelf-navigation { grid-template-columns: minmax(0, 1fr); }
 	.rd-nav-sidebar { position: static; }
 	.rd-nav-category-list { display: flex; overflow: auto; border: 0; gap: 8px; }

@@ -47,7 +47,7 @@ function ledgerRow(document: Document, book: LibraryBook, categories: LibraryCat
 		void host.openBook(book);
 	});
 	row.addEventListener('keydown', event => {
-		if (event.isComposing || isEditorTarget(event)) return;
+		if (event.isComposing || isEditorTarget(event) || event.target !== row) return;
 		if (event.key === 'Enter' || event.key === ' ') {
 			event.preventDefault();
 			void host.openBook(book);

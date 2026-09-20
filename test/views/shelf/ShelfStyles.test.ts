@@ -10,9 +10,10 @@ function rule(selector: string): string {
 
 describe('Shelf layout contract (ADR 0007)', () => {
 	it('centers content in a 1368px frame over a 24px workspace', () => {
-		expect(styles).toMatch(/^\.rd-shelf \{ padding: 24px 24px 72px; container-type: inline-size; \}$/m);
+		expect(styles).toMatch(/^\.rd-shelf \{ container-type: inline-size; \}$/m);
 		expect(rule('.rd-shelf-frame')).toContain('max-width: 1368px');
 		expect(rule('.rd-shelf-frame')).toContain('margin: 0 auto');
+		expect(rule('.rd-shelf-frame')).toContain('padding: 24px 24px 72px');
 	});
 
 	it('breaks on the shelf container, not the host window', () => {

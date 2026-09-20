@@ -262,7 +262,8 @@ export class ShelfView {
 		return heading;
 	}
 
-	private createChips(): HTMLElement {		return createCategoryChips({
+	private createChips(): HTMLElement {
+		return createCategoryChips({
 			books: this.books,
 			categories: this.categories,
 			selectedId: this.categoryId,
