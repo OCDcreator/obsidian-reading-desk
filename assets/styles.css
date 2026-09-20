@@ -505,9 +505,8 @@
 /* Settings: shadcn-style layout — vertical category nav on the left, bordered
  * card groups with hairline-divided rows on the right. All colors stay on host
  * tokens so light/dark follow the vault theme. */
-.reading-desk-settings { container-type: inline-size; }
-.rd-settings-layout { display: grid; grid-template-columns: 176px minmax(0, 1fr); gap: 28px; align-items: start; }
-.rd-settings-nav { display: flex; flex-direction: column; gap: 2px; position: sticky; top: 0; }
+.rd-settings-nav-card { margin-bottom: 16px; }
+.rd-settings-nav { display: flex; flex-wrap: wrap; gap: 4px; padding: 8px; }
 .rd-settings-tab {
 	display: flex; align-items: center; text-align: left;
 	border: 0; border-radius: 6px; background: transparent; color: var(--rd-ink-muted);
@@ -544,8 +543,3 @@
 .rd-setting-result.is-success { color: var(--text-success, var(--rd-ink)); }
 .rd-setting-result.is-error { color: var(--text-error, var(--rd-ink)); }
 .reading-desk-settings .rd-card-content input[type="text"] { width: 100%; max-width: 480px; }
-
-@container (max-width: 480px) {
-	.rd-settings-layout { grid-template-columns: minmax(0, 1fr); gap: 12px; }
-	.rd-settings-nav { flex-direction: row; flex-wrap: wrap; position: static; padding-bottom: 4px; }
-}

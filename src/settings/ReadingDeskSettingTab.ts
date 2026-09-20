@@ -52,10 +52,10 @@ export class ReadingDeskSettingTab extends PluginSettingTab {
 		containerEl.addClass('reading-desk-settings');
 		containerEl.createEl('h2', { cls: 'rd-setting-heading', text: 'Reading Desk 设置' });
 		containerEl.createEl('p', { cls: 'rd-setting-intro', text: '书架、阅读器和标注共用同一份本地数据。' });
-		const layout = containerEl.createDiv({ cls: 'rd-settings-layout' });
-		const nav = layout.createDiv({ cls: 'rd-settings-nav', attr: { role: 'tablist', 'aria-orientation': 'vertical', 'aria-label': '设置分类' } });
+		const navCard = containerEl.createDiv({ cls: 'rd-card rd-settings-nav-card' });
+		const nav = navCard.createDiv({ cls: 'rd-settings-nav', attr: { role: 'tablist', 'aria-label': '设置分类' } });
 		for (const definition of SETTINGS_TABS) nav.append(this.createTabButton(definition));
-		this.panel = layout.createDiv({ cls: 'rd-settings-panel', attr: { role: 'tabpanel', tabindex: '0', id: 'rd-settings-panel' } });
+		this.panel = containerEl.createDiv({ cls: 'rd-settings-panel', attr: { role: 'tabpanel', tabindex: '0', id: 'rd-settings-panel' } });
 		this.renderActiveTab();
 	}
 
@@ -78,9 +78,9 @@ export class ReadingDeskSettingTab extends PluginSettingTab {
 		button.tabIndex = selected ? 0 : -1;
 		button.addEventListener('click', () => this.switchTab(definition.key));
 		button.addEventListener('keydown', event => {
-			if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight' && event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
+			if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
 			event.preventDefault();
-			const delta = event.key === 'ArrowLeft' || event.key === 'ArrowUp' ? -1 : 1;
+			const delta = event.key === 'ArrowLeft' ? -1 : 1;
 			const index = SETTINGS_TABS.findIndex(item => item.key === this.activeTab);
 			const next = SETTINGS_TABS[(index + delta + SETTINGS_TABS.length) % SETTINGS_TABS.length];
 			this.switchTab(next.key);
