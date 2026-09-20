@@ -10,7 +10,6 @@ function createData(): ReadingDeskData {
 		comments: {},
 		settings: {
 			libraryFolders: ['Reading'],
-			readerLayout: 'shelf',
 			importedBookshelf: false,
 			storage: {
 				enabled: false,

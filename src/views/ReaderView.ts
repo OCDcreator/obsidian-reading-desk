@@ -3,7 +3,7 @@ import { AnnotationStore } from '../annotations/AnnotationStore';
 import type { PdfHighlight, TargetType } from '../types/contracts';
 import { createId } from '../utils/ids';
 import { normalizeClientRect } from '../reader/PdfSelectionGeometry';
-import { PdfRenderer, scaleToFitWidth, type PdfOutlineEntry } from '../reader/PdfRenderer';
+import { PdfRenderer, type PdfOutlineEntry } from '../reader/PdfRenderer';
 import { TargetService, type CanvasOutlineEntry } from '../targets';
 import { CommentPopover } from '../ui/comments/CommentPopover';
 import { HighlightList } from '../ui/comments/HighlightList';
@@ -17,6 +17,18 @@ import { parseDraggedHighlightRects } from '../reader/ReaderDragTransport';
 import { executeCopyReaderPage } from '../reader/ReaderCopyCommand';
 import { ReaderHighlightCoordinator, type HighlightScope } from '../reader/ReaderHighlightCoordinator';
 import { boundVisiblePage } from '../reader/ReaderPageNavigation';
+import { ReaderNavigation, type OutlineLoadState } from '../reader/ReaderNavigation';
+import { observeReaderDensity } from '../reader/ReaderResponsive';
+import { closeReaderTargetPanel, toggleReaderTargetPanel } from '../ui/targets/ReaderTargetDisclosure';
+import { revealCreatedCanvasTarget } from '../reader/ReaderTargetHandoff';
+import { availableFitExtent, FitFrameScheduler, fitInsets, fitScale, observeReaderFit, type ReaderFitMode } from '../reader/ReaderFit';
+import { createReaderButton, createReaderPageControl } from '../reader/ReaderPageControl';
+import { TargetPanelDisclosure } from '../ui/targets/TargetPanelDisclosure';
+import { ReaderOutlineLoader } from '../reader/ReaderOutlineLoader';
+import { createReaderPalette } from '../reader/ReaderPalette';
+import { ReaderOpenRequests } from '../reader/ReaderOpenRequests';
+import { openReaderDocument } from '../reader/ReaderDocumentOpen';
+import { ReaderViewLifecycle } from '../reader/ReaderViewLifecycle';
 
 export const READER_VIEW_TYPE = 'reading-desk-reader';
 export interface ReaderHost {
@@ -31,8 +43,6 @@ export interface ReaderHost {
 	prepareCropDrag(input: { pdfPath: string; page: number; rect: PdfHighlight['rects'][number]; target: 'canvas' | 'image'; image: Blob }): Promise<PreparedCropDrag>;
 	commitPreparedCrop(dragToken: string, targetPath?: string): Promise<void>;
 	discardPreparedCrop(dragToken: string): Promise<void>;
-	getReaderLayout(): Promise<'focus' | 'split'>;
-	setReaderLayout(layout: 'focus' | 'split'): Promise<void>;
 	readExcerptCards(pdfPath: string): Promise<ExcerptCard[]>;
 	updateExcerptCard(highlightId: string, patch: { title?: string; folded?: boolean }): Promise<void>;
 	openTargetInSplit(path: string, objectId?: string): Promise<void>;
@@ -41,15 +51,19 @@ export interface ReaderHost {
 }
 
 export class ReaderView extends ItemView {
-	private readonly pdf: PdfRenderer;
+	private pdf: PdfRenderer;
 	private readonly session = new ReaderSessionState();
 	private page = 1;
 	private pages = 0;
 	private selectedTarget: TargetType = 'canvas';
 	private selectedTargetPath = '';
-	private layout: 'focus' | 'split' = 'split';
 	private outline: PdfOutlineEntry[] = [];
+	private outlineState: OutlineLoadState = 'ready';
+	private outlineError = '';
 	private pageEl: HTMLElement | null = null;
+	private pdfStage: HTMLElement | null = null;
+	private readerBody: HTMLElement | null = null;
+	private readerNavigation: ReaderNavigation | null = null;
 	private drawer: HTMLElement | null = null;
 	private drawerToggle: HTMLButtonElement | null = null;
 	private drawerOpen = false;
@@ -57,18 +71,23 @@ export class ReaderView extends ItemView {
 	private excerptContainer: HTMLElement | null = null;
 	private sourceMissing = false;
 	private crop: CropSelectionOverlay | null = null;
-	private fitWidthLocked = true;
-	private fitObserver: ResizeObserver | null = null;
+	private fitMode: ReaderFitMode = 'width';
+	private stopFitTracking: (() => void) | null = null;
+	private stopDensityObserver: (() => void) | null = null;
 	private stopToolbarTracking: (() => void) | null = null;
-	private pendingFitFrame: number | null = null;
-	private lastFittedColumnWidth = 0;
-	/** Target paths already populated from the current PDF outline. */
+	private fitScheduler: FitFrameScheduler | null = null;
+	private lastFittedHostSize = 0;
+	private targetPanel: HTMLElement | null = null;
+	private targetDisclosure: TargetPanelDisclosure | null = null;
+	private readonly targetPanelId = createId('rd-target-panel');
 	private readonly outlineSyncedTargets = new Set<string>();
+	private readonly outlineLoader = new ReaderOutlineLoader();
+	private readonly openRequests = new ReaderOpenRequests();
+	private readonly lifecycle = new ReaderViewLifecycle();
 	private readonly comments: CommentPopover;
 	private readonly highlightList: HighlightList;
 	private readonly excerptPanel: ExcerptTargetPanel;
 	private readonly highlightCoordinator: ReaderHighlightCoordinator;
-
 	constructor(leaf: WorkspaceLeaf, private readonly host: ReaderHost) {
 		super(leaf);
 		this.pdf = host.createPdfRenderer();
@@ -84,36 +103,59 @@ export class ReaderView extends ItemView {
 			openComment: highlight => this.openCommentForHighlight(highlight)
 		});
 	}
-
 	getViewType(): string { return READER_VIEW_TYPE; }
 	getDisplayText(): string { return this.readerTitle(); }
 	getState(): Record<string, unknown> { return { ...this.session.serialize() }; }
-
 	async setState(state: unknown, _result: ViewStateResult): Promise<void> {
 		this.session.restore(state);
+		await this.lifecycle.onState(this.session.serialize(), (path, page) => this.openPdf(path, page));
 	}
-
 	async onClose(): Promise<void> {
+		this.lifecycle.close();
+		this.openRequests.invalidate();
+		this.outlineLoader.invalidate();
 		this.highlightCoordinator.close();
+		this.readerNavigation?.destroy();
+		this.readerNavigation = null;
 		this.stopFitWidthObserver();
 		this.stopToolbarTracking?.();
 		this.stopToolbarTracking = null;
+		this.stopDensityObserver?.();
+		this.stopDensityObserver = null;
 		this.crop?.destroy();
 		await this.pdf.close();
 	}
-
 	async openPdf(path: string, page = 1): Promise<void> {
-		this.session.open(path, page);
+		const request = this.openRequests.begin(path);
+		this.outlineLoader.invalidate();
+		const opened = await openReaderDocument(path, this.host.createPdfRenderer(), this.pdf, () => this.openRequests.isCurrent(request));
+		if (!opened) return;
+		this.pdf = opened.renderer;
+		this.session.open(request.path, page);
+		this.lifecycle.markLoaded(request.path, page);
 		this.sourceMissing = false;
-		this.layout = await this.host.getReaderLayout();
-		this.pages = await this.pdf.open(path);
-		this.outline = await this.pdf.getOutline();
+		this.pages = opened.pages;
+		this.outline = [];
+		this.outlineState = 'loading';
+		this.outlineError = '';
+		const outline = this.outlineLoader.load(this.pdf.getOutline());
 		this.outlineSyncedTargets.clear();
 		const bounded = boundVisiblePage(this.session.pageNumber(), this.pages);
 		this.page = bounded.page;
 		if (bounded.notice) new Notice(bounded.notice);
 		this.session.setPage(this.page);
 		await this.render();
+		const loadedOutline = await outline;
+		if (!loadedOutline) return;
+		if (!loadedOutline.error) {
+			this.outline = loadedOutline.entries;
+			this.outlineState = 'ready';
+		} else {
+			console.error('[Reading Desk] PDF 目录载入失败', loadedOutline.error);
+			this.outlineState = 'error';
+			this.outlineError = 'PDF 目录载入失败，可切换到缩略图继续导航。';
+		}
+		this.readerNavigation?.setOutline(this.outline, this.outlineState, this.outlineError);
 	}
 
 	async openPdfAtHighlight(path: string, highlightId: string): Promise<void> {
@@ -123,8 +165,8 @@ export class ReaderView extends ItemView {
 	}
 
 	async onOpen(): Promise<void> {
-		if (this.activePath() && this.pages === 0) await this.openPdf(this.activePath(), this.session.pageNumber());
-		else await this.render();
+		await this.lifecycle.onOpen(this.session.serialize(), (path, page) => this.openPdf(path, page));
+		if (!this.activePath()) await this.render();
 	}
 
 	/** Updates marks, drawer and target cards without reopening the PDF document. */
@@ -151,6 +193,8 @@ export class ReaderView extends ItemView {
 	async handleSourceDelete(path: string): Promise<boolean> {
 		const deleted = this.session.delete(path);
 		if (!deleted) return false;
+		this.openRequests.invalidate();
+		this.outlineLoader.invalidate();
 		this.sourceMissing = true;
 		this.crop?.destroy();
 		this.crop = null;
@@ -165,15 +209,21 @@ export class ReaderView extends ItemView {
 
 	private async render(): Promise<void> {
 		this.stopFitWidthObserver();
+		this.readerNavigation?.destroy();
+		this.readerNavigation = null;
 		this.highlightCoordinator.close();
 		const root = this.containerEl.children[1] as HTMLElement;
 		this.excerptContainer = null;
+		this.targetPanel = null;
+		this.targetDisclosure = null;
 		// containerEl's children can be replaced between renders, so replaceChildren may miss the previous drawer and leave a stale duplicate sharing the toggle's id.
 		this.drawer?.remove();
 		this.drawer = null;
 		this.drawerToggle = null;
 		root.replaceChildren();
 		root.className = 'rd-reader';
+		this.stopDensityObserver?.();
+		this.stopDensityObserver = observeReaderDensity(root);
 		if (!this.activePath()) {
 			const missing = this.sourceMissing;
 			root.createEl('p', { cls: missing ? 'rd-error' : 'rd-empty', text: missing ? '源 PDF 已删除，无法继续摘录。请从书架重新选择文件。' : '从书架选择一本 PDF 开始阅读。', attr: { role: missing ? 'alert' : 'status' } });
@@ -181,42 +231,40 @@ export class ReaderView extends ItemView {
 		}
 		root.createEl('h1', { cls: 'rd-reader-title rd-visually-hidden', text: this.readerTitle() });
 		const toolbar = root.createDiv({ cls: 'rd-reader-toolbar' });
-		this.button(toolbar, '缩小', () => this.changeScale(-0.15));
-		this.button(toolbar, '放大', () => this.changeScale(0.15));
-		this.button(toolbar, '适应宽度', () => this.fitWidth());
-		this.drawerToggle = this.button(toolbar, '高亮列表', () => this.toggleDrawer());
+		createReaderButton(toolbar, '缩小', () => this.changeScale(-0.15));
+		createReaderButton(toolbar, '放大', () => this.changeScale(0.15));
+		createReaderButton(toolbar, '适合宽度', () => this.fitWidth());
+		createReaderButton(toolbar, '适合高度', () => this.fitHeight());
+		this.drawerToggle = createReaderButton(toolbar, '高亮列表', () => this.toggleDrawer());
 		this.drawerToggle.setAttribute('aria-controls', this.drawerId);
 		this.drawerToggle.setAttribute('aria-expanded', String(this.drawerOpen));
-		this.button(toolbar, '裁剪', () => this.enterCropMode());
-		this.button(toolbar, this.layout === 'split' ? '专注阅读' : '分栏目标', () => void this.toggleLayout());
+		createReaderButton(toolbar, '裁剪', () => this.enterCropMode());
+		const targetPanelToggle = createReaderButton(toolbar, '摘录管理', () => this.toggleTargetPanel(root));
+		this.targetDisclosure = new TargetPanelDisclosure(targetPanelToggle, this.targetPanelId);
 		const target = toolbar.createEl('select', { attr: { 'aria-label': '摘录目标类型' } });
 		for (const type of ['canvas', 'excalidraw', 'markdown'] as TargetType[]) target.createEl('option', { value: type, text: targetTypeLabel(type) });
 		target.value = this.selectedTarget;
 		target.addEventListener('change', () => { this.selectedTarget = target.value as TargetType; this.selectedTargetPath = ''; void this.render(); });
-		this.createColorPalette(toolbar);
-		const previous = this.button(toolbar, '上一页', () => void this.goTo(this.page - 1));
-		previous.disabled = this.page <= 1;
-		const input = toolbar.createEl('input', { type: 'number', value: String(this.page), attr: { min: '1', max: String(Math.max(this.pages, 1)), 'aria-label': '页码' } });
-		input.disabled = this.pages === 0;
-		input.addEventListener('change', () => void this.goTo(input.value.trim() === '' ? this.page : Number(input.value)));
-		toolbar.createEl('span', { cls: 'rd-page-count', text: `/ ${this.pages}` });
-		const copyPage = this.button(toolbar, '复制本页链接', () => void executeCopyReaderPage(this, message => new Notice(message)));
+		createReaderPalette(toolbar, color => void this.createExcerptFromSelection(color));
+		createReaderPageControl(toolbar, { page: this.page, pages: this.pages, goTo: page => this.goTo(page) });
+		const copyPage = createReaderButton(toolbar, '复制本页链接', () => void executeCopyReaderPage(this, message => new Notice(message)));
 		copyPage.disabled = this.pages === 0;
-		const next = this.button(toolbar, '下一页', () => void this.goTo(this.page + 1));
-		next.disabled = this.page >= Math.max(this.pages, 1);
 		this.stopToolbarTracking?.();
 		this.stopToolbarTracking = trackToolbarHeight(root, toolbar);
 
-		const body = root.createDiv({ cls: ['rd-reader-body', `rd-reader-body--${this.layout}`] });
-		this.pageEl = body.createDiv({ cls: 'rd-pdf-page-host', attr: { role: 'region', tabindex: '0', 'aria-label': `PDF 第 ${this.page} 页` } });
+		const body = root.createDiv({ cls: 'rd-reader-body' });
+		this.readerBody = body;
+		const navigationEl = body.createEl('aside');
+		this.readerNavigation = new ReaderNavigation(this.pdf, this.pages, () => this.page, page => this.goTo(page));
+		this.readerNavigation.setOutline(this.outline, this.outlineState, this.outlineError);
+		this.readerNavigation.render(navigationEl);
+		this.pdfStage = body.createDiv({ cls: 'rd-pdf-stage' });
+		this.pageEl = this.pdfStage.createDiv({ cls: 'rd-pdf-page-host', attr: { role: 'region', tabindex: '0', 'aria-label': `PDF 第 ${this.page} 页` } });
 		this.pageEl.addEventListener('contextmenu', event => this.openSelectionMenu(event));
 		this.pageEl.addEventListener('keydown', event => this.handlePageHostKeys(event));
 		this.pageEl.addEventListener('dblclick', event => this.jumpFromHighlight(event));
 		this.pageEl.addEventListener('click', event => this.openComment(event));
 		this.pageEl.addEventListener('dragstart', event => this.beginExcerptDrag(event));
-		// The panel must be present before the first PDF measurement. Otherwise a
-		// one-column render is retained after the grid shrinks to split mode.
-		if (this.layout === 'split') body.append(this.createTargetPanel());
 		const highlights = this.host.annotations.list(this.activePath());
 		this.pageEl.createEl('p', { cls: 'rd-loading', text: '正在渲染页面…', attr: { role: 'status' } });
 		try {
@@ -228,7 +276,7 @@ export class ReaderView extends ItemView {
 			this.pageEl.replaceChildren();
 			this.pageEl.createEl('p', { cls: 'rd-error', text: 'PDF 页面载入失败。请回到书架重新打开该文件，或重新扫描书库后再试。', attr: { role: 'alert' } });
 		}
-		this.startFitWidthObserver(body);
+		this.startFitObserver(body);
 		this.drawer = root.createDiv({ cls: 'rd-highlight-drawer', attr: { id: this.drawerId } });
 		this.renderDrawer();
 		this.syncDrawerState();
@@ -241,27 +289,6 @@ export class ReaderView extends ItemView {
 		await this.host.copyPageLink(path, this.page);
 	}
 	canCopyCurrentPage(): boolean { return !!this.activePath() && this.pages > 0; }
-	private button(parent: HTMLElement, label: string, action: () => void): HTMLButtonElement {
-		const button = parent.createEl('button', { text: label, cls: 'rd-button' });
-		button.type = 'button';
-		button.addEventListener('click', action);
-		return button;
-	}
-
-	private createColorPalette(parent: HTMLElement): void {
-		const group = document.createElement('div');
-		group.className = 'rd-toolbar-palette';
-		group.setAttribute('role', 'group');
-		group.setAttribute('aria-label', '摘录颜色');
-		for (const [color, label] of [['moss', '苔'], ['amber', '琥'], ['brick', '砖'], ['indigo', '靛'], ['plum', '梅']] as Array<[PdfHighlight['color'], string]>) {
-			const button = this.button(group, label, () => void this.createExcerptFromSelection(color));
-			button.addEventListener('mousedown', event => event.preventDefault());
-			button.classList.add(`rd-swatch--${color}`);
-			button.title = `以${label}色摘录选中文本`;
-			button.setAttribute('aria-label', `以${label}色摘录选中文本`);
-		}
-		parent.append(group);
-	}
 
 	private async goTo(page: number): Promise<void> {
 		const bounded = boundVisiblePage(Number.isFinite(page) ? page : this.page, this.pages);
@@ -272,62 +299,59 @@ export class ReaderView extends ItemView {
 	}
 
 	private async changeScale(delta: number): Promise<void> {
-		this.fitWidthLocked = false;
+		this.fitMode = 'manual';
 		this.pdf.setScale(this.pdf.getScale() + delta);
 		await this.render();
 	}
 
 	private async fitWidth(): Promise<void> {
-		this.fitWidthLocked = true;
+		this.fitMode = 'width';
+		await this.fitRenderedPageToHost(this.host.annotations.list(this.activePath()), true);
+	}
+
+	private async fitHeight(): Promise<void> {
+		this.fitMode = 'height';
 		await this.fitRenderedPageToHost(this.host.annotations.list(this.activePath()), true);
 	}
 
 	private async fitRenderedPageToHost(highlights: PdfHighlight[], force = false): Promise<void> {
 		const pageEl = this.pageEl;
-		if (!this.fitWidthLocked || !pageEl) return;
+		const stage = this.pdfStage;
+		const body = this.readerBody;
+		if (this.fitMode === 'manual' || !pageEl || !stage || !body) return;
 		await afterLayout(pageEl);
-		const availableWidth = pageEl.clientWidth;
-		const renderedWidth = Math.max(pageEl.scrollWidth, this.pdf.getRenderedViewport()?.width ?? 0);
-		if (availableWidth <= 0 || renderedWidth <= 0) return;
-		const nextScale = scaleToFitWidth(this.pdf.getScale(), renderedWidth, availableWidth);
+		const viewport = this.pdf.getRenderedViewport();
+		if (!viewport) return;
+		const insets = fitInsets(stage);
+		const available = availableFitExtent(this.fitMode, stage, body, insets);
+		const nextScale = fitScale(this.fitMode, this.pdf.getScale(), viewport, stage, body, insets);
 		if (!force && Math.abs(nextScale - this.pdf.getScale()) < 0.005) {
-			this.lastFittedColumnWidth = availableWidth;
+			this.lastFittedHostSize = available;
 			return;
 		}
 		this.pdf.setScale(nextScale);
 		await this.pdf.renderPage(this.page, this.pageEl, highlights);
 		this.bindHighlightPreview();
 		await afterLayout(pageEl);
-		this.lastFittedColumnWidth = pageEl.clientWidth;
+		this.lastFittedHostSize = availableFitExtent(this.fitMode, stage, body, fitInsets(stage));
 	}
 
-	private startFitWidthObserver(body: HTMLElement): void {
-		if (typeof ResizeObserver === 'undefined') return;
-		this.fitObserver = new ResizeObserver(() => {
-			if (!this.fitWidthLocked || !this.pageEl || Math.abs(this.pageEl.clientWidth - this.lastFittedColumnWidth) < 1) return;
-			this.scheduleFitWidth();
-		});
-		this.fitObserver.observe(body);
-	}
-
-	private scheduleFitWidth(): void {
-		if (this.pendingFitFrame !== null || !this.pageEl) return;
-		const view = this.pageEl.ownerDocument.defaultView;
-		if (!view) return;
-		this.pendingFitFrame = view.requestAnimationFrame(() => {
-			this.pendingFitFrame = null;
-			void this.fitRenderedPageToHost(this.host.annotations.list(this.activePath()));
+	private startFitObserver(body: HTMLElement): void {
+		this.stopFitTracking = observeReaderFit(body, () => {
+			if (this.fitMode === 'manual' || !this.pdfStage || !this.readerBody) return 0;
+			return availableFitExtent(this.fitMode, this.pdfStage, this.readerBody, fitInsets(this.pdfStage));
+		}, () => {
+			const view = this.pageEl?.ownerDocument.defaultView;
+			if (view) (this.fitScheduler ??= new FitFrameScheduler(view)).schedule(() => void this.fitRenderedPageToHost(this.host.annotations.list(this.activePath())));
 		});
 	}
 
 	private stopFitWidthObserver(): void {
-		this.fitObserver?.disconnect();
-		this.fitObserver = null;
-		if (this.pendingFitFrame !== null) {
-			this.pageEl?.ownerDocument.defaultView?.cancelAnimationFrame(this.pendingFitFrame);
-			this.pendingFitFrame = null;
-		}
-		this.lastFittedColumnWidth = 0;
+		this.stopFitTracking?.();
+		this.stopFitTracking = null;
+		this.fitScheduler?.stop();
+		this.fitScheduler = null;
+		this.lastFittedHostSize = 0;
 	}
 	private toggleDrawer(): void {
 		this.drawerOpen = !this.drawerOpen;
@@ -342,7 +366,6 @@ export class ReaderView extends ItemView {
 		const toolbar = this.containerEl.children[1]?.querySelector<HTMLElement>('.rd-reader-toolbar');
 		if (toolbar) anchorBelowToolbar(this.drawer, toolbar);
 	}
-
 	private enterCropMode(): void {
 		if (!this.pageEl) return;
 		this.crop?.destroy();
@@ -421,6 +444,12 @@ export class ReaderView extends ItemView {
 		await this.host.annotations.save(highlight);
 		selection?.removeAllRanges();
 		await this.render();
+		const reveal = await revealCreatedCanvasTarget(written.target, this.host);
+		if (reveal === 'opened') {
+			new Notice('已创建 Canvas 卡片。');
+		} else if (reveal === 'open-failed') {
+			new Notice('Canvas 卡片已创建，但无法自动打开；可从“摘录管理”手动打开。');
+		}
 	}
 
 	private async createExcerptFromSelection(color: PdfHighlight['color']): Promise<void> {
@@ -441,57 +470,29 @@ export class ReaderView extends ItemView {
 		return this.host.prepareCropDrag({ pdfPath, page: payload.page, rect: payload.rect, target: payload.target, image });
 	}
 
-	private async toggleLayout(): Promise<void> {
-		this.layout = this.layout === 'split' ? 'focus' : 'split';
-		await this.host.setReaderLayout(this.layout);
-		await this.render();
+	private toggleTargetPanel(root: HTMLElement): void {
+		const disclosure = this.targetDisclosure;
+		if (!disclosure) return;
+		toggleReaderTargetPanel(root, disclosure, {
+			id: this.targetPanelId,
+			selectedPath: this.selectedTargetPath,
+			close: () => this.closeTargetPanel(),
+			listTargets: () => this.host.listTargets(this.selectedTarget),
+			selectPath: path => this.selectTargetPath(path),
+			openTarget: () => this.selectedTargetPath ? this.host.openTargetInSplit(this.selectedTargetPath) : Promise.resolve(),
+			drop: event => this.dropOnTargetPanel(event),
+			renderExcerpts: container => this.excerptPanel.render(container, this.activePath())
+		}, (panel, excerpts) => { this.targetPanel = panel; this.excerptContainer = excerpts; }, () => {
+			this.targetPanel = null;
+			this.excerptContainer = null;
+		});
 	}
 
-	private createTargetPanel(): HTMLElement {
-		const panel = document.createElement('aside');
-		panel.className = 'rd-target-panel';
-		panel.setAttribute('aria-label', '摘录目标面板');
-		const heading = document.createElement('h2');
-		heading.textContent = '摘录目标';
-		panel.append(heading);
-		const select = document.createElement('select');
-		select.setAttribute('aria-label', '选择已有目标文档');
-		select.append(new Option('正在加载已有目标…', ''));
-		const openTarget = this.button(panel, '打开实际目标', () => {
-			if (this.selectedTargetPath) void this.host.openTargetInSplit(this.selectedTargetPath);
+	private closeTargetPanel(): void {
+		closeReaderTargetPanel(this.targetDisclosure, this.targetPanel, () => {
+			this.targetPanel = null;
+			this.excerptContainer = null;
 		});
-		openTarget.disabled = !this.selectedTargetPath;
-		select.addEventListener('change', () => {
-			openTarget.disabled = !select.value;
-			void this.selectTargetPath(select.value);
-		});
-		void this.host.listTargets(this.selectedTarget).then(targets => {
-			select.replaceChildren();
-			if (targets.length === 0) select.append(new Option('暂无已有目标，创建摘录时会自动生成', ''));
-			else {
-				select.append(new Option('选择已有目标…', ''));
-				for (const target of targets) select.append(new Option(target.label, target.path));
-			}
-			select.value = this.selectedTargetPath;
-			openTarget.disabled = !this.selectedTargetPath;
-		}).catch(() => {
-			select.replaceChildren();
-			select.append(new Option('目标列表加载失败，仍可直接创建摘录', ''));
-			openTarget.disabled = true;
-		});
-		panel.append(select);
-		panel.append(openTarget);
-		const description = document.createElement('p');
-		description.textContent = '将选中文本拖到此处，或使用右键和色盘创建摘录。';
-		panel.append(description);
-		const excerpts = document.createElement('section');
-		excerpts.setAttribute('aria-label', 'Reading Desk 摘录卡片');
-		panel.append(excerpts);
-		this.excerptContainer = excerpts;
-		void this.excerptPanel.render(excerpts, this.activePath());
-		panel.addEventListener('dragover', event => event.preventDefault());
-		panel.addEventListener('drop', event => void this.dropOnTargetPanel(event));
-		return panel;
 	}
 
 	private async dropOnTargetPanel(event: DragEvent): Promise<void> {

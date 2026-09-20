@@ -27,6 +27,13 @@ export function scaleToFitWidth(currentScale: number, renderedWidth: number, ava
 	return currentScale * availableWidth / renderedWidth;
 }
 
+/** Returns the unbounded scale required to render a page at its host height. */
+export function scaleToFitHeight(currentScale: number, renderedHeight: number, availableHeight: number): number {
+	if (!Number.isFinite(currentScale) || !Number.isFinite(renderedHeight) || !Number.isFinite(availableHeight)
+		|| currentScale <= 0 || renderedHeight <= 0 || availableHeight <= 0) return currentScale;
+	return currentScale * availableHeight / renderedHeight;
+}
+
 export class PdfRenderer {
 	private document: PDFDocumentProxy | null = null;
 	private scale = 1.25;
@@ -76,6 +83,22 @@ export class PdfRenderer {
 		await this.renderTextLayer(page, viewport, target);
 		this.renderHighlights(target, viewport, highlights.filter(highlight => highlight.page === pageNumber - 1));
 		return { page: pageNumber, viewport, container: target };
+	}
+
+	/** Paints a lightweight, real PDF-page preview without changing Reader scale state. */
+	async renderThumbnail(pageNumber: number, canvas: HTMLCanvasElement, maxWidth = 136): Promise<void> {
+		const page = await this.requireDocument().getPage(pageNumber);
+		const natural = page.getViewport({ scale: 1, rotation: this.rotation });
+		const cssScale = maxWidth / natural.width;
+		const viewport = page.getViewport({ scale: cssScale, rotation: this.rotation });
+		const pixelRatio = Math.max(1, canvas.ownerDocument.defaultView?.devicePixelRatio ?? 1);
+		canvas.width = Math.ceil(viewport.width * pixelRatio);
+		canvas.height = Math.ceil(viewport.height * pixelRatio);
+		canvas.style.width = `${Math.ceil(viewport.width)}px`;
+		canvas.style.height = `${Math.ceil(viewport.height)}px`;
+		const context = canvas.getContext('2d');
+		if (!context) throw new Error('无法创建 PDF 缩略图 canvas 上下文');
+		await page.render({ canvasContext: context, viewport, transform: pixelRatio === 1 ? undefined : [pixelRatio, 0, 0, pixelRatio, 0, 0] }).promise;
 	}
 
 	/** Repaints only the annotation overlay, leaving PDF canvas/text selection intact. */

@@ -2,7 +2,6 @@ import type { ReadingDeskData, ReadingDeskSettings } from '../types/contracts';
 
 export const DEFAULT_SETTINGS: ReadingDeskSettings = {
 	libraryFolders: [],
-	readerLayout: 'shelf',
 	storage: {
 		enabled: false,
 		imageHostEnabled: false,

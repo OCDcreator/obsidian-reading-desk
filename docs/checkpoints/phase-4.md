@@ -13,5 +13,5 @@
 ## Next command
 
 ```bash
-obsidian vault=testvault command id=obsidian-reading-desk:open-reader-in-focus-layout
+`open-reader-in-focus-layout` 作为旧命令 id 保留兼容，只打开当前/首本 PDF，不再写入已废弃的 focus 布局偏好。
 ```

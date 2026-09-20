@@ -58,8 +58,6 @@ export default class ReadingDeskPlugin extends Plugin {
 			updateProgress: (path, progress) => this.updateProgress(path, progress),
 			showTarget: (path, objectId) => this.showTarget(path, objectId),
 			openTargetInSplit: (path, objectId) => this.openTargetInSplit(path, objectId),
-			getReaderLayout: () => this.getReaderLayout(),
-			setReaderLayout: layout => this.setReaderLayout(layout),
 			readExcerptCards: path => this.readExcerptCards(path),
 			updateExcerptCard: (highlightId, patch) => this.updateExcerptCard(highlightId, patch),
 			copyPageLink: (path, page) => this.copyPageLink(path, page),
@@ -73,7 +71,7 @@ export default class ReadingDeskPlugin extends Plugin {
 		this.addRibbonIcon('book-open', '打开 Reading Desk 书架', () => this.openShelf());
 		this.addCommand({ id: 'open-reading-desk', name: '打开 Reading Desk 书架', callback: () => this.openShelf() });
 		this.addCommand({ id: 'scan-library', name: '扫描 Reading Desk 书库', callback: () => this.scanLibrary() });
-		this.addCommand({ id: 'open-reader-in-focus-layout', name: '以专注布局打开 Reading Desk 阅读器', callback: () => this.openFocusedReader() });
+		this.addCommand({ id: 'open-reader-in-focus-layout', name: '打开 Reading Desk 阅读器（兼容命令）', callback: () => this.openReaderFromActiveFile() });
 		this.addCommand({ id: 'import-legacy-bookshelf', name: '导入旧 Bookshelf 数据（一次性）', callback: () => this.importLegacyBookshelf() });
 		this.addCommand({ id: 'export-library-markdown', name: '导出 Reading Desk 书架为 Markdown（写入仓库）', callback: () => this.exportToVault('markdown') });
 		this.addCommand({ id: 'export-library-json', name: '导出 Reading Desk 书架为 JSON（写入仓库）', callback: () => this.exportToVault('json') });
@@ -192,8 +190,7 @@ export default class ReadingDeskPlugin extends Plugin {
 		}
 	}
 
-	private async openFocusedReader(): Promise<void> {
-		await this.setReaderLayout('focus');
+	private async openReaderFromActiveFile(): Promise<void> {
 		const active = this.app.workspace.getActiveFile();
 		const path = active?.extension.toLowerCase() === 'pdf' ? active.path : this.library.list().find(book => book.format === 'pdf')?.path;
 		if (!path) throw new Error('没有可打开的 PDF。请先扫描书库或打开一个 PDF。');
@@ -220,14 +217,6 @@ export default class ReadingDeskPlugin extends Plugin {
 			.filter(file => targetMatches(file, type))
 			.map(file => ({ path: file.path, label: file.basename }))
 			.sort((left, right) => left.label.localeCompare(right.label, 'zh-CN'));
-	}
-
-	private async getReaderLayout(): Promise<'focus' | 'split'> {
-		return this.repository.readSettings().readerLayout === 'focus' ? 'focus' : 'split';
-	}
-
-	private async setReaderLayout(layout: 'focus' | 'split'): Promise<void> {
-		await this.repository.updateSettings({ readerLayout: layout });
 	}
 
 	private async readExcerptCards(pdfPath: string): Promise<Array<{ highlight: import('./types/contracts').PdfHighlight; title?: string; folded?: boolean }>> {

@@ -165,7 +165,9 @@ Shelf 和 Reader 的外层各保留 `24px` 工作区 padding。Reader 的 sticky
 
 Shelf 的主书库采用 `repeat(auto-fill, minmax(184px, 1fr))`，卡片不是营销式的固定等高网格：封面容器保持 `0.7` aspect ratio，继续阅读轨单卡限定为 `clamp(152px, 22vw, 196px)` / 最大 `196px`，其余高度由真实元数据、标题与进度决定。表格是数据密集布局，不套用正文行宽规则。
 
-Reader 在常规 desktop leaf 中为 PDF 单列；`split` 是 `minmax(0, 1fr)` 加 `minmax(220px, 32%)` 的目标列。窄 leaf 由 `@container (max-width: 800px)` 与 `760px` fallback 改为单列，目标面板从 sticky 变为正常流。高亮抽屉和评论浮层是有边界的 overlay，不是模态替身。工具栏在窄 leaf 中会换行，所以抽屉与 sticky 目标面板的偏移不写死常量：目标面板读取工具栏实测高度（`--rd-toolbar-height`），抽屉则在每次显示时按自身解析原点自校准（`--rd-drawer-top`）。抽屉是 `fixed`，而 Obsidian 给 workspace leaf 加了 `contain: strict`，包含块因此是那个 leaf 而不是视口，用视口坐标会把抽屉压到工具栏上。PDF 页宿主保留自身 `overflow: auto` 作为容纳盒，避免过宽的页面溅到 Reader 上；Reader 仍是主滚动容器。
+Reader 的常规 desktop leaf 使用真实 PDF 导航列加 PDF 工作面：宽档为 `224–256px` 导航和至少 `520px` PDF，中档为至少 `192px` 导航和 `400px` PDF；两列保持 `16px` gutter 与 `24/16px` 外边距。窄 leaf 依据 Reader 自身 `ResizeObserver` 测量切为上下排列，导航成为最高 `240px` 的可滚动区域，PDF 工作面保持 `min-width: 0` 与自身 overflow，不依赖全窗口宽度。导航在真实页面缩略图与 PDF outline 层级之间切换；目录含当前章节、页码、加载、空和错误态。
+
+真实 Canvas、Excalidraw 与 Markdown 由宿主相邻 leaf 呈现。创建 Canvas 摘录后 Reader 立即调用宿主打开相邻 Canvas 并聚焦新 node；Reader 内“摘录管理”只是按需打开的辅助 overlay，不占第三列、不模拟 Canvas。高亮抽屉和评论浮层同样是有边界的 overlay。工具栏在窄 leaf 中换行，overlay 偏移读取工具栏实测高度。PDF 页宿主保留自身 `overflow: auto`，避免过宽页面溅出 Reader。
 
 ## Elevation & Depth
 
@@ -191,7 +193,7 @@ Reader 在常规 desktop leaf 中为 PDF 单列；`split` 是 `minmax(0, 1fr)` �
 
 ### Reader Toolbar and Target Panel
 
-**同一个工具词汇连接 PDF 与真实目标。** toolbar 固定在 Reader 顶部；`rd-target-panel` 作为 `split` 中的 `16px` raised-surface 侧面板，含目标类型/路径、摘录卡和明确的 Canvas、Excalidraw、Markdown 操作入口。它不替代、也不伪装原生 Canvas/Excalidraw leaf；实际目标仍由宿主打开、聚焦与保存。
+**同一个工具词汇连接 PDF 与真实目标。** toolbar 固定在 Reader 顶部，并同时提供“适合宽度”“适合高度”；手动放大/缩小退出 fit mode，Reader 容器重排则保持当前 fit mode。`rd-target-panel` 是按需打开的辅助管理 overlay，含目标类型/路径、摘录卡和明确的原生目标入口；它不占常驻第三列，也不替代或伪装 Canvas/Excalidraw leaf。实际目标由宿主打开、聚焦与保存。
 
 ### Highlights, Palette and Comments
 

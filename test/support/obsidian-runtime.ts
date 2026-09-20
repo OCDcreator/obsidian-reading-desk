@@ -28,6 +28,19 @@ export class Vault {}
 
 export class EventRef {}
 
+export class ItemView {
+	containerEl = { children: [] };
+	constructor(leaf?: unknown) { void leaf; }
+}
+
+export class Notice { constructor(message: string) { void message; } }
+
+export class Menu {
+	addItem(_builder: (item: { setTitle(title: string): unknown; onClick(action: () => void): unknown }) => void): this { return this; }
+	showAtMouseEvent(event: unknown): void { void event; }
+	showAtPosition(position: { x: number; y: number }): void { void position; }
+}
+
 export async function requestUrl(): Promise<never> {
 	throw new Error('requestUrl is not implemented in the test runtime');
 }

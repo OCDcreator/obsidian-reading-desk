@@ -4,6 +4,10 @@
 
 使用 `pdfjs-dist` 4.10.38 本地 bundle，优先从插件安装目录的 `pdf.worker.mjs` asset 加载；渲染层是 canvas，文本层使用 pdfjs `TextLayer` API，二者由同一 viewport 驱动。插件声明 desktop-only。
 
+Reader 的导航列提供真实页面缩略图与 PDF.js `getOutline()` 层级目录，两者都可跳页。页面缩放同时支持适合宽度和适合高度；Reader 自身的 `ResizeObserver` 在宿主 leaf 重排后重算当前 fit mode，手动缩放则退出自动适配。
+
+Canvas 仍是 Obsidian 所有的相邻 leaf。Canvas 摘录经 `TargetService` 持久化后，应用组合边界打开原生目标并聚焦返回的 node id；Reader 内的目标管理只是辅助 overlay，不渲染 Canvas 替身。
+
 ## 原因
 
 CDN 会引入离线、隐私与 CSP 风险；内置 worker 在 vault 复制部署后仍可用。当前生产 worker 为 2.1 MiB，主 bundle 约 1.1 MiB（2026-09-18 实测）；这个体积成本换来真实 metadata、page rendering、outline、text selection 和旋转坐标的一致 PDF 引擎。

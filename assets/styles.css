@@ -103,8 +103,9 @@
 .rd-shelf .rd-category-chip, .rd-shelf .rd-view-switch-button { background: var(--rd-surface); }
 
 /* Reader shell */
-.rd-reader, .rd-shelf { height: 100%; overflow: auto; background: var(--rd-surface); }
-.rd-reader { container-type: inline-size; }
+.rd-reader, .rd-shelf { height: 100%; background: var(--rd-surface); }
+.rd-shelf { overflow: auto; }
+.rd-reader { container-type: inline-size; display: grid; grid-template-rows: auto minmax(0, 1fr); overflow: hidden; }
 .rd-reader-toolbar {
 	display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
 	padding: 12px 16px; position: sticky; top: 0; z-index: 4;
@@ -113,12 +114,51 @@
 }
 .rd-reader-toolbar > * { min-width: 0; }
 .rd-page-count { align-self: center; color: var(--rd-ink-muted); font: inherit; white-space: nowrap; }
-.rd-reader-body { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; padding: 24px; min-height: calc(100% - 54px); min-width: 0; }
-.rd-reader-body--split { grid-template-columns: minmax(0, 1fr) minmax(220px, 32%); align-items: start; justify-items: stretch; gap: 16px; }
-.rd-reader-body--split .rd-pdf-page-host { justify-self: center; }
+.rd-page-control { display: flex; align-items: center; gap: 4px; min-width: 0; white-space: nowrap; }
+.rd-page-control input { width: 64px; min-width: 52px; font-variant-numeric: tabular-nums; text-align: center; }
+.rd-page-control__prefix, .rd-page-control__suffix { color: var(--rd-ink-muted); }
+.rd-reader-body {
+	display: grid; grid-template-columns: minmax(224px, 256px) minmax(520px, 1fr);
+	align-items: stretch; gap: 16px; padding: 24px;
+	min-height: 0; height: 100%; min-width: 0; overflow: hidden;
+}
+.rd-pdf-stage { min-width: 0; min-height: 0; height: 100%; overflow: auto; display: grid; place-items: start center; padding: 24px; }
+.rd-reader-navigation {
+	min-width: 0; max-height: calc(100vh - var(--rd-toolbar-height, 54px) - 48px); overflow: hidden;
+	border: 1px solid var(--rd-line); background: var(--rd-surface-raised); display: grid; grid-template-rows: auto minmax(0, 1fr);
+}
+.rd-reader-navigation__tabs { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--rd-line); padding: 8px; gap: 8px; }
+.rd-reader-navigation__tab, .rd-reader-thumbnail, .rd-reader-outline__item {
+	border: 1px solid transparent; border-radius: 5px; background: transparent; color: var(--rd-ink); font: inherit;
+}
+.rd-reader-navigation__tab { min-height: 30px; padding: 4px 8px; }
+.rd-reader-navigation__tab[aria-selected='true'] { border-color: var(--rd-accent); background: color-mix(in oklch, var(--rd-surface) 90%, var(--rd-accent)); }
+.rd-reader-navigation__panel { min-height: 0; overflow: auto; padding: 8px; }
+.rd-reader-thumbnails, .rd-reader-outline { list-style: none; margin: 0; padding: 0; }
+.rd-reader-thumbnails { display: grid; gap: 16px; }
+.rd-reader .rd-reader-thumbnail {
+	width: 100%; height: auto; min-height: 0; overflow: hidden;
+	padding: 8px; display: grid; align-content: start; justify-items: center; gap: 8px;
+	background: var(--rd-surface); cursor: pointer;
+}
+.rd-reader .rd-reader-thumbnail canvas {
+	display: block; width: 100%; max-width: 136px; height: auto; flex: none;
+	background: var(--rd-surface-document); box-shadow: 0 4px 12px var(--rd-elevation);
+}
+.rd-reader-thumbnail span, .rd-reader-outline__page { color: var(--rd-ink-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.rd-reader-thumbnail[aria-current='page'], .rd-reader-outline__item[aria-current='location'] { border-color: var(--rd-accent); }
+.rd-reader-outline .rd-reader-outline { padding-left: 16px; }
+.rd-reader-outline__item { width: 100%; min-width: 0; min-height: 30px; padding: 4px 8px; display: flex; align-items: center; justify-content: space-between; gap: 8px; text-align: left; cursor: pointer; }
+.rd-reader-outline__item > :first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rd-reader-navigation__tab:focus-visible, .rd-reader-thumbnail:focus-visible, .rd-reader-outline__item:focus-visible { outline: 2px solid var(--rd-accent); outline-offset: 2px; }
 /* The host keeps its own overflow so an over-wide page stays contained instead of
  * spilling across the Reader; the Reader remains the primary scroll container. */
 .rd-pdf-page-host { position: relative; background: var(--rd-surface-document); box-shadow: 0 8px 22px var(--rd-elevation); max-width: 100%; overflow: auto; }
+.rd-reader[data-rd-size='medium'] .rd-reader-body { grid-template-columns: minmax(192px, 224px) minmax(400px, 1fr); padding: 16px; }
+.rd-reader[data-rd-size='medium'] .rd-pdf-stage { padding: 16px; }
+.rd-reader[data-rd-size='narrow'] .rd-reader-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(120px, 240px) minmax(320px, 1fr); padding: 16px; overflow: hidden; }
+.rd-reader[data-rd-size='narrow'] .rd-reader-navigation { max-height: 240px; }
+.rd-reader[data-rd-size='narrow'] .rd-pdf-stage { min-width: 0; min-height: 320px; padding: 16px 0; overflow: auto; }
 .rd-pdf-canvas, .rd-pdf-text-layer, .rd-highlight-layer { inset: 0; position: absolute; }
 .rd-pdf-canvas { position: relative; display: block; }
 .rd-pdf-text-layer { overflow: hidden; line-height: 1; opacity: 1; user-select: text; -webkit-user-select: text; pointer-events: auto; }
@@ -163,8 +203,9 @@
 .rd-toolbar-palette .rd-button:hover, .rd-swatch[aria-pressed='true'] { outline: 3px solid var(--rd-accent); outline-offset: 2px; }
 
 /* Target panel and excerpt cards */
-.rd-target-panel { position: sticky; top: var(--rd-toolbar-height, 72px); border: 1px solid var(--rd-line); background: var(--rd-surface-raised); padding: 16px; display: grid; gap: 12px; min-height: 180px; min-width: 0; }
+.rd-target-panel { position: fixed; right: 16px; top: var(--rd-toolbar-height, 72px); z-index: 7; width: min(360px, calc(100% - 32px)); max-height: calc(100% - var(--rd-toolbar-height, 72px) - 16px); overflow: auto; border: 1px solid var(--rd-line); background: var(--rd-surface-raised); box-shadow: 0 12px 28px var(--rd-elevation); padding: 16px; display: grid; gap: 12px; min-height: 180px; min-width: 0; }
 .rd-target-panel h2, .rd-target-panel h3 { font-size: 16px; margin: 0; }
+.rd-target-panel__header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .rd-target-panel p { color: var(--rd-ink-muted); font-size: 14px; line-height: 1.5; }
 .rd-target-panel:focus-within { border-color: var(--rd-accent); }
 .rd-target-panel select { width: 100%; min-width: 0; max-width: 100%; }

@@ -1,5 +1,4 @@
 export type BookFormat = 'pdf' | 'epub';
-export type ReaderLayout = 'focus' | 'split' | 'shelf';
 export type TargetType = 'canvas' | 'excalidraw' | 'markdown';
 export type HighlightColor = 'moss' | 'amber' | 'brick' | 'indigo' | 'plum';
 
@@ -95,7 +94,6 @@ export interface ObjectStorageSettings {
 
 export interface ReadingDeskSettings {
 	libraryFolders: string[];
-	readerLayout: ReaderLayout;
 	storage: ObjectStorageSettings;
 	importedBookshelf: boolean;
 }
