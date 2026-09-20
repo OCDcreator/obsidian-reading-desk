@@ -43,7 +43,7 @@ export class PdfRenderer {
 	private renderedViewport: PageViewport | null = null;
 	private renderedPageNumber: number | null = null;
 	private renderGeneration = 0;
-	private activeRenderTask: RenderTask | null = null;
+	private readonly activeRenderTasks = new Map<number, RenderTask>();
 
 	constructor(private readonly source: PdfBinarySource) { }
 
@@ -69,7 +69,9 @@ export class PdfRenderer {
 	}
 
 	async renderPage(pageNumber: number, target: HTMLElement, highlights: PdfHighlight[]): Promise<RenderedPage | null> {
-		const generation = ++this.renderGeneration;
+		// The generation only changes when the document closes or is replaced; it must
+		// not bump per call, or concurrent deck page renders would invalidate each other.
+		const generation = this.renderGeneration;
 		const proxy = this.requireDocument();
 		const page = await proxy.getPage(pageNumber);
 		const viewport = page.getViewport({ scale: this.scale, rotation: this.rotation });
@@ -96,15 +98,17 @@ export class PdfRenderer {
 		const context = canvas.getContext('2d');
 		if (!context) throw new Error('无法创建 PDF canvas 上下文');
 		const task = page.render({ canvasContext: context, viewport, transform: pixelRatio === 1 ? undefined : [pixelRatio, 0, 0, pixelRatio, 0, 0] });
-		this.activeRenderTask?.cancel();
-		this.activeRenderTask = task;
+		// Per-page task tracking: the deck renders several pages concurrently, so a
+		// new render may only cancel the previous task of the SAME page.
+		this.activeRenderTasks.get(pageNumber)?.cancel();
+		this.activeRenderTasks.set(pageNumber, task);
 		try {
 			await task.promise;
 		} catch (error) {
 			if (isCancelledRender(error) || !this.ownsRender(generation, proxy)) return null;
 			throw error;
 		} finally {
-			if (this.activeRenderTask === task) this.activeRenderTask = null;
+			if (this.activeRenderTasks.get(pageNumber) === task) this.activeRenderTasks.delete(pageNumber);
 		}
 		if (!this.ownsRender(generation, proxy)) return null;
 		const textSelectable = await this.renderTextLayer(page, viewport, target, generation);
@@ -184,8 +188,8 @@ export class PdfRenderer {
 
 	async close(): Promise<void> {
 		this.renderGeneration += 1;
-		this.activeRenderTask?.cancel();
-		this.activeRenderTask = null;
+		for (const task of this.activeRenderTasks.values()) task.cancel();
+		this.activeRenderTasks.clear();
 		if (!this.document) return;
 		const document = this.document;
 		this.document = null;

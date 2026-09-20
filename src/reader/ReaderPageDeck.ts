@@ -21,8 +21,10 @@ export class ContinuousPageSurface implements PageSurface {
 	private readonly rendered = new Set<number>();
 	private readonly viewports = new Map<number, PageViewport>();
 	private readonly pageTops: number[] = [];
-	private pageWidth = 0;
+	private naturalWidth = 0;
 	private pageRatio = 1.414;
+	private renderEpoch = 0;
+	private readonly visiblePages = new Set<number>();
 	private currentPage: number;
 	private intersection: IntersectionObserver | null = null;
 	private scrollFrame: number | null = null;
@@ -50,7 +52,18 @@ export class ContinuousPageSurface implements PageSurface {
 		this.currentPage = this.clampPage(this.currentPage);
 		this.stage.scrollTop = this.pageTops[this.currentPage - 1] ?? 0;
 		this.requestRender(this.currentPage);
+		// Fit math runs right after render(); the anchor page must have a viewport.
+		await this.waitForRendered(this.currentPage);
 		this.io.callbacks.onPageChange(this.currentPage);
+	}
+
+	/** Resolves once the page holds a rendered viewport, or after a bounded wait. */
+	private async waitForRendered(page: number): Promise<void> {
+		const view = this.stage.ownerDocument.defaultView;
+		const deadline = Date.now() + 3000;
+		while (!this.rendered.has(page) && !this.destroyed && Date.now() < deadline) {
+			await new Promise<void>(resolve => (view ? view.requestAnimationFrame(() => resolve()) : setTimeout(resolve, 32)));
+		}
 	}
 
 	async goToPage(page: number, options?: GoToOptions): Promise<void> {
@@ -101,7 +114,13 @@ export class ContinuousPageSurface implements PageSurface {
 
 	relayoutPending(): void {
 		if (!this.structureReady) return;
+		this.renderEpoch += 1;
+		this.rendered.clear();
+		this.viewports.clear();
 		this.syncPlaceholderSizes();
+		// IntersectionObserver will not refire for pages whose visibility did not
+		// change, so the visible window is re-requested explicitly after zoom.
+		for (const page of this.visiblePages) this.requestRender(page);
 	}
 
 	destroy(): void {
@@ -124,14 +143,15 @@ export class ContinuousPageSurface implements PageSurface {
 		return Math.max(1, Math.min(Math.max(this.io.pageCount, 1), Math.round(page)));
 	}
 
+	/** Measures once at scale 1 so placeholder math stays correct across zoom changes. */
 	private async measureFirstPage(): Promise<void> {
-		if (this.pageWidth > 0) return;
+		if (this.naturalWidth > 0) return;
 		try {
 			const viewport = await this.io.pdf.pageViewport(1);
 			this.pageRatio = viewport.height / Math.max(1, viewport.width);
-			this.pageWidth = viewport.width;
+			this.naturalWidth = viewport.width / Math.max(this.io.pdf.getScale(), 0.0001);
 		} catch {
-			this.pageWidth = 0;
+			this.naturalWidth = 0;
 		}
 	}
 
@@ -156,7 +176,7 @@ export class ContinuousPageSurface implements PageSurface {
 	}
 
 	private targetPageWidth(): number {
-		if (this.pageWidth > 0) return this.pageWidth;
+		if (this.naturalWidth > 0) return Math.round(this.naturalWidth * this.io.pdf.getScale());
 		const style = this.stage.ownerDocument.defaultView?.getComputedStyle(this.stage);
 		const padding = Number.parseFloat(style?.paddingLeft ?? '24') + Number.parseFloat(style?.paddingRight ?? '24');
 		return Math.max(120, this.stage.clientWidth - padding);
@@ -215,8 +235,13 @@ export class ContinuousPageSurface implements PageSurface {
 			for (const entry of entries) {
 				const page = Number((entry.target as HTMLElement).dataset.page ?? '0');
 				if (!page) continue;
-				if (entry.isIntersecting) this.requestRender(page);
-				else this.maybeRelease(page);
+				if (entry.isIntersecting) {
+					this.visiblePages.add(page);
+					this.requestRender(page);
+				} else {
+					this.visiblePages.delete(page);
+					this.maybeRelease(page);
+				}
 			}
 		}, { root: this.stage, rootMargin: IO_MARGIN });
 		for (const host of this.hosts.values()) this.intersection.observe(host);

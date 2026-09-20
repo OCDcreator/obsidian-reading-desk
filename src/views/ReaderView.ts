@@ -346,7 +346,8 @@ export class ReaderView extends ItemView {
 		this.drawerToggle.setAttribute('aria-expanded', String(this.drawerOpen));
 		this.targetDisclosure = new TargetPanelDisclosure(this.controls.targetPanelToggle, this.targetPanelId);
 		this.controls.copyPage.disabled = this.pages === 0;
-		this.tools.searchPanel.mount(root);
+		const aux = root.createDiv({ cls: 'rd-reader-aux' });
+		this.tools.searchPanel.mount(aux);
 		this.stopToolbarTracking?.();
 		this.stopToolbarTracking = trackToolbarHeight(root, toolbar);
 

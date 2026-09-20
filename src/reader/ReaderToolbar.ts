@@ -102,6 +102,8 @@ export function createReaderToolbar(parent: HTMLElement, options: ReaderToolbarO
 	const copySelection = overflow(createReaderButton(pageGroup, '复制选中文本', options.onCopySelection, 'copy'), 'secondary');
 
 	const zoomGroup = group(parent, 'zoom', '缩放');
+	// The whole zoom group collapses behind 更多工具 on narrow leaves.
+	zoomGroup.dataset.rdOverflow = 'secondary';
 	const zoomControl = createReaderZoomControl(zoomGroup, { scale: options.scale, setScale: options.onZoomSet, zoomOut: options.onZoomOut, zoomIn: options.onZoomIn });
 
 	createReaderPalette(group(parent, 'color', '颜色'), options.onColor);
@@ -114,6 +116,7 @@ export function createReaderToolbar(parent: HTMLElement, options: ReaderToolbarO
 		if (isHidden(crop)) items.push(['裁剪', options.onCrop]);
 		if (isHidden(back)) items.push(['返回上一位置', options.onBack]);
 		if (isHidden(forward)) items.push(['前往下一位置', options.onForward]);
+		if (getComputedStyle(zoomGroup).display === 'none') items.push(['缩小', options.onZoomOut], ['放大', options.onZoomIn]);
 		if (isHidden(copyPage)) items.push(['复制本页链接', options.onCopyPage]);
 		if (isHidden(copySelection)) items.push(['复制选中文本', options.onCopySelection]);
 		showMenu(more, items);

@@ -15,8 +15,8 @@
 	--rd-moss: var(--canvas-color-4, oklch(0.68 0.12 145));
 	--rd-amber: var(--canvas-color-3, oklch(0.77 0.14 80));
 	--rd-brick: var(--canvas-color-1, oklch(0.62 0.15 30));
-	--rd-indigo: var(--canvas-color-6, oklch(0.61 0.13 275));
-	--rd-plum: var(--canvas-color-5, oklch(0.62 0.13 325));
+	--rd-indigo: var(--canvas-color-5, oklch(0.60 0.11 195));
+	--rd-plum: var(--canvas-color-6, oklch(0.58 0.16 300));
 	--rd-elevation: oklch(0.2 0.02 250 / 0.2);
 	color: var(--rd-ink);
 }
@@ -106,7 +106,10 @@
 /* Reader shell */
 .rd-reader, .rd-shelf { height: 100%; background: var(--rd-surface); }
 .rd-shelf { overflow: auto; }
-.rd-reader { container-type: inline-size; display: grid; grid-template-rows: auto minmax(0, 1fr); overflow: hidden; }
+.rd-reader { container-type: inline-size; display: grid; grid-template-rows: auto auto minmax(0, 1fr); overflow: hidden; }
+/* The aux row carries the docked search panel; it collapses to zero when hidden. */
+.rd-reader-aux:empty, .rd-reader-aux > .is-hidden { line-height: 0; }
+.rd-reader-aux { min-height: 0; }
 .rd-reader-toolbar {
 	display: flex; align-items: center; gap: 8px; flex-wrap: nowrap;
 	padding: 8px; position: sticky; top: 0; z-index: 4;
