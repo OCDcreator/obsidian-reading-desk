@@ -48,8 +48,9 @@ export class ReaderFitController {
 		if (!body) return;
 		this.stopTracking = observeReaderFit(body, () => {
 			const surface = this.io.surface();
-			if (this.mode === 'manual' || !surface?.stage || !this.io.body()) return 0;
-			return availableFitExtent(this.mode, surface.stage, this.io.body()!, fitInsets(surface.stage));
+			const liveBody = this.io.body();
+			if (this.mode === 'manual' || !surface?.stage || !liveBody) return 0;
+			return availableFitExtent(this.mode, surface.stage, liveBody, fitInsets(surface.stage));
 		}, () => {
 			const view = body.ownerDocument.defaultView;
 			if (view) (this.scheduler ??= new FitFrameScheduler(view)).schedule(() => void this.apply());

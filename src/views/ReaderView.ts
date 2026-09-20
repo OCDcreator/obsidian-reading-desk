@@ -30,18 +30,12 @@ import { openReaderDocument } from '../reader/ReaderDocumentOpen';
 import { ReaderViewLifecycle } from '../reader/ReaderViewLifecycle';
 import { ContinuousPageSurface } from '../reader/ReaderPageDeck';
 import { SinglePageSurface, type PageSurface, type PageSurfaceIO } from '../reader/PageSurface';
-import { readerKeyAction, readerKeyTargetIsEditable } from '../reader/ReaderKeyboard';
+import { bindReaderPageEvents, type ReaderPageEventDeps } from '../reader/ReaderPageEvents';
+import { ReaderDisplayOptions } from '../reader/ReaderDisplayOptions';
 import { ReaderHistory } from '../reader/ReaderHistory';
-import { ReaderToolsController, showSelectionMenu } from '../reader/ReaderToolsController';
-import { type InvertSetting } from '../reader/ReaderViewerOptions';
-import { applyReaderInvert, observeReaderTheme } from '../reader/ReaderThemeInvert';
+import { ReaderToolsController } from '../reader/ReaderToolsController';
 import { selectionRects, writeReaderExcerpt } from '../reader/ReaderExcerptWriter';
 
-/* eslint-disable max-lines --
- * ReaderView is the composition boundary for surfaces, bridges and controllers.
- * Reader UX overhaul 0.2.0 extracted 12 collaborator modules; the remaining width is
- * lifecycle wiring, and deeper splits would only invert dependencies into objects.
- * Decomposition debt is tracked in docs/adr/0006-reader-ux-overhaul.md. */
 export const READER_VIEW_TYPE = 'reading-desk-reader';
 export interface ReaderHost {
 	createPdfRenderer(): PdfRenderer;
@@ -90,7 +84,6 @@ export class ReaderView extends ItemView {
 	private fitController: ReaderFitController;
 	private stopDensityObserver: (() => void) | null = null;
 	private stopToolbarTracking: (() => void) | null = null;
-	private stopThemeObserver: (() => void) | null = null;
 	private targetPanelController: ReaderTargetPanelController;
 	private targetDisclosure: TargetPanelDisclosure | null = null;
 	private readonly targetPanelId = createId('rd-target-panel');
@@ -103,8 +96,7 @@ export class ReaderView extends ItemView {
 	private readonly highlightCoordinator: ReaderHighlightCoordinator;
 	private readonly history = new ReaderHistory();
 	private readonly tools: ReaderToolsController;
-	private scrollMode: 'continuous' | 'single' = 'continuous';
-	private invert: InvertSetting = 'auto';
+	private readonly display: ReaderDisplayOptions;
 	private lastColor: PdfHighlight['color'] = 'moss';
 	private controls: ReaderToolbarControls | null = null;
 	private scannedNoticeShown = false;
@@ -157,14 +149,22 @@ export class ReaderView extends ItemView {
 			listTargets: () => this.host.listTargets(this.selectedTarget),
 			openTargetInSplit: path => this.host.openTargetInSplit(path),
 			commitCropDrop: (event, canvasTargetPath) => handleCropDrop(event, canvasTargetPath, (token, path) => this.host.commitPreparedCrop(token, path)),
-			dropExcerpt: event => this.dropExcerptOnPanel(event),
+			dropExcerpt: event => {
+				const text = event.dataTransfer?.getData('text/plain').trim() ?? '';
+				const rects = parseDraggedHighlightRects(event.dataTransfer?.getData('application/x-reading-desk-rects') ?? '');
+				return text && rects ? this.createExcerpt(text, this.selectedTarget, this.lastColor, rects) : Promise.resolve();
+			},
 			renderExcerpts: container => this.excerptPanel.render(container, this.activePath()),
 			syncOutlineForCanvas: targetPath => this.syncOutlineForTarget(targetPath),
 			onNotice: message => new Notice(message)
 		});
-		const viewer = host.viewerSettings();
-		this.scrollMode = viewer.scrollMode;
-		this.invert = viewer.invertPdf;
+		this.display = new ReaderDisplayOptions({
+			root: () => this.containerEl.children[1] as HTMLElement,
+			pdf: () => this.pdf,
+			rebuildSurface: () => this.rebuildSurface(),
+			updateViewerSettings: patch => this.host.updateViewerSettings(patch)
+		});
+		this.display.restoreFrom(host.viewerSettings());
 		this.fitController = new ReaderFitController({
 			pdf: () => this.pdf,
 			surface: () => this.surface,
@@ -190,8 +190,7 @@ export class ReaderView extends ItemView {
 		this.readerNavigation = null;
 		this.navigationContainer = null;
 		this.fitController.stop();
-		this.stopThemeObserver?.();
-		this.stopThemeObserver = null;
+		this.display.stop();
 		this.stopToolbarTracking?.();
 		this.stopToolbarTracking = null;
 		this.stopDensityObserver?.();
@@ -304,8 +303,8 @@ export class ReaderView extends ItemView {
 		this.drawerToggle = null;
 		root.replaceChildren();
 		root.className = 'rd-reader';
-		this.applyInvertState(root);
-		this.observeTheme(root);
+		this.display.applyInvert();
+		this.display.startThemeTracking();
 		this.stopDensityObserver?.();
 		this.stopDensityObserver = observeReaderDensity(root);
 		if (!this.activePath()) {
@@ -315,25 +314,24 @@ export class ReaderView extends ItemView {
 		}
 		root.createEl('h1', { cls: 'rd-reader-title rd-visually-hidden', text: this.readerTitle() });
 		const toolbar = root.createDiv({ cls: 'rd-reader-toolbar' });
-		const wasSearchOpen = this.tools.searchPanel.isOpen();
 		this.controls = bindReaderToolbar(toolbar, {
 			page: () => this.page,
 			pages: () => this.pages,
 			scale: () => this.pdf.getScale(),
 			selectedTarget: () => this.selectedTarget,
-			scrollMode: () => this.scrollMode,
-			invert: () => this.invert,
+			scrollMode: () => this.display.scrollMode(),
+			invert: () => this.display.invertSetting(),
 			canBack: () => this.history.canBack(),
 			canForward: () => this.history.canForward(),
 			onTargetChange: target => { this.selectedTarget = target; this.selectedTargetPath = ''; void this.render(); },
 			applyScale: scale => void this.applyScale(scale),
 			zoomStep: delta => void this.applyScale(this.pdf.getScale() + delta),
 			fitTo: mode => void this.fitTo(mode),
-			rotate: delta => void this.rotate(delta),
-			changeScrollMode: mode => void this.changeScrollMode(mode),
-			changeInvert: mode => void this.changeInvert(mode),
+			rotate: delta => void this.display.rotate(delta),
+			changeScrollMode: mode => void this.display.changeScrollMode(mode),
+			changeInvert: mode => void this.display.changeInvert(mode),
 			navigateHistory: direction => void this.navigateHistory(direction),
-			toggleSearch: () => this.toggleSearch(),
+			toggleSearch: () => this.tools.toggleSearch(),
 			toggleDrawer: () => this.toggleDrawer(),
 			enterCropMode: () => void this.enterCropMode(),
 			toggleTargetPanel: () => this.targetPanelController.toggle(),
@@ -349,22 +347,23 @@ export class ReaderView extends ItemView {
 		this.targetDisclosure = new TargetPanelDisclosure(this.controls.targetPanelToggle, this.targetPanelId);
 		this.controls.copyPage.disabled = this.pages === 0;
 		this.tools.searchPanel.mount(root);
-		if (wasSearchOpen) this.tools.searchPanel.show();
 		this.stopToolbarTracking?.();
 		this.stopToolbarTracking = trackToolbarHeight(root, toolbar);
 
 		const body = root.createDiv({ cls: 'rd-reader-body' });
 		this.readerBody = body;
-		this.createSurface();
-		body.append(this.surface!.stage);
-		this.bindPageEvents(this.surface!.stage);
+		const surface = this.createSurface();
+		body.append(surface.stage);
+		bindReaderPageEvents(surface.stage, this.pageEventDeps());
 		try {
-			await this.surface!.render();
+			await surface.render();
 			await this.fitController.refit(true);
-			this.recordProgress();
+			const opened = this.activePath();
+			if (opened && this.pages) this.host.recordProgress(opened, this.page / this.pages);
 		} catch (error) {
 			console.error('[Reading Desk] PDF 页面渲染失败', error);
-			this.renderStageError(body);
+			body.replaceChildren();
+			body.createEl('p', { cls: 'rd-error', text: 'PDF 页面载入失败。请回到书架重新打开该文件，或重新扫描书库后再试。', attr: { role: 'alert' } });
 		}
 		this.fitController.startObserver();
 		if (this.navigationContainer) this.attachNavigation(this.navigationContainer);
@@ -374,12 +373,7 @@ export class ReaderView extends ItemView {
 		this.bindHighlightPreview();
 	}
 
-	private renderStageError(body: HTMLElement): void {
-		body.replaceChildren();
-		body.createEl('p', { cls: 'rd-error', text: 'PDF 页面载入失败。请回到书架重新打开该文件，或重新扫描书库后再试。', attr: { role: 'alert' } });
-	}
-
-	private createSurface(): void {
+	private createSurface(): PageSurface {
 		this.surface?.destroy();
 		const io: PageSurfaceIO = {
 			pdf: this.pdf,
@@ -391,16 +385,27 @@ export class ReaderView extends ItemView {
 				onTextSignal: (page, selectable) => this.handleTextSignal(page, selectable)
 			}
 		};
-		this.surface = this.scrollMode === 'continuous' ? new ContinuousPageSurface(io) : new SinglePageSurface(io);
+		this.surface = this.display.scrollMode() === 'continuous' ? new ContinuousPageSurface(io) : new SinglePageSurface(io);
+		return this.surface;
 	}
 
-	private bindPageEvents(stage: HTMLElement): void {
-		stage.addEventListener('contextmenu', event => this.openSelectionMenu(event));
-		stage.addEventListener('keydown', event => this.handleReaderKeys(event));
-		stage.addEventListener('dblclick', event => this.jumpFromHighlight(event));
-		stage.addEventListener('click', event => this.handlePageClick(event));
-		stage.addEventListener('dragstart', event => this.beginExcerptDrag(event));
-		stage.addEventListener('wheel', event => this.handleWheelZoom(event), { passive: false });
+	private pageEventDeps(): ReaderPageEventDeps {
+		return {
+			getHighlight: (id: string) => this.host.annotations.get(id),
+			openComment: (highlight: PdfHighlight, anchor: HTMLElement) => void this.bridge.openFor(highlight, anchor, false),
+			selectionText: () => window.getSelection()?.toString().trim() ?? '',
+			jumpToTarget: (id: string) => void this.jumpToHighlightTarget(id),
+			page: (delta: -1 | 1) => void this.goTo(this.page + delta),
+			zoom: (delta: number) => void this.applyScale(this.pdf.getScale() + delta),
+			fit: (mode: 'width' | 'height' | 'page') => void this.fitTo(mode),
+			rotate: (delta: 90 | -90) => void this.display.rotate(delta),
+			back: () => void this.navigateHistory(-1),
+			forward: () => void this.navigateHistory(1),
+			openSearch: () => { this.tools.searchPanel.show(); this.tools.applySearchMarks(); },
+			applyZoomFactor: (factor: number) => void this.applyScale(this.pdf.getScale() * factor),
+			beginDrag: (event: DragEvent) => this.beginExcerptDrag(event),
+			openSelectionMenu: (event: MouseEvent) => this.openSelectionMenu(event)
+		};
 	}
 
 	attachNavigation(container: HTMLElement): void {
@@ -432,13 +437,10 @@ export class ReaderView extends ItemView {
 		await this.host.copyPageLink(path, this.page);
 	}
 	canCopyCurrentPage(): boolean { return !!this.activePath() && this.pages > 0; }
-
 	canCopySelection(): boolean { return this.tools.canCopySelection(); }
 	async copySelectedText(): Promise<void> { await this.tools.copySelectedText(); }
-
-		canUndoLastExcerpt(): boolean { return this.tools.canUndoLastExcerpt(); }
+	canUndoLastExcerpt(): boolean { return this.tools.canUndoLastExcerpt(); }
 	async undoLastExcerpt(): Promise<void> { await this.tools.undoLastExcerpt(); }
-
 	private async goTo(page: number, options?: { jump?: boolean; smooth?: boolean }): Promise<void> {
 		const bounded = boundVisiblePage(Number.isFinite(page) ? page : this.page, this.pages);
 		if (bounded.notice) new Notice(bounded.notice);
@@ -458,10 +460,6 @@ export class ReaderView extends ItemView {
 		this.controls?.pageControl.update(this.page, this.pages);
 		this.controls?.updateHistory(this.history.canBack(), this.history.canForward());
 		this.readerNavigation?.revealPage(this.page);
-		this.recordProgress();
-	}
-
-	private recordProgress(): void {
 		const path = this.activePath();
 		if (path && this.pages) this.host.recordProgress(path, this.page / this.pages);
 	}
@@ -482,44 +480,15 @@ export class ReaderView extends ItemView {
 		await this.fitController.fitTo(mode, true);
 	}
 
-	private async rotate(delta: 90 | -90): Promise<void> {
-		this.pdf.setRotation(this.pdf.getRotation() + delta);
-		await this.rebuildSurface();
-	}
-
 	/** Rebuilds the page surface after rotation or scroll-mode changes. */
 	private async rebuildSurface(): Promise<void> {
 		this.surface?.destroy();
 		this.surface = null;
 		if (!this.readerBody) return;
-		this.createSurface();
-		this.readerBody.replaceChildren(this.surface!.stage);
-		this.bindPageEvents(this.surface!.stage);
-		await this.surface!.render();
-	}
-
-	private async changeScrollMode(mode: 'continuous' | 'single'): Promise<void> {
-		if (mode === this.scrollMode) return;
-		this.scrollMode = mode;
-		await this.host.updateViewerSettings({ scrollMode: this.scrollMode, invertPdf: this.invert });
-		await this.rebuildSurface();
-		await this.fitController.refit(true);
-	}
-
-	private async changeInvert(mode: InvertSetting): Promise<void> {
-		if (mode === this.invert) return;
-		this.invert = mode;
-		await this.host.updateViewerSettings({ scrollMode: this.scrollMode, invertPdf: this.invert });
-		this.applyInvertState(this.containerEl.children[1] as HTMLElement);
-	}
-
-	private applyInvertState(root: HTMLElement): void {
-		applyReaderInvert(root, this.invert);
-	}
-
-	private observeTheme(root: HTMLElement): void {
-		this.stopThemeObserver?.();
-		this.stopThemeObserver = observeReaderTheme(root, () => this.applyInvertState(root));
+		const surface = this.createSurface();
+		this.readerBody.replaceChildren(surface.stage);
+		bindReaderPageEvents(surface.stage, this.pageEventDeps());
+		await surface.render();
 	}
 
 	private async navigateHistory(direction: -1 | 1): Promise<void> {
@@ -528,54 +497,7 @@ export class ReaderView extends ItemView {
 		await this.goTo(location.page, { smooth: false });
 	}
 
-	private toggleSearch(): void {
-		this.tools.toggleSearch();
-	}
-
-	private handleReaderKeys(event: KeyboardEvent): void {
-		if (readerKeyTargetIsEditable(event.target)) return;
-		const action = readerKeyAction(event);
-		if (!action) return;
-		event.preventDefault();
-		switch (action.type) {
-			case 'page': void this.goTo(this.page + action.delta); break;
-			case 'zoom': void this.applyScale(this.pdf.getScale() + action.delta * 0.15); break;
-			case 'fit': void this.fitTo(action.mode); break;
-			case 'rotate': void this.rotate(action.delta); break;
-			case 'back': void this.navigateHistory(-1); break;
-			case 'forward': void this.navigateHistory(1); break;
-			case 'search': this.tools.searchPanel.show(); this.tools.applySearchMarks(); break;
-		}
-	}
-
-	private handleWheelZoom(event: WheelEvent): void {
-		if (!event.ctrlKey && !event.metaKey) return;
-		event.preventDefault();
-		const factor = event.deltaY < 0 ? 1.1 : 1 / 1.1;
-		void this.applyScale(this.pdf.getScale() * factor);
-	}
-
-	private handlePageClick(event: MouseEvent): void {
-		const button = (event.target as HTMLElement).closest<HTMLElement>('.rd-highlight-comment-button');
-		if (button) {
-			const highlight = this.host.annotations.get(button.dataset.highlightId ?? '');
-			if (highlight) void this.bridge.openFor(highlight, button, false);
-			return;
-		}
-		// Clicking a mark with a collapsed selection opens its comment popover, which
-		// carries recolor/tag/delete; drag-selecting text keeps the native behavior.
-		const selection = window.getSelection()?.toString().trim() ?? '';
-		if (selection) return;
-		const mark = (event.target as HTMLElement).closest<HTMLElement>('.rd-highlight');
-		if (!mark) return;
-		const highlight = this.host.annotations.get(mark.dataset.highlightId ?? '');
-		if (highlight) void this.bridge.openFor(highlight, mark, false);
-	}
-
-	private toggleDrawer(): void {
-		this.drawerOpen = !this.drawerOpen;
-		this.syncDrawerState();
-	}
+	private toggleDrawer(): void { this.drawerOpen = !this.drawerOpen; this.syncDrawerState(); }
 
 	private syncDrawerState(): void {
 		if (!this.drawer || !this.drawerToggle) return;
@@ -608,24 +530,9 @@ export class ReaderView extends ItemView {
 		this.bridge.renderList(this.drawer, this.host.annotations.list(this.activePath()), this.page - 1, this.highlightCoordinator.getScope());
 	}
 
-	private bindHighlightPreview(): void {
-		this.highlightCoordinator.bind(this.surface?.hostForPage(this.page) ?? null, this.drawer);
-	}
+	private bindHighlightPreview(): void { this.highlightCoordinator.bind(this.surface?.hostForPage(this.page) ?? null, this.drawer); }
 	private openSelectionMenu(event?: MouseEvent): void {
-		const selection = window.getSelection()?.toString().trim() ?? '';
-		if (!selection) {
-			if (event) return;
-			new Notice('请先选择 PDF 原文，再按 Enter 打开摘录菜单。');
-			return;
-		}
-		event?.preventDefault();
-		const bounds = this.surface?.stage.getBoundingClientRect();
-		showSelectionMenu({
-			selection,
-			lastColor: () => this.lastColor,
-			createExcerpt: (text, type, color) => this.createExcerpt(text, type, color),
-			copySelectedText: () => void this.copySelectedText()
-		}, event, bounds ? { x: bounds.left + bounds.width / 2, y: bounds.top + bounds.height / 2 } : undefined);
+		this.tools.openSelectionMenu(event, this.surface?.stage.getBoundingClientRect());
 	}
 
 	private async createExcerpt(text: string, type = this.selectedTarget, color: PdfHighlight['color'] = this.lastColor, frozenRects?: PdfHighlight['rects']): Promise<void> {
@@ -650,7 +557,8 @@ export class ReaderView extends ItemView {
 			if (!written) return;
 			selection?.removeAllRanges();
 			await this.refreshAnnotations();
-			const reveal = await revealCreatedCanvasTarget(written.highlight.target!, this.host);
+			const target = written.highlight.target;
+			const reveal = target ? await revealCreatedCanvasTarget(target, this.host) : 'created' as const;
 			if (reveal === 'opened') new Notice('已创建 Canvas 卡片。');
 			else if (reveal === 'open-failed') new Notice('Canvas 卡片已创建，但无法自动打开；可从“摘录管理”手动打开。');
 		} catch (error) {
@@ -670,12 +578,6 @@ export class ReaderView extends ItemView {
 		if (!pdfPath) throw new Error('没有可裁剪的 PDF。');
 		const image = await this.pdf.renderCrop(payload.rect);
 		return this.host.prepareCropDrag({ pdfPath, page: payload.page, rect: payload.rect, target: payload.target, image });
-	}
-
-	private async dropExcerptOnPanel(event: DragEvent): Promise<void> {
-		const text = event.dataTransfer?.getData('text/plain').trim() ?? '';
-		const rects = parseDraggedHighlightRects(event.dataTransfer?.getData('application/x-reading-desk-rects') ?? '');
-		if (text && rects) await this.createExcerpt(text, this.selectedTarget, this.lastColor, rects);
 	}
 
 	/** Target-scoped cache avoids a second transform; TargetService guards idempotency. */

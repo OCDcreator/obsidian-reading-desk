@@ -105,6 +105,23 @@ export class ReaderToolsController {
 		if (!list.length) return null;
 		return list.reduce((latest, current) => current.createdAt > latest.createdAt ? current : latest, list[0]);
 	}
+
+	/** Opens the selection context menu; the reader passes the stage bounds for keyboard entry. */
+	openSelectionMenu(event: MouseEvent | undefined, stageBounds?: DOMRect): void {
+		const selection = this.deps.selectionText();
+		if (!selection) {
+			if (event) return;
+			new Notice('请先选择 PDF 原文，再按 Enter 打开摘录菜单。');
+			return;
+		}
+		event?.preventDefault();
+		showSelectionMenu({
+			selection,
+			lastColor: () => this.deps.lastColor(),
+			createExcerpt: (text, type, color) => this.deps.createExcerpt(text, type, color),
+			copySelectedText: () => void this.copySelectedText()
+		}, event, stageBounds ? { x: stageBounds.left + stageBounds.width / 2, y: stageBounds.top + stageBounds.height / 2 } : undefined);
+	}
 }
 
 /** Builds the selection context menu shared by right-click and Enter paths. */

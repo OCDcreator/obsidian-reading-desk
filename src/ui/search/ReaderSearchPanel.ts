@@ -25,7 +25,8 @@ export class ReaderSearchPanel {
 	constructor(private readonly host: ReaderSearchPanelHost) { }
 
 	mount(parent: HTMLElement): void {
-		if (this.container) return;
+		// The reader rebuilds its root between renders; a detached container must be recreated.
+		if (this.container?.isConnected) return;
 		const container = parent.createDiv({ cls: 'rd-search-panel', attr: { 'aria-label': 'PDF 全文搜索' } });
 		this.container = container;
 		const bar = container.createDiv({ cls: 'rd-search-panel__bar' });
@@ -47,7 +48,7 @@ export class ReaderSearchPanel {
 		this.status = bar.createSpan({ cls: 'rd-search-panel__status', attr: { role: 'status' }, text: '' });
 		createReaderButton(bar, '关闭搜索', () => this.close(), 'x');
 		this.list = container.createDiv({ cls: 'rd-search-panel__list' });
-		container.classList.add('is-hidden');
+		container.classList.toggle('is-hidden', !this.open);
 	}
 
 	toggle(): void {
