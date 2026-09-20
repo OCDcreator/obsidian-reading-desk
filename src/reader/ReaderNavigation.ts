@@ -95,14 +95,18 @@ export class ReaderNavigation {
 		else this.renderOutline(panel);
 	}
 
-	/** Refreshes the current-page marker and scrolls it into view after page changes. */
+	/** Mirrors the host PDF sidebar's thumbnail paper width so the leaf reads as native chrome. */
+	private static readonly THUMBNAIL_WIDTH = 112;
+
+	/** Refreshes the page marker and the outline's current-section marker after page changes. */
 	revealPage(page: number): void {
 		if (!this.container) return;
 		const zeroBased = page - 1;
+		const activeKey = activeOutlinePath(this.outline, zeroBased).join('\u0000');
 		for (const button of Array.from(this.container.querySelectorAll<HTMLElement>('[data-nav-page]'))) {
-			const isCurrent = Number(button.dataset.navPage) === zeroBased;
-			const role = button.classList.contains('rd-reader-thumbnail') ? 'page' : 'location';
-			button.setAttribute('aria-current', isCurrent ? role : 'false');
+			const isOutline = button.dataset.outlineKey !== undefined;
+			const isCurrent = isOutline ? button.dataset.outlineKey === activeKey : Number(button.dataset.navPage) === zeroBased;
+			button.setAttribute('aria-current', isCurrent ? (isOutline ? 'location' : 'page') : 'false');
 			if (isCurrent) button.scrollIntoView({ block: 'nearest' });
 		}
 	}
@@ -137,7 +141,9 @@ export class ReaderNavigation {
 		if (!this.pages) { this.status(panel, '暂无可预览页面。'); return; }
 		const list = panel.createEl('ol', { cls: 'rd-reader-thumbnails' });
 		const render = (canvas: HTMLCanvasElement, page: number): void => {
-			void this.pdf.renderThumbnail(page, canvas).catch(() => {
+			void this.pdf.renderThumbnail(page, canvas, ReaderNavigation.THUMBNAIL_WIDTH).then(() => {
+				canvas.dataset.rendered = '1';
+			}).catch(() => {
 				canvas.replaceWith(Object.assign(document.createElement('span'), { className: 'rd-reader-thumbnail__error', textContent: '预览失败' }));
 			});
 		};
@@ -145,10 +151,9 @@ export class ReaderNavigation {
 		if (Observer) this.thumbnailLifecycle = new ThumbnailObserverLifecycle((callback, root) => new Observer(callback, { root, rootMargin: '160px 0px' }));
 		for (let page = 1; page <= this.pages; page += 1) {
 			const item = list.createEl('li');
-			const button = item.createEl('button', { cls: 'rd-reader-thumbnail', attr: { 'aria-label': `跳到第 ${page} 页`, 'aria-current': page === this.currentPage() ? 'page' : 'false', 'data-nav-page': String(page - 1) } });
+			const button = item.createEl('button', { cls: 'rd-reader-thumbnail', attr: { 'aria-label': `跳到第 ${page} 页`, 'aria-current': page === this.currentPage() ? 'page' : 'false', 'data-nav-page': String(page - 1), 'data-page-label': String(page) } });
 			button.type = 'button';
 			const canvas = button.createEl('canvas', { attr: { 'aria-hidden': 'true', 'data-page': String(page) } });
-			button.createEl('span', { text: `第 ${page} 页` });
 			button.addEventListener('click', () => void this.goTo(page));
 			if (this.thumbnailLifecycle) this.thumbnailLifecycle.observe(canvas, page, panel, render);
 			else render(canvas, page);
@@ -167,8 +172,9 @@ export class ReaderNavigation {
 		const list = parent.createEl('ul', { cls: 'rd-reader-outline' });
 		for (const node of nodes) {
 			const item = list.createEl('li');
-			const active = node.path.join('\u0000') === activePath.join('\u0000');
-			const button = item.createEl('button', { cls: 'rd-reader-outline__item', attr: { 'aria-current': active ? 'location' : 'false', title: `${node.title}，第 ${node.page + 1} 页`, 'data-nav-page': String(node.page) } });
+			const key = node.path.join('\u0000');
+			const active = key === activePath.join('\u0000');
+			const button = item.createEl('button', { cls: 'rd-reader-outline__item', attr: { 'aria-current': active ? 'location' : 'false', title: `${node.title}，第 ${node.page + 1} 页`, 'data-nav-page': String(node.page), 'data-outline-key': key } });
 			button.type = 'button';
 			button.createEl('span', { text: node.title });
 			button.createEl('span', { cls: 'rd-reader-outline__page', text: `p.${node.page + 1}` });

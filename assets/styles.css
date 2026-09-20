@@ -147,30 +147,45 @@
 .reading-desk-pdf-navigation-host > div { height: 100%; }
 .reading-desk-pdf-navigation-host .rd-reader-navigation { height: 100%; max-height: none; border: 0; }
 .rd-reader-navigation__tabs { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--rd-line); background: var(--rd-surface-raised); padding: 8px; gap: 8px; }
-.rd-reader-navigation__tab, .rd-reader-thumbnail, .rd-reader-outline__item {
+.rd-reader-navigation__tab, .rd-reader-outline__item {
 	border: 1px solid transparent; border-radius: 5px; background: transparent; color: var(--rd-ink); font: inherit;
+}
+.rd-reader-thumbnail {
+	border: 8px solid transparent; border-radius: 4px; background: transparent; color: var(--rd-ink); font: inherit;
+	padding: 0; position: relative; display: block; cursor: pointer;
 }
 .rd-reader-navigation__tab { min-height: 30px; padding: 4px 8px; }
 .rd-reader-navigation__tab[aria-selected='true'] { border-color: var(--rd-accent); background: color-mix(in oklch, var(--rd-surface) 90%, var(--rd-accent)); }
 .rd-reader-navigation__panel { min-height: 0; overflow: auto; padding: 8px; }
 .rd-reader-thumbnails, .rd-reader-outline { list-style: none; margin: 0; padding: 0; }
-.rd-reader-thumbnails { display: grid; gap: 8px; }
-.reading-desk-pdf-navigation-host .rd-reader-thumbnail {
-	width: 100%; height: auto; min-height: 0; overflow: hidden;
-	padding: 4px; display: grid; align-content: start; justify-items: center; gap: 4px;
-	background: var(--rd-surface); border-color: transparent; cursor: pointer;
+/* Mirrors the host PDF sidebar: wrapped centered papers with a 4px lane and 12px frame. */
+.rd-reader-thumbnails { display: flex; flex-wrap: wrap; align-content: flex-start; justify-content: center; gap: 4px; padding: 4px; }
+.reading-desk-pdf-navigation-host .rd-reader-thumbnail { width: auto; height: auto; min-height: 0; overflow: visible; border-color: transparent; }
+.reading-desk-pdf-navigation-host .rd-reader-thumbnail:hover,
+.reading-desk-pdf-navigation-host .rd-reader-thumbnail[aria-current='page'] { border-color: var(--background-modifier-hover, var(--rd-line)); }
+.reading-desk-pdf-navigation-host .rd-reader-thumbnail::after {
+	content: attr(data-page-label);
+	position: absolute; right: 4px; bottom: 4px;
+	padding: 2px 4px; border-radius: 3px; line-height: 1;
+	background: var(--background-secondary, var(--rd-surface-raised)); color: var(--text-muted, var(--rd-ink-muted));
+	font-size: var(--font-ui-smaller, 11px); font-variant-numeric: tabular-nums;
 }
 .reading-desk-pdf-navigation-host .rd-reader-outline__item { background: transparent; border-color: transparent; }
-.reading-desk-pdf-navigation-host .rd-reader-thumbnail[aria-current='page'],
+.reading-desk-pdf-navigation-host .rd-reader-outline__item:hover { background: var(--nav-item-background-hover, transparent); }
 .reading-desk-pdf-navigation-host .rd-reader-outline__item[aria-current='location'] {
-	border-color: var(--rd-accent); background: color-mix(in oklch, var(--rd-surface) 90%, var(--rd-accent));
+	border-color: transparent;
+	color: var(--nav-item-color-active, var(--rd-ink));
+	background: var(--nav-item-background-active, transparent);
 }
+.reading-desk-pdf-navigation-host .rd-reader-outline__item[aria-current='location'] .rd-reader-outline__page { color: inherit; }
 .reading-desk-pdf-navigation-host .rd-reader-thumbnail canvas {
-	display: block; width: 100%; max-width: 120px; height: auto; flex: none;
-	background: var(--rd-surface-document); box-shadow: 0 4px 12px var(--rd-elevation);
+	display: block; width: 112px; max-width: 100%; height: auto; flex: none;
+	background: var(--rd-surface-document); box-shadow: var(--pdf-thumbnail-shadow, 0 0 0 1px var(--rd-line), 0 2px 8px rgb(0 0 0 / 20%));
+}
+.reading-desk-pdf-navigation-host .rd-reader-thumbnail canvas:not([data-rendered]) {
+	box-shadow: none; border: 1px dashed var(--rd-line); margin: -1px;
 }
 .rd-reader-thumbnail span, .rd-reader-outline__page { color: var(--rd-ink-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
-.rd-reader-thumbnail[aria-current='page'], .rd-reader-outline__item[aria-current='location'] { border-color: var(--rd-accent); }
 .rd-reader-outline .rd-reader-outline { padding-left: 16px; }
 .rd-reader-outline__item { width: 100%; min-width: 0; min-height: 30px; padding: 4px 8px; display: flex; align-items: center; justify-content: space-between; gap: 8px; text-align: left; cursor: pointer; }
 .rd-reader-outline__item > :first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
