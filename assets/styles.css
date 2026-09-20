@@ -422,10 +422,12 @@
 .rd-import-export-panel__status.is-success { color: var(--text-success); }
 .rd-import-export-panel__status.is-error { color: var(--text-error); }
 .rd-import-export-panel__button { justify-self: start; }
-.rd-setting-heading-row { display: flex; align-items: center; gap: 10px; }
-.rd-setting-heading-icon { display: inline-flex; width: 22px; height: 22px; }
-.rd-setting-heading-icon svg { width: 22px; height: 22px; }
-.reading-desk-settings h2.rd-setting-heading { font-size: 20px !important; font-weight: 650; line-height: 1.25; }
+.rd-setting-heading-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+/* h2 carries host margins that flex centering ignores; zero them so the icon
+ * optically centers on the text line, and let the row own the spacing below. */
+.reading-desk-settings h2.rd-setting-heading { font-size: 20px !important; font-weight: 650; line-height: 1.25; margin: 0 !important; }
+.rd-setting-heading-icon { display: flex; align-items: center; width: 22px; height: 22px; }
+.rd-setting-heading-icon svg { width: 22px; height: 22px; display: block; }
 .reading-desk-settings .rd-setting-intro { font-size: 14px; line-height: 1.5; color: var(--rd-ink-muted); }
 
 @media (prefers-reduced-motion: reduce) {

@@ -75,3 +75,8 @@
 - 根因:反复 reload 期间 openPdfNavigation 找不到既有 leaf 时新建,旧 leaf 残留,左侧栏堆积多个「PDF 导航」空态面板(用户截图证实约 6 个)。修复:每次打开导航时 detach 除保留 leaf 外的全部同型 leaf(detachDuplicateNavigationLeaves);重载后实测 nav leaves=1,存量已清。
 - 「页边锚点」图标补进设置界面:标题行左置 22px 彩色图标(与 ribbon 同源,宿主主题双通道同步),10-settings-heading-icon.png 经中性核验:图标语义齐全、颜色正确、比例协调,无布局缺陷。
 - 命令直达与设置窗口陈旧 DOM 的注意事项已在本文件先前小节记录,本轮验证沿用了先关旧窗再开新的流程。
+
+## 标题行垂直对齐修复(追加)
+
+- 用户指出标题与图标垂直错位(图标偏上约 20%):根因是宿主给 h2 的默认 margin 不参与 flex 垂直居中。修复为 h2 margin 置零、由标题行接管下方间距,图标 svg 改块级显示。
+- 实测几何:图标中心 90.5px == 文字中心 90.5px,偏移 0px;截图 11-heading-aligned.png 中性核验确认对齐、比例协调。
