@@ -41,3 +41,10 @@
 - 设置页重构为五个标签：书库 / 阅读 / 存储与图床 / AI 集成 / 数据与迁移；活动标签持久化于 localStorage，支持左右方向键切换（aria tablist/tab/tabpanel 语义完整）。
 - 新增「阅读」标签承载滚动模式与夜间纸面反相设置（复用 viewer 设置持久化）。
 - 实机验收：点击工具栏按钮打开 Obsidian 1.13.7 独立设置窗口并直达 Reading Desk 页（目标 "设置 - testvault"）；五标签结构断言通过，书库/阅读/存储与图床/数据与迁移四张截图存于 .obsidian-debug/reader-ux-020/07-*.png，工具栏带设置按钮见 08-toolbar-settings.png，图像核验通过。
+
+## 设置页 shadcn 风格重构(追加验收)
+
+- 布局改为左侧竖向分类导航(粘性,176px)+ 右侧内容区;窄于 640px 折叠为顶部横向标签栏。
+- 设置组卡片化:1px 边线、8px 圆角,卡片头部为标题 + muted 描述,行为细分隔线布局(标签/描述居左,控件居右)。
+- 输入/下拉统一 30px 高、6px 圆角、细边线;焦点 accent 轮廓。存储标签拆为「Markdown 图床」「对象存储凭据」两张卡。
+- 实机验收:.obsidian-debug/reader-ux-020/07-settings-{library,reader,storage,data}.png;存储与书库两帧经图像工具核验:导航高亮、卡片结构、行布局、控件一致性均通过,整体评价为 shadcn 风格成立。

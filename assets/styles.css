@@ -503,14 +503,47 @@
 .rd-search-panel__more { color: var(--rd-ink-muted); font-size: 12px; }
 .rd-pdf-text-layer .rd-search-hit { box-shadow: 0 0 0 2px var(--rd-accent); border-radius: 2px; }
 
-/* Settings tab navigation: one category per tab instead of one long page. */
-.rd-settings-tabs { display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 0 12px; border-bottom: 1px solid var(--rd-line); margin-bottom: 12px; }
+/* Settings: shadcn-style layout — vertical category nav on the left, bordered
+ * card groups with hairline-divided rows on the right. All colors stay on host
+ * tokens so light/dark follow the vault theme. */
+.reading-desk-settings { container-type: inline-size; }
+.rd-settings-layout { display: grid; grid-template-columns: 176px minmax(0, 1fr); gap: 28px; align-items: start; }
+.rd-settings-nav { display: flex; flex-direction: column; gap: 2px; position: sticky; top: 0; }
 .rd-settings-tab {
-	border: 1px solid transparent; border-radius: 5px; background: transparent; color: var(--rd-ink);
-	font: inherit; min-height: 30px; padding: 4px 12px; cursor: pointer; white-space: nowrap;
+	display: flex; align-items: center; text-align: left;
+	border: 0; border-radius: 6px; background: transparent; color: var(--rd-ink-muted);
+	font: inherit; font-size: 13px; line-height: 1.4; min-height: 32px; padding: 6px 10px;
+	cursor: pointer; white-space: nowrap;
 }
-.rd-settings-tab:hover { border-color: var(--rd-accent); }
-.rd-settings-tab[aria-selected='true'] { border-color: var(--rd-accent); background: color-mix(in oklch, var(--rd-surface) 90%, var(--rd-accent)); }
+.rd-settings-tab:hover { color: var(--rd-ink); background: color-mix(in oklch, var(--rd-surface) 96%, var(--rd-ink) 4%); }
+.rd-settings-tab[aria-selected='true'] { color: var(--rd-ink); background: var(--rd-surface-raised); font-weight: 500; }
 .rd-settings-tab:focus-visible { outline: 2px solid var(--rd-accent); outline-offset: 2px; }
-.rd-settings-panel { display: block; }
-.rd-setting-note { color: var(--rd-ink-muted); font-size: 12px; max-width: 75ch; }
+.rd-settings-panel { min-width: 0; }
+
+.rd-card { border: 1px solid var(--rd-line); border-radius: 8px; background: var(--rd-surface); overflow: hidden; }
+.rd-card + .rd-card { margin-top: 16px; }
+.rd-card-header { padding: 16px 16px 12px; }
+.rd-card-title { font-size: 14px; font-weight: 600; line-height: 1.3; color: var(--rd-ink); }
+.rd-card-desc { margin-top: 4px; font-size: 12px; line-height: 1.5; color: var(--rd-ink-muted); max-width: 75ch; }
+.rd-card-header + .rd-card-content .setting-item:first-child { border-top: 1px solid var(--rd-line); }
+
+/* Rows inside cards replace Obsidian's default setting block with quiet dividers. */
+.reading-desk-settings .setting-item { border: 0; border-top: 1px solid var(--rd-line); padding: 12px 16px; margin: 0; }
+.reading-desk-settings .setting-item:first-child { border-top: 0; }
+.reading-desk-settings .setting-item-name { font-size: 13px; font-weight: 500; color: var(--rd-ink); }
+.reading-desk-settings .setting-item-description { font-size: 12px; color: var(--rd-ink-muted); }
+.reading-desk-settings .rd-card-content .setting-item-control { gap: 8px; }
+.reading-desk-settings .rd-card-content input[type='text'],
+.reading-desk-settings .rd-card-content input[type='password'],
+.reading-desk-settings .rd-card-content select {
+	border: 1px solid var(--rd-line); border-radius: 6px; background: var(--rd-surface);
+	color: var(--rd-ink); font: inherit; font-size: 13px; min-height: 30px; padding: 4px 8px;
+}
+.reading-desk-settings .rd-card-content input:focus-visible,
+.reading-desk-settings .rd-card-content select:focus-visible { outline: 2px solid var(--rd-accent); outline-offset: 1px; border-color: var(--rd-accent); }
+.rd-settings-portability { min-width: 0; padding: 0 16px 16px; }
+
+@container (max-width: 640px) {
+	.rd-settings-layout { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+	.rd-settings-nav { flex-direction: row; overflow-x: auto; position: static; padding-bottom: 4px; }
+}

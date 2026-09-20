@@ -50,9 +50,10 @@ export class ReadingDeskSettingTab extends PluginSettingTab {
 		containerEl.addClass('reading-desk-settings');
 		containerEl.createEl('h2', { cls: 'rd-setting-heading', text: 'Reading Desk 设置' });
 		containerEl.createEl('p', { cls: 'rd-setting-intro', text: '书架、阅读器和标注共用同一份本地数据；凭据仅保存在此插件的本地设置中。' });
-		const tabs = containerEl.createDiv({ cls: 'rd-settings-tabs', attr: { role: 'tablist', 'aria-label': '设置分类' } });
-		for (const definition of SETTINGS_TABS) tabs.append(this.createTabButton(definition));
-		this.panel = containerEl.createDiv({ cls: 'rd-settings-panel', attr: { role: 'tabpanel', tabindex: '0' } });
+		const layout = containerEl.createDiv({ cls: 'rd-settings-layout' });
+		const nav = layout.createDiv({ cls: 'rd-settings-nav', attr: { role: 'tablist', 'aria-orientation': 'vertical', 'aria-label': '设置分类' } });
+		for (const definition of SETTINGS_TABS) nav.append(this.createTabButton(definition));
+		this.panel = layout.createDiv({ cls: 'rd-settings-panel', attr: { role: 'tabpanel', tabindex: '0', id: 'rd-settings-panel' } });
 		this.renderActiveTab();
 	}
 
@@ -75,9 +76,9 @@ export class ReadingDeskSettingTab extends PluginSettingTab {
 		button.tabIndex = selected ? 0 : -1;
 		button.addEventListener('click', () => this.switchTab(definition.key));
 		button.addEventListener('keydown', event => {
-			if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+			if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight' && event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
 			event.preventDefault();
-			const delta = event.key === 'ArrowLeft' ? -1 : 1;
+			const delta = event.key === 'ArrowLeft' || event.key === 'ArrowUp' ? -1 : 1;
 			const index = SETTINGS_TABS.findIndex(item => item.key === this.activeTab);
 			const next = SETTINGS_TABS[(index + delta + SETTINGS_TABS.length) % SETTINGS_TABS.length];
 			this.switchTab(next.key);
@@ -123,66 +124,75 @@ export class ReadingDeskSettingTab extends PluginSettingTab {
 		}
 	}
 
+	/** shadcn-style card: bordered group whose rows are divided by hairlines. */
+	private createCard(parent: HTMLElement, title: string, description?: string): HTMLElement {
+		const card = parent.createDiv({ cls: 'rd-card' });
+		const header = card.createDiv({ cls: 'rd-card-header' });
+		header.createDiv({ cls: 'rd-card-title', text: title });
+		if (description) header.createDiv({ cls: 'rd-card-desc', text: description });
+		return card.createDiv({ cls: 'rd-card-content' });
+	}
+
 	private renderLibrarySection(panel: HTMLElement): void {
-		panel.createEl('h3', { text: '书库文件夹' });
-		new Setting(panel)
-			.setName('书库文件夹')
-			.setDesc('用英文逗号分隔；会自动扫描其中的 PDF 和 EPUB。')
+		const content = this.createCard(panel, '书库文件夹', 'Reading Desk 从这些文件夹自动发现 PDF 与 EPUB。');
+		new Setting(content)
+			.setName('文件夹列表')
+			.setDesc('用英文逗号分隔；修改后从书架「扫描书库」或命令面板重新扫描。')
 			.addText(text => {
 				text.inputEl.setAttribute('aria-label', '书库文件夹');
 				return text.setValue(this.readingDesk.repository.readSettings().libraryFolders.join(', ')).onChange(async value => {
 					await this.readingDesk.repository.updateSettings({ libraryFolders: value.split(',').map(item => item.trim()).filter(Boolean) });
 				});
 			});
-		panel.createEl('p', { cls: 'rd-setting-note', text: '修改后可从书架的「扫描书库」或命令面板重新扫描。' });
 	}
 
 	private renderReaderSection(panel: HTMLElement): void {
 		const viewer = this.readingDesk.repository.readSettings().viewer;
-		panel.createEl('h3', { text: '阅读器' });
-		new Setting(panel).setName('滚动模式').setDesc('连续滚动把整本书排成一条虚拟长卷；单页一次只显示一页。阅读器工具栏也可随时切换。')
+		const content = this.createCard(panel, '阅读偏好', '对新打开的阅读器生效；已打开的阅读器可在其工具栏「显示选项」中即时调整。');
+		new Setting(content).setName('滚动模式').setDesc('连续滚动把整本书排成一条虚拟长卷；单页一次只显示一页。')
 			.addDropdown(dropdown => {
 				dropdown.selectEl.setAttribute('aria-label', '滚动模式');
 				return dropdown.addOption('continuous', '连续滚动').addOption('single', '单页')
 					.setValue(viewer.scrollMode)
 					.onChange(async scrollMode => this.readingDesk.updateViewerSettings({ scrollMode: scrollMode as 'continuous' | 'single' }));
 			});
-		new Setting(panel).setName('夜间纸面反相').setDesc('在深色主题下把 PDF 纸面反相为夜间阅读底色，界面本身不受影响。')
+		new Setting(content).setName('夜间纸面反相').setDesc('在深色主题下把 PDF 纸面反相为夜间阅读底色，界面本身不受影响。')
 			.addDropdown(dropdown => {
 				dropdown.selectEl.setAttribute('aria-label', '夜间纸面反相');
 				return dropdown.addOption('auto', '跟随主题').addOption('on', '始终开启').addOption('off', '始终关闭')
 					.setValue(viewer.invertPdf)
 					.onChange(async invertPdf => this.readingDesk.updateViewerSettings({ invertPdf: invertPdf as 'auto' | 'on' | 'off' }));
 			});
-		panel.createEl('p', { cls: 'rd-setting-note', text: '以上偏好对新打开的阅读器生效；已打开的阅读器可在其工具栏「显示选项」中即时调整。' });
 	}
 
 	private renderStorageSection(panel: HTMLElement): void {
-		panel.createEl('h3', { text: '对象存储与图床' });
 		const storage = this.readingDesk.repository.readSettings().storage;
-		new Setting(panel).setName('启用对象存储').setDesc('裁剪图片上传到 OSS 或 COS。')
+		const imageHost = this.createCard(panel, 'Markdown 图床', '开启后在 Markdown 编辑器粘贴图片时自动上传，并以外链插入。');
+		new Setting(imageHost).setName('启用对象存储').setDesc('裁剪图片与图床上传的总开关；凭据保存在本地插件数据中。')
 			.addToggle(toggle => {
 				toggle.toggleEl.setAttribute('aria-label', '启用对象存储');
 				return toggle.setValue(storage.enabled).onChange(async enabled => this.readingDesk.updateStorageSettings({ enabled }));
 			});
-		new Setting(panel).setName('启用 Markdown 图床').setDesc(storage.enabled ? '在 Markdown 编辑器粘贴图片时上传并插入外链。' : '需先启用对象存储，图床才会接管 Markdown 图片粘贴。')
+		new Setting(imageHost).setName('接管 Markdown 粘贴').setDesc(storage.enabled ? '粘贴图片时上传并插入外链。' : '需先启用对象存储。')
 			.addToggle(toggle => {
 				toggle.toggleEl.setAttribute('aria-label', '启用 Markdown 图床');
 				return toggle.setValue(storage.imageHostEnabled).setDisabled(!storage.enabled).onChange(async imageHostEnabled => this.readingDesk.updateStorageSettings({ imageHostEnabled }));
 			});
-		new Setting(panel).setName('提供商').addDropdown(dropdown => {
-			dropdown.selectEl.setAttribute('aria-label', '对象存储提供商');
-			return dropdown.addOption('oss', '阿里云 OSS').addOption('cos', '腾讯云 COS')
-				.setValue(storage.provider).setDisabled(!storage.enabled)
-				.onChange(async provider => this.readingDesk.updateStorageSettings({ provider: provider as 'oss' | 'cos' }));
-		});
-		this.addStorageText(panel, 'Endpoint', 'endpoint');
-		this.addStorageText(panel, 'Region（COS 必填）', 'region');
-		this.addStorageText(panel, 'Bucket', 'bucket');
-		this.addStorageText(panel, '对象存储路径', 'prefix');
-		this.addStorageText(panel, 'Access Key', 'accessKeyId');
-		this.addStorageText(panel, 'Secret Key', 'secretAccessKey', true);
-		const testSetting = new Setting(panel).setName('测试连接').setDesc(storage.enabled ? '发送已签名的只读请求；不会上传文件。' : '先启用对象存储并填写凭据后才可测试。');
+		const credentials = this.createCard(panel, '对象存储凭据', '填写 OSS 或 COS 的访问信息，可先用只读请求测试连通。');
+		new Setting(credentials).setName('提供商')
+			.addDropdown(dropdown => {
+				dropdown.selectEl.setAttribute('aria-label', '对象存储提供商');
+				return dropdown.addOption('oss', '阿里云 OSS').addOption('cos', '腾讯云 COS')
+					.setValue(storage.provider).setDisabled(!storage.enabled)
+					.onChange(async provider => this.readingDesk.updateStorageSettings({ provider: provider as 'oss' | 'cos' }));
+			});
+		this.addStorageText(credentials, 'Endpoint', 'endpoint');
+		this.addStorageText(credentials, 'Region（COS 必填）', 'region');
+		this.addStorageText(credentials, 'Bucket', 'bucket');
+		this.addStorageText(credentials, '对象存储路径', 'prefix');
+		this.addStorageText(credentials, 'Access Key', 'accessKeyId');
+		this.addStorageText(credentials, 'Secret Key', 'secretAccessKey', true);
+		const testSetting = new Setting(credentials).setName('测试连接').setDesc(storage.enabled ? '发送已签名的只读请求；不会上传文件。' : '先启用对象存储并填写凭据后才可测试。');
 		testSetting
 			.addButton(button => button.setButtonText('测试连接').setDisabled(!storage.enabled).onClick(async () => {
 				button.setDisabled(true).setButtonText('测试中…');
@@ -198,15 +208,16 @@ export class ReadingDeskSettingTab extends PluginSettingTab {
 	}
 
 	private renderAiSection(panel: HTMLElement): void {
-		panel.createEl('h3', { text: '可选 AI 集成' });
 		const ai = this.readingDesk.ai.availability();
-		new Setting(panel).setName('AI 选区对话').setDesc(ai.reason)
+		const content = this.createCard(panel, 'AI 选区对话', ai.reason);
+		new Setting(content).setName('发送当前选区')
+			.setDesc('在阅读器中选中原文后，通过命令「将当前 Reading Desk 选区交给 AI」把上下文交给已启用的兼容插件。')
 			.addButton(button => button.setButtonText('发送当前选区').setDisabled(!ai.available).onClick(() => this.readingDesk.notice('在阅读器中选中原文后，使用命令面板“将当前 Reading Desk 选区交给 AI”。')));
 	}
 
 	private renderDataSection(panel: HTMLElement): void {
-		panel.createEl('h3', { text: '数据与迁移' });
-		const portability = panel.createDiv({ cls: 'rd-settings-portability' });
+		const content = this.createCard(panel, '导入与导出', '导入只读取旧数据并新建文件，不会覆盖仓库内容。');
+		const portability = content.createDiv({ cls: 'rd-settings-portability' });
 		this.portabilityPanel = new ImportExportPanel({
 			importLegacy: () => this.readingDesk.importLegacyBookshelf(),
 			exportMarkdown: () => this.readingDesk.exportMarkdown(),
