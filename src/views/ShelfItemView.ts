@@ -1,4 +1,5 @@
 import { ItemView, type WorkspaceLeaf } from 'obsidian';
+import type { AnnotationStore } from '../annotations/AnnotationStore';
 import type { LibraryIndex } from '../library/LibraryIndex';
 import { ShelfView } from './ShelfView';
 
@@ -8,23 +9,27 @@ export interface ShelfNavigation {
 	open(path: string): Promise<void>;
 	scan(): Promise<void>;
 	resourceUrl(path: string): string | null;
-	openSettings?(): Promise<void>;
+	openSettings?(tab?: string): Promise<void>;
 }
 
 export class ShelfItemView extends ItemView {
 	private readonly shelf: ShelfView;
 
-	constructor(leaf: WorkspaceLeaf, index: LibraryIndex, navigation: ShelfNavigation) {
+	constructor(leaf: WorkspaceLeaf, index: LibraryIndex, annotations: AnnotationStore, navigation: ShelfNavigation) {
 		super(leaf);
 		this.shelf = new ShelfView({
 			getBooks: () => index.list(),
 			getCategories: () => index.listCategories(),
 			addCategory: name => index.addCategory(name),
+			renameCategory: (id, name) => index.renameCategory(id, name),
+			removeCategory: id => index.removeCategory(id),
 			reorderCategories: ids => index.reorderCategories(ids),
 			updateBook: (id, patch) => index.updateBook(id, patch),
 			openBook: book => navigation.open(book.path),
 			scan: () => navigation.scan(),
-			resolveCoverUrl: path => navigation.resourceUrl(path)
+			countHighlights: () => annotations.listAll().length,
+			resolveCoverUrl: path => navigation.resourceUrl(path),
+			openSettings: tab => navigation.openSettings?.(tab)
 		});
 	}
 

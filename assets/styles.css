@@ -355,56 +355,173 @@
 .rd-crop-drag-handle img, .rd-crop-drag-preview { display: block; max-width: 112px; max-height: 72px; }
 
 /* Shelf */
-.rd-shelf { padding: 24px; }
-.rd-shelf-header, .rd-shelf-toolbar, .rd-shelf-actions, .rd-category-chips, .rd-category-manager, .rd-continue-reading-list { display: flex; gap: 8px; align-items: center; }
-.rd-shelf-header { justify-content: space-between; margin-bottom: 16px; }
-.rd-shelf-heading { font-size: 25px; font-weight: 600; }
-.rd-shelf-toolbar { justify-content: space-between; border-bottom: 1px solid var(--rd-line); padding-bottom: 12px; }
-.rd-shelf-search { min-width: min(360px, 60vw); }
-.rd-shelf-mode-host, .rd-view-switch, .rd-shelf-results { display: flex; min-width: 0; }
-.rd-view-switch { gap: 8px; align-items: center; }
-.rd-shelf-content { display: grid; gap: 24px; padding-top: 20px; min-width: 0; }
-.rd-section-title { font-size: 20px; margin: 0 0 12px; }
+.rd-shelf { padding: 24px 24px 72px; }
+.rd-shelf-frame { max-width: 1368px; margin: 0 auto; min-width: 0; }
+.rd-shelf-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; margin-bottom: 16px; }
+.rd-shelf-title-wrap { min-width: 0; }
+.rd-shelf-heading { margin: 0; font-size: 25px; font-weight: 600; line-height: 1.25; }
+.rd-shelf-subtitle { margin: 4px 0 0; color: var(--rd-ink-muted); font-size: 14px; max-width: 75ch; }
+.rd-shelf-actions { display: flex; gap: 8px; align-items: center; }
+.rd-shelf .rd-button--primary { border-color: var(--rd-accent); background: color-mix(in oklch, var(--rd-surface) 88%, var(--rd-accent)); }
+.rd-shelf .rd-button--primary:hover:not(:disabled) { background: color-mix(in oklch, var(--rd-surface) 80%, var(--rd-accent)); }
+.rd-button-icon { display: inline-flex; width: 16px; height: 16px; }
+.rd-button-icon svg { width: 16px; height: 16px; display: block; }
+.rd-shelf .rd-icon-button { width: 30px; min-width: 30px; padding: 0; display: inline-grid; place-items: center; }
+.rd-shelf-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; border-bottom: 1px solid var(--rd-line); padding-bottom: 12px; }
+.rd-shelf-search { min-width: min(440px, 50vw); }
+.rd-shelf-mode-host, .rd-shelf-results { display: flex; min-width: 0; }
+.rd-view-switch { display: inline-flex; gap: 2px; align-items: center; padding: 2px; border: 1px solid var(--rd-line); border-radius: 5px; }
+.rd-shelf .rd-view-switch-button { min-height: 26px; min-width: 62px; border-color: transparent; background: transparent; box-shadow: none; color: var(--rd-ink-muted); }
+.rd-view-switch-button.is-selected { border-color: var(--rd-line); background: var(--rd-surface-raised); color: var(--rd-ink); }
+.rd-shelf-content { display: grid; gap: 24px; padding-top: 24px; min-width: 0; }
+.rd-shelf-section { min-width: 0; }
+/* Section headings carry the 20px level; the note doubles as the sort toggle. */
+.rd-section-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; margin-bottom: 12px; }
+.rd-section-title { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.rd-section-heading-main { margin: 0; font-size: 20px; font-weight: 600; line-height: 1.25; }
+.rd-section-note { color: var(--rd-ink-muted); font-size: 12px; }
+.rd-shelf .rd-section-note-button { min-height: 0; padding: 2px 0; border-color: transparent; background: transparent; box-shadow: none; color: var(--rd-ink-muted); }
+.rd-shelf .rd-section-note-button:hover:not(:disabled) { border-color: transparent; color: var(--rd-ink); text-decoration: underline; }
+.rd-shelf .rd-section-link { min-height: 0; padding: 2px 0; border-color: transparent; background: transparent; box-shadow: none; color: var(--rd-accent); }
+/* Continue-reading rail: three horizontal resume cards, 88px cover. */
 .rd-continue-reading { min-width: 0; }
-.rd-continue-reading-list { overflow: auto; padding-bottom: 4px; align-items: stretch; }
-/* The rail is a resume affordance, not a second shelf. Carrying the full card's
- * category editor and cover height made a one-book rail 483px tall, pushing the
- * library grid entirely below the fold of a 792px pane. */
-.rd-continue-reading-list .rd-shelf-card { flex: 0 0 clamp(152px, 22vw, 196px); max-width: 196px; }
-.rd-continue-reading-list .rd-book-cover { max-height: 160px; }
-.rd-continue-reading-list .rd-book-category,
-.rd-continue-reading-list .rd-book-author,
-.rd-continue-reading-list .rd-book-meta { display: none; }
-/* Figures, page counts and timestamps stay column-aligned instead of jittering. */
-.rd-page-count, .rd-book-meta, .rd-progress-label, .rd-library-table td,
-.rd-comment-popover__comment time, .rd-crop-status { font-variant-numeric: tabular-nums; }
+.rd-continue-reading-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.rd-continue-card { display: grid; grid-template-columns: 88px minmax(0, 1fr); min-width: 0; cursor: pointer; border: 1px solid var(--rd-line); background: var(--rd-surface-raised); }
+.rd-continue-card:hover, .rd-shelf-card:hover { border-color: var(--background-modifier-border-hover, var(--rd-accent)); }
+.rd-continue-card:focus-visible, .rd-shelf-card:focus-visible { outline: 2px solid var(--rd-accent); outline-offset: 2px; }
+.rd-book-cover--continue { aspect-ratio: auto; min-height: 118px; box-shadow: none; }
+.rd-continue-copy { min-width: 0; display: flex; flex-direction: column; gap: 4px; padding: 12px; }
+.rd-continue-title { margin: 0; font-size: 16px; font-weight: 500; line-height: 1.3; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.rd-continue-author { margin: 0; color: var(--rd-ink-muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rd-continue-copy .rd-progress-row { margin-top: auto; }
+/* Category chips: one wrapping row with counts; selected keeps accent line only. */
+.rd-category-panel { min-width: 0; }
+.rd-category-chips { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.rd-shelf .rd-category-chip { min-height: 26px; padding: 3px 10px; color: var(--rd-ink-muted); }
+.rd-category-chip.is-selected { border-color: var(--rd-accent); outline: 1px solid var(--rd-accent); outline-offset: 1px; color: var(--rd-ink); }
+.rd-shelf .rd-category-chip-add { font-size: 14px; line-height: 1; }
+.rd-chip-input { min-height: 26px; padding: 3px 10px; }
+/* Shelf grid and cards: full-bleed cover over a fixed info slot; slots drive equal heights. */
 .rd-shelf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(184px, 1fr)); gap: 16px; }
-.rd-shelf-card { min-width: 0; cursor: pointer; border: 1px solid var(--rd-line); background: var(--rd-surface-raised); padding: 12px; display: grid; gap: 8px; }
-.rd-shelf-card:hover, .rd-shelf-card.is-selected, .rd-library-table tr.is-selected { border-color: var(--rd-accent); background: color-mix(in oklch, var(--rd-surface-raised) 92%, var(--rd-accent)); }
-.rd-shelf-card:focus-visible, .rd-library-table tr:focus-visible { outline: 2px solid var(--rd-accent); outline-offset: 2px; }
-.rd-book-cover { aspect-ratio: 0.7; background: var(--rd-surface-document); display: grid; place-items: center; overflow: hidden; color: var(--rd-ink-muted); font-size: 12px; }
+.rd-shelf-card { min-width: 0; cursor: pointer; display: grid; grid-template-rows: auto minmax(0, 1fr); border: 1px solid var(--rd-line); background: var(--rd-surface-raised); }
+.rd-shelf-card.is-selected, .rd-library-table tr.is-selected { border-color: var(--rd-accent); background: color-mix(in oklch, var(--rd-surface-raised) 92%, var(--rd-accent)); }
+/* The paper cover is the only functional shadow on the shelf; the card itself stays flat. */
+.rd-book-cover { position: relative; aspect-ratio: 0.7; background: var(--rd-surface-document); display: grid; place-items: center; overflow: hidden; color: var(--rd-ink-muted); font-size: 12px; box-shadow: 0 8px 22px var(--rd-elevation); }
 .rd-book-cover img { width: 100%; height: 100%; object-fit: cover; }
 .rd-book-cover-unavailable { padding: 0 8px; text-align: center; overflow-wrap: anywhere; }
-.rd-book-details { min-width: 0; }
-.rd-book-title { font-size: 16px; font-weight: 500; margin: 0; min-width: 0; overflow-wrap: anywhere; }
-.rd-book-author, .rd-book-meta { color: var(--rd-ink-muted); font-size: 12px; margin: 4px 0; min-width: 0; overflow-wrap: anywhere; }
-.rd-progress-group { display: grid; gap: 4px; }
-.rd-progress-label { font-size: 12px; color: var(--rd-ink-muted); }
-.rd-book-category { display: grid; gap: 4px; font-size: 12px; }
-.rd-rating-select { min-width: 0; max-width: 100%; }
-/* Filter chips and the create form share one wrapping row. Stacked, this panel cost
- * 120px between the rail and the library grid, which pushed the grid below the fold. */
-.rd-category-panel { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.rd-category-chip.is-selected, .rd-view-switch-button.is-selected { border-color: var(--rd-accent); background: var(--rd-surface-raised); color: var(--rd-ink); outline: 2px solid var(--rd-accent); outline-offset: 1px; }
-.rd-category-order { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 8px; }
-.rd-category-order-row { display: flex; gap: 4px; align-items: center; font-size: 12px; min-width: 0; }
-.rd-category-name { min-width: 0; overflow-wrap: anywhere; }
-.rd-category-order-actions { display: inline-flex; gap: 4px; flex: none; }
+.rd-cover-category-badge { position: absolute; left: 10px; top: 10px; height: 21px; display: inline-flex; align-items: center; padding: 1px 7px; border: 1px solid rgb(255 255 255 / 34%); border-radius: 999px; background: rgb(18 21 27 / 82%); color: #fff; font-size: var(--font-ui-smaller, 11px); line-height: 1.4; max-width: calc(100% - 20px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rd-book-details { min-width: 0; display: grid; gap: 7px; padding: 12px; align-content: start; }
+.rd-book-title { margin: 0; font-size: 16px; font-weight: 500; line-height: 1.3; min-height: 2.6em; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.rd-book-author { display: block; color: var(--rd-ink); font-size: 12px; min-width: 0; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rd-author-editable { cursor: text; border-bottom: 1px dashed transparent; }
+.rd-author-editable:hover, .rd-author-editable:focus-visible { border-bottom-color: var(--rd-accent); }
+.rd-author-editable.is-placeholder { color: var(--rd-ink-muted); border-bottom-color: color-mix(in oklch, var(--rd-accent) 55%, transparent); }
+.rd-author-input { min-height: 24px; padding: 2px 6px; font-size: 12px; width: 100%; }
+.rd-book-meta { display: flex; align-items: center; gap: 8px; margin: 0; color: var(--rd-ink-muted); font-size: 12px; white-space: nowrap; overflow: hidden; }
+.rd-meta-item { display: inline-flex; align-items: center; gap: 3px; min-width: 0; }
+.rd-meta-icon { display: inline-flex; width: 12px; height: 12px; flex: none; }
+.rd-meta-icon svg { width: 12px; height: 12px; display: block; }
+.rd-progress-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; }
+.rd-progress-value { min-width: 28px; color: var(--rd-ink-muted); font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; }
+/* Figures, page counts and timestamps stay column-aligned instead of jittering. */
+.rd-page-count, .rd-book-meta, .rd-library-table td,
+.rd-comment-popover__comment time, .rd-crop-status { font-variant-numeric: tabular-nums; }
+/* Ledger (C): four summary cells over a dense table with inline editors. */
+.rd-ledger-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid var(--rd-line); background: var(--rd-surface-raised); }
+.rd-summary-cell { padding: 12px 16px; border-right: 1px solid var(--rd-line); min-width: 0; }
+.rd-summary-cell:last-child { border-right: 0; }
+.rd-summary-value { display: block; font-size: 16px; font-weight: 600; }
+.rd-summary-label { display: block; color: var(--rd-ink-muted); font-size: 12px; }
 .rd-library-table { width: 100%; border-collapse: collapse; }
-.rd-library-table td, .rd-library-table th { border-bottom: 1px solid var(--rd-line); text-align: left; padding: 8px; }
+.rd-ledger { border: 1px solid var(--rd-line); background: var(--rd-surface-raised); }
+.rd-library-table td, .rd-library-table th { border-bottom: 1px solid var(--rd-line); text-align: left; padding: 10px 12px; }
+.rd-library-table th { color: var(--rd-ink-muted); font-size: 12px; font-weight: 500; background: color-mix(in oklch, var(--rd-surface-raised) 92%, var(--rd-surface)); }
+.rd-library-table tbody tr:hover { background: color-mix(in oklch, var(--rd-surface-raised) 94%, var(--rd-surface)); }
+.rd-library-table tr:focus-visible { outline: 2px solid var(--rd-accent); outline-offset: -2px; }
 .rd-library-table td { overflow-wrap: anywhere; }
-.rd-library-table tr { outline-offset: -2px; }
-.rd-table-editor { width: 100%; min-width: 0; }
+.rd-ledger-book { display: grid; grid-template-columns: 42px minmax(0, 1fr); gap: 10px; align-items: center; min-width: 220px; }
+.rd-book-cover--ledger { width: 42px; box-shadow: none; }
+.rd-ledger-book-text { min-width: 0; display: grid; gap: 2px; }
+.rd-shelf .rd-ledger-title { min-height: 0; padding: 0; border-color: transparent; background: transparent; box-shadow: none; font-weight: 500; justify-self: start; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rd-ledger-path { color: var(--rd-ink-muted); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 44ch; }
+.rd-ledger .rd-progress-row { min-width: 130px; }
+.rd-table-editor, .rd-rating-select, .rd-ledger-category-select { min-width: 0; max-width: 100%; }
+/* Navigation workbench (B): sticky category rail, focus book, compact grid. */
+.rd-shelf-navigation { display: grid; grid-template-columns: 224px minmax(0, 1fr); gap: 24px; align-items: start; }
+.rd-nav-sidebar { position: sticky; top: 0; display: grid; gap: 16px; min-width: 0; }
+.rd-nav-sidebar-note { margin: 0; color: var(--rd-ink-muted); font-size: 12px; }
+.rd-nav-category-list { list-style: none; margin: 0; padding: 0; border-block: 1px solid var(--rd-line); }
+.rd-nav-category-item { border-bottom: 1px solid var(--rd-line); }
+.rd-nav-category-item:last-child { border-bottom: 0; }
+.rd-shelf .rd-nav-category { width: 100%; display: flex; justify-content: space-between; gap: 12px; align-items: center; padding: 10px 8px; min-height: 0; border-color: transparent; background: transparent; box-shadow: none; color: var(--rd-ink-muted); text-align: left; }
+.rd-shelf .rd-nav-category:hover:not(:disabled) { border-color: transparent; background: var(--rd-surface-raised); color: var(--rd-ink); }
+.rd-nav-category.is-selected { color: var(--rd-ink); background: var(--rd-surface-raised); box-shadow: inset 2px 0 var(--rd-accent); }
+.rd-nav-category-count { color: var(--rd-ink-muted); font-variant-numeric: tabular-nums; }
+.rd-nav-main { min-width: 0; }
+.rd-compact-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.rd-nav-focus { display: grid; grid-template-columns: 172px minmax(0, 1fr); gap: 20px; padding: 16px; border: 1px solid var(--rd-line); background: var(--rd-surface-raised); margin-bottom: 24px; }
+.rd-nav-focus-copy { min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.rd-nav-focus-page { color: var(--rd-ink-muted); font-size: 12px; letter-spacing: 0.04em; }
+.rd-nav-focus-title { margin: 0; font-size: 20px; font-weight: 600; line-height: 1.25; }
+.rd-nav-focus-meta { margin: 0; color: var(--rd-ink-muted); font-size: 12px; max-width: 62ch; }
+.rd-nav-focus-copy .rd-progress-row { margin-top: auto; max-width: 360px; }
+.rd-shelf .rd-nav-focus-open { justify-self: start; }
+/* Category manager modal and action menus detach from .rd-shelf, so they carry
+ * their own token block and control chrome (host button rules outrank bare classes). */
+.rd-category-modal, .rd-action-menu {
+	--rd-surface: var(--background-primary, oklch(0.98 0.005 250));
+	--rd-surface-raised: var(--background-secondary, oklch(0.96 0.01 250));
+	--rd-ink: var(--text-normal, oklch(0.24 0.02 250));
+	--rd-ink-muted: var(--text-muted, oklch(0.48 0.02 250));
+	--rd-line: var(--background-modifier-border, oklch(0.75 0.02 250));
+	--rd-accent: var(--interactive-accent, oklch(0.62 0.13 235));
+	color: var(--rd-ink);
+	box-sizing: border-box;
+}
+.rd-modal-scrim { position: fixed; inset: 0; z-index: var(--layer-modal, 20); display: grid; place-items: center; padding: 24px; background: rgb(0 0 0 / 32%); }
+.rd-category-modal { width: min(560px, 100%); max-height: min(70vh, 640px); overflow: auto; display: grid; gap: 12px; padding: 20px; border: 1px solid var(--rd-line); border-radius: 8px; background: var(--rd-surface-raised); box-shadow: 0 12px 28px oklch(0.2 0.02 250 / 0.2); }
+.rd-category-modal-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.rd-category-modal-title { margin: 0; font-size: 20px; font-weight: 600; }
+.rd-category-modal-desc { margin: 0; color: var(--rd-ink-muted); font-size: 12px; max-width: 75ch; }
+.rd-category-modal-list { list-style: none; margin: 0; padding: 0; border-block: 1px solid var(--rd-line); }
+.rd-category-modal-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--rd-line); min-width: 0; }
+.rd-category-modal-row:last-child { border-bottom: 0; }
+.rd-category-modal-name { min-width: 0; overflow-wrap: anywhere; }
+.rd-category-modal-actions { display: inline-flex; gap: 4px; align-items: center; flex: none; }
+.rd-category-modal-count { color: var(--rd-ink-muted); font-size: 12px; white-space: nowrap; }
+.rd-category-modal-empty { margin: 12px 0; color: var(--rd-ink-muted); }
+.rd-category-modal-create { display: flex; gap: 8px; }
+.rd-category-modal-create input { flex: 1; min-width: 0; }
+.rd-category-modal .rd-button { border: 1px solid var(--rd-line); border-radius: 5px; background: var(--rd-surface); color: var(--rd-ink); box-shadow: none; font: inherit; min-height: 30px; padding: 4px 8px; }
+.rd-category-modal .rd-button:hover:not(:disabled) { border-color: var(--rd-accent); }
+.rd-category-modal .rd-button.is-danger { color: var(--text-error); }
+.rd-category-modal .rd-button.is-armed { border-color: var(--text-error); }
+.rd-category-modal .rd-category-modal-actions .rd-button { min-height: 24px; padding: 2px 6px; font-size: 12px; }
+.rd-category-modal input, .rd-category-modal .rd-chip-input { border: 1px solid var(--rd-line); border-radius: 5px; background: var(--rd-surface); color: var(--rd-ink); font: inherit; min-height: 30px; padding: 4px 8px; }
+.rd-action-menu { position: fixed; z-index: var(--layer-menu, 30); display: grid; min-width: 160px; padding: 4px; border: 1px solid var(--rd-line); border-radius: 5px; background: var(--rd-surface-raised); box-shadow: 0 12px 28px oklch(0.2 0.02 250 / 0.2); }
+.rd-action-menu .rd-action-menu-item { justify-content: flex-start; min-height: 28px; padding: 4px 10px; border-color: transparent; background: transparent; box-shadow: none; }
+.rd-action-menu .rd-action-menu-item.is-danger { color: var(--text-error); }
+.rd-action-menu-confirm { display: flex; align-items: center; gap: 4px; min-width: 220px; }
+.rd-action-menu-question { flex: 1; color: var(--rd-ink-muted); font-size: 12px; }
+@media (max-width: 1180px) {
+	.rd-continue-reading-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+	.rd-compact-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+	.rd-shelf-navigation { grid-template-columns: 190px minmax(0, 1fr); }
+}
+@media (max-width: 880px) {
+	.rd-shelf { padding: 16px 16px 56px; }
+	.rd-shelf-header, .rd-shelf-toolbar { flex-wrap: wrap; }
+	.rd-shelf-actions { width: 100%; }
+	.rd-shelf-search { min-width: 0; width: 100%; }
+	.rd-shelf-navigation { grid-template-columns: minmax(0, 1fr); }
+	.rd-nav-sidebar { position: static; }
+	.rd-nav-category-list { display: flex; overflow: auto; border: 0; gap: 8px; }
+	.rd-nav-category-item { border: 0; }
+	.rd-shelf .rd-nav-category { border: 1px solid var(--rd-line); white-space: nowrap; }
+	.rd-ledger-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+	.rd-summary-cell:nth-child(2) { border-right: 0; }
+	.rd-summary-cell:nth-child(-n+2) { border-bottom: 1px solid var(--rd-line); }
+}
 
 /* States and progress */
 .rd-shelf-state, .rd-shelf-loading, .rd-shelf-empty { padding: 32px 0; color: var(--rd-ink-muted); }

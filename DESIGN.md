@@ -43,6 +43,11 @@ typography:
     fontSize: "12px"
     fontWeight: 500
     lineHeight: 1.5
+  badge:
+    fontFamily: "inherit"
+    fontSize: "var(--font-ui-smaller)"
+    fontWeight: 500
+    lineHeight: 1.4
 rounded:
   square: "0"
   highlight: "2px"
@@ -167,7 +172,7 @@ Reading Desk 是一个 desktop Obsidian 操作表面：像长期置于书桌上�
 
 Shelf 和 Reader 的外层各保留 `24px` 工作区 padding。Reader 的 sticky 工具栏使用 `12px 16px`，分栏 PDF/目标面板间距为 `16px`；目标面板自身 `16px` padding、`12px` 内部 gap。列表、摘录卡和工具组以 `8px` 为基本节奏。
 
-Shelf 的主书库采用 `repeat(auto-fill, minmax(184px, 1fr))`，卡片不是营销式的固定等高网格：封面容器保持 `0.7` aspect ratio，继续阅读轨单卡限定为 `clamp(152px, 22vw, 196px)` / 最大 `196px`，其余高度由真实元数据、标题与进度决定。表格是数据密集布局，不套用正文行宽规则。
+Shelf 内容限定 `max-width: 1368px` 居中容器（ADR 0007）。主书库采用 `repeat(auto-fill, minmax(184px, 1fr))` 封面墙；卡片是「固定信息槽的内容驱动等高卡」：封面 `0.7` aspect ratio 满宽 + 两行 clamp 书名槽（`2.6em`）/ 单行作者 / 单行元数据 / 进度行，槽位而非拉伸保证等高。继续阅读轨是三张横排卡（`88px` 封面 + `min-height 118px`），窄屏降两列；「查看阅读记录」把主列表切到仅含阅读记录 + 最近阅读排序的筛选态。分类筛选是单行可换行 chips（数量 + 选中 accent 描边），行尾「+」新建、chip 右键重排/改名/删除，「管理分类」开集中 modal；排序由「全部图书」副文案点击切换并记忆到 localStorage。台账视图（C）是统计摘要 4 格 + 高密度表格；导航工作台（B）是左侧 `224px` sticky 分类列（选中 inset `2px` accent）+ `172px` 重点卡 + 四列紧凑网格，复用同一书卡组件。表格是数据密集布局，不套用正文行宽规则。书架微节奏（chip `3px 10px`、书卡信息 `7px` gap、封面角标 `10px` 偏移/`21px` 高）是原型契约登记的刻度延伸，只用于书架表面。
 
 Reader leaf 始终只承载 PDF 工作面，真实 PDF 导航作为独立原生 Obsidian 左侧栏 leaf 呈现，不随 Reader 变窄而挤占中间阅读空间。导航 leaf 在真实页面缩略图与 PDF outline 层级之间切换，并跟随最近激活的 Reader；目录含当前章节、页码、加载、空和错误态。缩略图与目录复刻宿主原生 PDF 侧栏的视觉契约：纸面 `148px` 宽、宿主 `--pdf-thumbnail-shadow`、`8px` 透明光晕边框在 hover/当前页转为 `--background-modifier-hover`，页码以 `data-page-label` 徽章叠在右下角，未渲染纸面用 1px 虚线占位；导航按钮必须在 host 作用域下显式清除主题 button 底色/边框，否则光晕会透出主题按钮色。目录按范围匹配持续标出当前所在章节（宿主 `--nav-item-*-active` 配色）并随翻页保持可见，而不是只在章节起始页亮起。Reader 工具栏保留“PDF 导航”入口，用户折叠宿主左侧栏时导航按宿主行为隐藏，重新打开后仍保留两种页签。PDF 工作面保持 `min-width: 0` 与自身 overflow，不依赖全窗口宽度。
 
@@ -193,7 +198,7 @@ Reader leaf 始终只承载 PDF 工作面，真实 PDF 导航作为独立原生 
 
 ### Shelf Cards and Table
 
-**真实书目优先于宣传封面。** `rd-shelf-card` 使用 raised surface、1px line、`12px` 内边距和 `8px` gap；封面容器不控制书目正文的高度。hover/selected 只以 accent 边线和低比例 accent 混色提示，键盘焦点仍保留 outline。`rd-library-table` 使用行底边、`8px` 单元格 padding 和就地编辑，不把数据行伪装成卡片。继续阅读轨是「继续」入口而不是第二个书架：轨内卡片只保留封面、书名与进度（封面限高 `160px`，不渲染作者、元数据与分类编辑器），分类筛选与新建分类共用一行 wrap 排布。两者叠放会让单本轨道加分类面板吃掉首屏，把主书库挤到折叠线以下。
+**真实书目优先于宣传封面。** `rd-shelf-card` 是「满宽封面 + 固定信息槽」的分区卡：方正 0 圆角、raised surface、1px line、卡面无投影；唯一功能性阴影给封面纸面（`0 8px 22px` elevation，与 PDF 页同一语言）。信息槽为两行 clamp 书名（16px，槽 `2.6em`，完整书名走 title 提示/台账/阅读器标题）、单行 ellipsis 作者（点击就地编辑，缺失态「点击添加作者信息」accent 虚线下划线）、12px 图标元数据行（页数 · 大小）与 3px 进度行；等高由槽位保证，不是拉伸。hover 只把边线加深为 `--background-modifier-border-hover`，focus 是 `2px` accent outline，选中沿用 accent 边线 + 低比例混色。封面左上角分类角标是只读 pill（宿主 `--font-ui-smaller`，半透明深底白字、白 34% 边）。台账（`rd-ledger`）使用 42px 小封面 + 书名/路径、作者/分类/标签/评分就地编辑、行底边与 `10px 12px` 单元格 padding，不把数据行伪装成卡片。继续阅读轨是「继续」入口而不是第二个书架：轨内横卡只保留 88px 封面、书名、作者与进度。
 
 ### Reader Toolbar and Target Panel
 
@@ -213,7 +218,7 @@ Reader leaf 始终只承载 PDF 工作面，真实 PDF 导航作为独立原生 
 
 ### Progress
 
-**页码语境下的细线反馈。** `rd-progress` 是 `3px` line 底轨，fill 使用 accent，自身保持 `100%` 宽度并以 `transform: scaleX()` 加 `180ms` 指数 ease-out 做合成器过渡；`prefers-reduced-motion: reduce` 取消过渡。不得改为环形 KPI 或大数字摘要。
+**页码语境下的细线反馈。** `rd-progress` 是 `3px` line 底轨，fill 使用 accent，自身保持 `100%` 宽度并以 `transform: scaleX()` 加 `180ms` 指数 ease-out 做合成器过渡；`prefers-reduced-motion: reduce` 取消过渡。书架卡片、继续阅读横卡、台账行与重点卡的进度都是「底轨 + 右端常显百分比」一行（`rd-progress-row`），百分比用 tabular numerals 右对齐。不得改为环形 KPI 或大数字摘要。
 
 ## Do's and Don'ts
 

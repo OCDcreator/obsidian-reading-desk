@@ -16,7 +16,16 @@
 
 | 文件 / 类名 | 责任 |
 |---|---|
-| `src/views/ShelfView.ts::ShelfView` | 书架卡片、表格、分类、搜索与单元格编辑 |
+| `src/views/ShelfView.ts::ShelfView` | 书架编排层：壳/页头/工具栏/三态切换与各视图模块组装 |
+| `src/views/shelf/ShelfViewModel.ts` | 视图状态纯函数：筛选（含阅读记录态）、统计、状态存取与格式化 |
+| `src/views/shelf/ShelfSorting.ts` | 排序策略：最近阅读（有记录倒序在前、未读按书名在后）与书名 |
+| `src/views/shelf/BookCard.ts` | A 书卡（固定信息槽/封面角标/作者就地编辑）、继续横卡与进度行 |
+| `src/views/shelf/ContinueReadingRail.ts` | 继续阅读三横卡轨与「查看阅读记录」筛选态入口 |
+| `src/views/shelf/CategoryChips.ts` | 分类 chips 行：数量、选中、「+」新建与右键重排/改名/删除 |
+| `src/views/shelf/CategoryManagerModal.ts` | 集中式分类管理 modal，与 chips 右键同一套写路径 |
+| `src/views/shelf/LedgerView.ts` | C 台账：统计摘要 4 格与高密度表格（就地编辑保留） |
+| `src/views/shelf/NavigationLayout.ts` | B 导航工作台：sticky 分类列、重点卡与四列紧凑网格 |
+| `src/views/shelf/ShelfDom.ts` | 书架共享 DOM 工具、就地输入绑定与锚定操作菜单 |
 | `src/views/ReaderView.ts::ReaderView` | 布局、顶部工具栏、目标面板、高亮抽屉、评论浮层与选区交互编排 |
 | `src/reader/PdfRenderer.ts::PdfRenderer` | 真实 PDF 渲染、文本层、高亮图层、页码 / 缩放与裁剪 |
 | `src/reader/PdfSelectionGeometry.ts` | 跨行选区和归一化 PDF 坐标 |

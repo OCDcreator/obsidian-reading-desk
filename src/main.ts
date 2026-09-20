@@ -85,11 +85,11 @@ export default class ReadingDeskPlugin extends Plugin {
 			const current = this.app.workspace.getActiveViewOfType(ReaderView);
 			return current ?? this.app.workspace.getLeavesOfType(READER_VIEW_TYPE).map(item => item.view).find(view => view instanceof ReaderView && !!view.getState().pdfPath) as ReaderView | undefined ?? null;
 		}));
-		this.registerView(SHELF_VIEW_TYPE, leaf => new ShelfItemView(leaf, this.library, {
+		this.registerView(SHELF_VIEW_TYPE, leaf => new ShelfItemView(leaf, this.library, this.annotations, {
 			open: path => this.openReader(path),
 			scan: () => this.scanLibrary(),
 			resourceUrl: path => this.app.vault.adapter.getResourcePath(path),
-			openSettings: () => this.openPluginSettings('library')
+			openSettings: tab => this.openPluginSettings(tab ?? 'library')
 		}));
 		this.app.workspace.onLayoutReady(() => { if (this.app.workspace.getLeavesOfType(READER_VIEW_TYPE).some(leaf => !!leaf.view.getState().pdfPath)) void this.openPdfNavigation(false); });
 		addIcon('reading-desk-margin-day', READING_DESK_MARGIN_ANCHOR_DAY);

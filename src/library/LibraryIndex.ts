@@ -75,6 +75,30 @@ export class LibraryIndex {
 		return category;
 	}
 
+	async renameCategory(id: string, name: string): Promise<void> {
+		const trimmed = name.trim();
+		if (!trimmed) throw new Error('分类名称不能为空。');
+		await this.persistence.commit(() => {
+			const category = this.persistence.readCategories().find(item => item.id === id);
+			if (!category) throw new Error(`未找到分类：${id}`);
+			category.name = trimmed;
+		});
+	}
+
+	/** Removes the category and unassigns it from every book; book records themselves stay. */
+	async removeCategory(id: string): Promise<void> {
+		await this.persistence.commit(() => {
+			const categories = this.persistence.readCategories();
+			const index = categories.findIndex(category => category.id === id);
+			if (index < 0) throw new Error(`未找到分类：${id}`);
+			categories.splice(index, 1);
+			categories.forEach((category, order) => { category.order = order; });
+			for (const book of Object.values(this.persistence.readBooks())) {
+				if (book.categoryId === id) book.categoryId = undefined;
+			}
+		});
+	}
+
 	async reorderCategories(ids: string[]): Promise<void> {
 		await this.persistence.commit(() => {
 			const categories = this.persistence.readCategories();

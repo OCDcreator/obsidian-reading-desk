@@ -1,15 +1,23 @@
-import { Notice } from 'obsidian';
+import { Notice, setIcon } from 'obsidian';
 import type { LibraryBook, LibraryCategory } from '../types/contracts';
+import { createShelfCard, type BookCardHost } from './shelf/BookCard';
+import { createCategoryChips } from './shelf/CategoryChips';
+import { openCategoryManager } from './shelf/CategoryManagerModal';
+import { createContinueReadingRail } from './shelf/ContinueReadingRail';
+import { createLedgerSummary, createLedgerTable } from './shelf/LedgerView';
+import { createNavigationLayout } from './shelf/NavigationLayout';
+import { button, documentInput, element, errorMessage, linkButton, showActionMenu } from './shelf/ShelfDom';
+import { SHELF_SORT_LABELS, sortBooks } from './shelf/ShelfSorting';
 import {
-	categoryBookCount,
 	filterBooks,
-	formatFileSize,
-	formatProgress,
-	parseTags,
+	ledgerStats,
 	ShelfSearchController,
-	sortCategories,
+	ShelfViewStateStore,
 	shouldShowContinueReading,
-	type ShelfDisplayMode
+	sortCategories,
+	type ShelfFilters,
+	type ShelfLayout,
+	type ShelfSortMode
 } from './shelf/ShelfViewModel';
 
 type Awaitable<T> = T | Promise<T>;
@@ -18,22 +26,34 @@ export interface ShelfViewHost {
 	getBooks(): Awaitable<LibraryBook[]>;
 	getCategories(): Awaitable<LibraryCategory[]>;
 	addCategory(name: string): Awaitable<LibraryCategory>;
+	renameCategory(id: string, name: string): Awaitable<void>;
+	removeCategory(id: string): Awaitable<void>;
 	reorderCategories(ids: string[]): Awaitable<void>;
 	updateBook(id: string, patch: Partial<Pick<LibraryBook, 'title' | 'author' | 'tags' | 'rating' | 'categoryId'>>): Awaitable<void>;
 	openBook(book: LibraryBook): Awaitable<void>;
 	scan(): Awaitable<void>;
+	countHighlights(): Awaitable<number>;
 	resolveCoverUrl?(coverPath: string): string | null;
-	openSettings?(): Awaitable<void>;
+	openSettings?(tab?: string): Awaitable<void>;
 }
 
-/** A framework-free shelf surface. Its host owns persistence and navigation. */
+const LAYOUT_LABELS: Array<{ mode: ShelfLayout; label: string }> = [
+	{ mode: 'cards', label: '卡片' },
+	{ mode: 'ledger', label: '台账' },
+	{ mode: 'navigation', label: '导航' }
+];
+
+/** A framework-free shelf surface. Its host owns persistence and navigation; this class only orchestrates. */
 export class ShelfView {
 	private container?: HTMLElement;
 	private books: LibraryBook[] = [];
 	private categories: LibraryCategory[] = [];
+	private highlightCount = 0;
 	private query = '';
 	private categoryId?: string;
-	private mode: ShelfDisplayMode = 'cards';
+	private layout: ShelfLayout;
+	private sortMode: ShelfSortMode;
+	private historyOnly = false;
 	private selectedBookId?: string;
 	private loading = false;
 	private error?: string;
@@ -43,8 +63,13 @@ export class ShelfView {
 	private content?: HTMLElement;
 	private search?: HTMLInputElement;
 	private readonly searchController = new ShelfSearchController();
+	private readonly stateStore: ShelfViewStateStore;
 
-	constructor(private readonly host: ShelfViewHost) { }
+	constructor(private readonly host: ShelfViewHost) {
+		this.stateStore = new ShelfViewStateStore(window.localStorage);
+		this.layout = this.stateStore.readLayout();
+		this.sortMode = this.stateStore.readSortMode();
+	}
 
 	async render(container: HTMLElement): Promise<void> {
 		this.container = container;
@@ -66,9 +91,14 @@ export class ShelfView {
 		this.error = undefined;
 		this.paint();
 		try {
-			const [books, categories] = await Promise.all([this.host.getBooks(), this.host.getCategories()]);
+			const [books, categories, highlights] = await Promise.all([
+				this.host.getBooks(),
+				this.host.getCategories(),
+				this.host.countHighlights()
+			]);
 			this.books = books;
 			this.categories = sortCategories(categories);
+			this.highlightCount = highlights;
 		} catch (error) {
 			this.error = errorMessage(error, '无法加载书架');
 		} finally {
@@ -86,13 +116,15 @@ export class ShelfView {
 	}
 
 	private ensureShell(container: HTMLElement): void {
-		if (this.content && this.content.parentElement === container) return;
+		if (this.content && this.content.closest('.rd-shelf') === container) return;
 		container.replaceChildren();
 		container.className = 'rd-shelf';
+		const frame = element('div', 'rd-shelf-frame');
 		this.header = this.createHeader();
 		this.toolbar = this.createToolbar();
 		this.content = element('div', 'rd-shelf-results');
-		container.append(this.header, this.toolbar, this.content);
+		frame.append(this.header, this.toolbar, this.content);
+		container.append(frame);
 	}
 
 	private refreshModeSwitch(): void {
@@ -110,18 +142,35 @@ export class ShelfView {
 
 	private createHeader(): HTMLElement {
 		const header = element('header', 'rd-shelf-header');
-		header.append(element('h1', 'rd-shelf-heading', '书架'));
+		const titleWrap = element('div', 'rd-shelf-title-wrap');
+		titleWrap.append(element('h1', 'rd-shelf-heading', '书架'), element('p', 'rd-shelf-subtitle', '原文、摘录与进度在同一处'));
 		const actions = element('div', 'rd-shelf-actions');
-		actions.append(button('扫描书库', '重新扫描书库', () => void this.scan()));
-		if (this.host.openSettings) actions.append(button('设置', '打开 Reading Desk 设置', () => void this.host.openSettings?.()));
-		header.append(actions);
+		const scan = button('扫描书库', '重新扫描书库', () => void this.scan());
+		scan.classList.add('rd-button--primary');
+		scan.prepend(iconSpan('scan-line'));
+		actions.append(scan);
+		const importButton = button('导入', '打开设置中的数据与迁移', () => void this.host.openSettings?.('data'));
+		importButton.prepend(iconSpan('import'));
+		actions.append(importButton);
+		actions.append(this.createMoreMenuButton());
+		header.append(titleWrap, actions);
 		return header;
+	}
+
+	private createMoreMenuButton(): HTMLButtonElement {
+		const more = button('更多操作', '更多操作', () => showActionMenu(more, [
+			{ label: '设置', onClick: () => void this.host.openSettings?.('library') },
+			{ label: '扫描书库', onClick: () => void this.scan() }
+		]));
+		more.classList.add('rd-icon-button');
+		more.replaceChildren(iconSpan('more-horizontal'));
+		return more;
 	}
 
 	private createToolbar(): HTMLElement {
 		const toolbar = element('div', 'rd-shelf-toolbar');
 		toolbar.setAttribute('role', 'search');
-		this.search = documentInput('search', '搜索标题、作者或标签');
+		this.search = documentInput('search', '搜索书名、作者或标签');
 		this.search.className = 'rd-shelf-search';
 		this.search.value = this.query;
 		this.search.setAttribute('aria-label', '搜索书架');
@@ -144,246 +193,134 @@ export class ShelfView {
 		const group = element('div', 'rd-view-switch');
 		group.setAttribute('role', 'group');
 		group.setAttribute('aria-label', '书架视图');
-		group.append(
-			this.modeButton('cards', '卡片视图'),
-			this.modeButton('table', '表格视图')
-		);
+		for (const { mode, label } of LAYOUT_LABELS) {
+			const control = button(label, `${label}视图`, () => {
+				this.layout = mode;
+				this.stateStore.writeLayout(mode);
+				this.paint();
+			});
+			control.classList.add('rd-view-switch-button');
+			control.setAttribute('aria-pressed', String(this.layout === mode));
+			if (this.layout === mode) control.classList.add('is-selected');
+			group.append(control);
+		}
 		return group;
-	}
-
-	private modeButton(mode: ShelfDisplayMode, label: string): HTMLButtonElement {
-		const control = button(label, label, () => {
-			this.mode = mode;
-			this.paint();
-		});
-		control.classList.add('rd-view-switch-button');
-		control.setAttribute('aria-pressed', String(this.mode === mode));
-		if (this.mode === mode) control.classList.add('is-selected');
-		return control;
 	}
 
 	private createContent(): HTMLElement {
 		const content = element('div', 'rd-shelf-content');
-		const continuing = shouldShowContinueReading({ query: this.query, categoryId: this.categoryId }) ? this.createContinueReading() : undefined;
-		if (continuing) content.append(continuing);
-		content.append(this.createCategoryPanel());
-		const books = filterBooks(this.books, { query: this.query, categoryId: this.categoryId });
-		if (books.length === 0) content.append(this.createEmptyState());
-		else content.append(this.mode === 'cards' ? this.createCardGrid(books) : this.createTable(books));
+		const filters: ShelfFilters = { query: this.query, categoryId: this.categoryId, historyOnly: this.historyOnly };
+		const filtered = sortBooks(filterBooks(this.books, filters), this.historyOnly ? 'recent' : this.sortMode);
+		if (this.layout === 'navigation') {
+			const section = element('section', 'rd-shelf-section');
+			section.setAttribute('aria-label', '全部图书');
+			section.append(createNavigationLayout({
+				books: filtered,
+				allBooks: this.books,
+				categories: this.categories,
+				selectedCategoryId: this.categoryId,
+				mainHeading: this.createLibraryHeading(filtered.length, '全部图书'),
+				host: { ...this.cardHost(), onSelectCategory: id => this.setCategoryFilter(id) }
+			}));
+			content.append(section);
+			return content;
+		}
+		if (this.layout === 'cards' && shouldShowContinueReading(filters)) {
+			const rail = createContinueReadingRail(this.books, this.historyOnly, {
+				...this.cardHost(),
+				onToggleHistory: () => this.setHistoryFilter(!this.historyOnly)
+			});
+			if (rail) content.append(rail);
+		}
+		content.append(this.createChips());
+		const section = element('section', 'rd-shelf-section');
+		section.setAttribute('aria-label', this.layout === 'ledger' ? '书目台账' : '全部图书');
+		section.append(this.createLibraryHeading(filtered.length, this.layout === 'ledger' ? '书目台账' : '全部图书'));
+		if (this.layout === 'ledger') content.append(createLedgerSummary(ledgerStats(this.books, this.highlightCount)));
+		section.append(this.createResults(filtered));
+		content.append(section);
 		return content;
 	}
 
-	private createContinueReading(): HTMLElement | undefined {
-		const books = this.books
-			.filter(book => book.progress > 0 && book.progress < 1)
-			.sort((left, right) => (right.lastReadAt ?? 0) - (left.lastReadAt ?? 0));
-		if (books.length === 0) return undefined;
-		const section = element('section', 'rd-continue-reading');
-		section.setAttribute('aria-label', '继续阅读');
-		section.append(element('h2', 'rd-section-title', '继续阅读'));
-		const cards = element('div', 'rd-continue-reading-list');
-		for (const book of books) cards.append(this.createCard(book));
-		section.append(cards);
-		return section;
-	}
-
-	private createCategoryPanel(): HTMLElement {
-		const panel = element('section', 'rd-category-panel');
-		panel.setAttribute('aria-label', '图书分类');
-		const chips = element('div', 'rd-category-chips');
-		chips.append(this.categoryChip(undefined, `全部 ${this.books.length}`));
-		for (const category of this.categories) {
-			chips.append(this.categoryChip(category.id, `${category.name} ${categoryBookCount(this.books, category.id)}`));
+	private createLibraryHeading(count: number, title: string): HTMLElement {
+		const heading = element('div', 'rd-section-heading');
+		const headingTitle = element('div', 'rd-section-title');
+		headingTitle.append(element('h2', 'rd-section-heading-main', title));
+		const note = this.historyOnly
+			? `仅含阅读记录 · ${count} 本 · 按${SHELF_SORT_LABELS.recent}排序`
+			: `${count} 本 · 按${SHELF_SORT_LABELS[this.sortMode]}排序`;
+		if (this.historyOnly) {
+			headingTitle.append(element('span', 'rd-section-note', note));
+		} else {
+			const toggle = button(note, `切换排序（当前：${SHELF_SORT_LABELS[this.sortMode]}）`, () => this.toggleSort());
+			toggle.classList.add('rd-section-note', 'rd-section-note-button');
+			headingTitle.append(toggle);
 		}
-		panel.append(chips, this.createCategoryManager());
-		return panel;
+		heading.append(headingTitle);
+		if (title === '全部图书') heading.append(linkButton('管理分类', '打开分类管理面板', () => this.openManager()));
+		return heading;
 	}
 
-	private categoryChip(categoryId: string | undefined, label: string): HTMLButtonElement {
-		const control = button(label, label, () => {
-			this.categoryId = categoryId;
-			this.paint();
+	private createChips(): HTMLElement {
+		return createCategoryChips({
+			books: this.books,
+			categories: this.categories,
+			selectedId: this.categoryId,
+			onSelect: id => this.setCategoryFilter(id),
+			addCategory: async name => { await this.host.addCategory(name); await this.reload(); },
+			renameCategory: async (id, name) => { await this.host.renameCategory(id, name); await this.reload(); },
+			removeCategory: async id => { await this.host.removeCategory(id); await this.reload(); },
+			reorderCategories: async ids => { await this.host.reorderCategories(ids); await this.reload(); },
+			notify: message => this.notify(message)
 		});
-		control.classList.add('rd-category-chip');
-		control.setAttribute('aria-pressed', String(this.categoryId === categoryId));
-		if (this.categoryId === categoryId) control.classList.add('is-selected');
-		return control;
 	}
 
-	private createCategoryManager(): HTMLElement {
-		const manager = element('div', 'rd-category-manager');
-		const input = documentInput('text', '新分类名称');
-		input.className = 'rd-category-input';
-		input.setAttribute('aria-label', '新分类名称');
-		const add = async (): Promise<void> => {
-			const name = input.value.trim();
-			if (!name) return;
-			try {
-				await this.host.addCategory(name);
-				input.value = '';
-				await this.reload();
-			} catch (error) {
-				this.error = errorMessage(error, '无法添加分类');
-				this.paint();
-			}
-		};
-		input.addEventListener('keydown', event => {
-			if (event.key === 'Enter') {
-				event.preventDefault();
-				void add();
-			}
+	private openManager(): void {
+		openCategoryManager({
+			books: this.books,
+			categories: this.categories,
+			addCategory: async name => { await this.host.addCategory(name); },
+			renameCategory: async (id, name) => { await this.host.renameCategory(id, name); },
+			removeCategory: async id => { await this.host.removeCategory(id); },
+			reorderCategories: async ids => { await this.host.reorderCategories(ids); },
+			notify: message => this.notify(message),
+			refresh: () => this.reload()
 		});
-		manager.append(input, button('新增分类', '新增分类', () => void add()));
-		if (this.categories.length > 0) manager.append(this.createCategoryOrder());
-		return manager;
 	}
 
-	private createCategoryOrder(): HTMLElement {
-		const list = element('ol', 'rd-category-order');
-		list.setAttribute('aria-label', '分类排序');
-		this.categories.forEach((category, index) => {
-			const row = element('li', 'rd-category-order-row');
-			row.append(element('span', 'rd-category-name', category.name));
-			const controls = element('span', 'rd-category-order-actions');
-			controls.append(
-				this.reorderButton(category, index, -1, '上移'),
-				this.reorderButton(category, index, 1, '下移')
-			);
-			row.append(controls);
-			list.append(row);
-		});
-		return list;
-	}
-
-	private reorderButton(category: LibraryCategory, index: number, offset: number, label: string): HTMLButtonElement {
-		const control = button(label, `${category.name}${label}`, () => void this.reorderCategory(index, offset));
-		control.disabled = index + offset < 0 || index + offset >= this.categories.length;
-		return control;
-	}
-
-	private async reorderCategory(index: number, offset: number): Promise<void> {
-		const reordered = [...this.categories];
-		const [moved] = reordered.splice(index, 1);
-		reordered.splice(index + offset, 0, moved);
-		try {
-			await this.host.reorderCategories(reordered.map(category => category.id));
-			await this.reload();
-		} catch (error) {
-			this.error = errorMessage(error, '无法调整分类顺序');
-			this.paint();
-		}
-	}
-
-	private createCardGrid(books: LibraryBook[]): HTMLElement {
+	private createResults(filtered: LibraryBook[]): HTMLElement {
+		if (filtered.length === 0) return this.createEmptyState();
+		if (this.layout === 'ledger') return createLedgerTable(filtered, this.categories, this.cardHost());
 		const grid = element('div', 'rd-shelf-grid');
 		grid.setAttribute('aria-label', '图书卡片');
-		for (const book of books) grid.append(this.createCard(book));
+		for (const book of filtered) {
+			grid.append(createShelfCard(book, this.categories.find(category => category.id === book.categoryId), this.cardHost()));
+		}
 		return grid;
 	}
 
-	private createCard(book: LibraryBook): HTMLElement {
-		const card = element('article', 'rd-shelf-card');
-		card.tabIndex = 0;
-		card.setAttribute('aria-label', `打开 ${book.title}`);
-		card.addEventListener('click', () => void this.openBook(book));
-		card.addEventListener('keydown', event => {
-			if (event.key === 'Enter' || event.key === ' ') {
-				event.preventDefault();
-				void this.openBook(book);
-			}
-		});
-		this.applySelection(card, book.id);
-		const cover = element('div', 'rd-book-cover');
-		const coverUrl = book.coverPath ? this.host.resolveCoverUrl?.(book.coverPath) ?? book.coverPath : null;
-		if (coverUrl) {
-			const image = card.ownerDocument.createElement('img');
-			image.src = coverUrl;
-			image.alt = `${book.title} 封面`;
-			image.loading = 'lazy';
-			image.decoding = 'async';
-			image.addEventListener('error', () => {
-				image.remove();
-				cover.append(element('span', 'rd-book-cover-unavailable', '无可用封面'));
-			});
-			cover.append(image);
-		} else cover.append(element('span', 'rd-book-cover-unavailable', '无可用封面'));
-		const details = element('div', 'rd-book-details');
-		details.append(
-			element('p', 'rd-book-title', book.title),
-			element('p', 'rd-book-author', book.author || '作者未填写'),
-			element('p', 'rd-book-meta', bookMeta(book)),
-			this.createProgress(book),
-			this.createCardCategoryControl(book)
-		);
-		card.append(cover, details);
-		return card;
+	private cardHost(): BookCardHost {
+		return {
+			resolveCoverUrl: path => this.host.resolveCoverUrl?.(path) ?? null,
+			updateBook: (book, patch, onError) => this.updateBook(book, patch, onError),
+			openBook: book => this.openBook(book)
+		};
 	}
 
-	private createProgress(book: LibraryBook): HTMLElement {
-		const group = element('div', 'rd-progress-group');
-		const bar = element('div', 'rd-progress');
-		bar.setAttribute('role', 'progressbar');
-		bar.setAttribute('aria-label', `${book.title} 阅读进度`);
-		bar.setAttribute('aria-valuemin', '0');
-		bar.setAttribute('aria-valuemax', '100');
-		bar.setAttribute('aria-valuenow', String(Math.round(book.progress * 100)));
-		const fill = element('span', 'rd-progress-fill');
-		fill.style.width = formatProgress(book.progress);
-		bar.append(fill);
-		group.append(bar, element('span', 'rd-progress-label', `阅读进度 ${formatProgress(book.progress)}`));
-		return group;
+	private setCategoryFilter(id?: string): void {
+		this.categoryId = id;
+		this.refreshContent();
 	}
 
-	private createCardCategoryControl(book: LibraryBook): HTMLElement {
-		const wrapper = element('label', 'rd-book-category');
-		wrapper.append('分类');
-		wrapper.addEventListener('click', event => event.stopPropagation());
-		const select = wrapper.ownerDocument.createElement('select');
-		select.setAttribute('aria-label', `${book.title} 的分类`);
-		select.append(option(select.ownerDocument, '', '未分类'));
-		for (const category of this.categories) select.append(option(select.ownerDocument, category.id, category.name));
-		select.value = book.categoryId ?? '';
-		select.addEventListener('click', event => event.stopPropagation());
-		select.addEventListener('change', () => void this.updateBook(book, { categoryId: select.value || undefined }, message => new Notice(message)));
-		wrapper.append(select);
-		return wrapper;
+	private setHistoryFilter(active: boolean): void {
+		this.historyOnly = active;
+		this.refreshContent();
 	}
 
-	private createTable(books: LibraryBook[]): HTMLElement {
-		const table = element('table', 'rd-library-table') as HTMLTableElement;
-		table.setAttribute('aria-label', '图书表格');
-		const head = table.createTHead().insertRow();
-		for (const label of ['标题', '作者', '标签', '评分', '页数', '大小', '进度']) {
-			const cell = table.ownerDocument.createElement('th');
-			cell.scope = 'col';
-			cell.textContent = label;
-			head.append(cell);
-		}
-		const body = table.createTBody();
-		for (const book of books) body.append(this.createTableRow(table.ownerDocument, book));
-		return table;
-	}
-
-	private createTableRow(document: Document, book: LibraryBook): HTMLTableRowElement {
-		const row = document.createElement('tr');
-		row.tabIndex = 0;
-		row.setAttribute('aria-label', `选择 ${book.title}`);
-		row.addEventListener('click', () => this.selectBook(book.id));
-		row.addEventListener('keydown', event => {
-			if (event.key === 'Enter' || event.key === ' ') {
-				event.preventDefault();
-				this.selectBook(book.id);
-			}
-		});
-		this.applySelection(row, book.id);
-		row.insertCell().append(button(book.title, `打开 ${book.title}`, () => void this.openBook(book)));
-		row.insertCell().append(this.inlineTextEditor(document, book, 'author', '作者'));
-		row.insertCell().append(this.inlineTextEditor(document, book, 'tags', '标签'));
-		row.insertCell().append(this.ratingEditor(document, book));
-		row.insertCell().textContent = book.pageCount ? `${book.pageCount} 页` : '页数未提供';
-		row.insertCell().textContent = formatFileSize(book.fileSize);
-		row.insertCell().textContent = formatProgress(book.progress);
-		return row;
+	private toggleSort(): void {
+		this.sortMode = this.sortMode === 'recent' ? 'title' : 'recent';
+		this.stateStore.writeSortMode(this.sortMode);
+		this.refreshContent();
 	}
 
 	/** Updates the selection in place so the focused row or card is not rebuilt under the user. */
@@ -392,54 +329,13 @@ export class ShelfView {
 		const container = this.content;
 		if (!container) return;
 		for (const item of Array.from(container.querySelectorAll<HTMLElement>('[data-book-id]'))) {
-			this.applySelection(item, item.dataset.bookId ?? id);
+			const bookId = item.dataset.bookId ?? id;
+			const selected = this.selectedBookId === bookId;
+			item.classList.toggle('is-selected', selected);
+			if (item.tagName === 'TR') item.setAttribute('aria-selected', String(selected));
+			else if (selected) item.setAttribute('aria-current', 'true');
+			else item.removeAttribute('aria-current');
 		}
-	}
-
-	private applySelection(item: HTMLElement, bookId: string): void {
-		item.dataset.bookId = bookId;
-		const selected = this.selectedBookId === bookId;
-		item.classList.toggle('is-selected', selected);
-		if (item.tagName === 'TR') item.setAttribute('aria-selected', String(selected));
-		else if (selected) item.setAttribute('aria-current', 'true');
-		else item.removeAttribute('aria-current');
-	}
-
-	private inlineTextEditor(document: Document, book: LibraryBook, field: 'author' | 'tags', label: string): HTMLInputElement {
-		const input = document.createElement('input');
-		input.className = 'rd-table-editor';
-		input.value = field === 'tags' ? book.tags.join('，') : book.author;
-		input.setAttribute('aria-label', `${book.title} 的${label}`);
-		const save = (): void => {
-			const value = field === 'tags' ? parseTags(input.value) : input.value.trim();
-			if (sameFieldValue(book, field, value)) return;
-			void this.updateBook(book, { [field]: value }, message => showEditorError(input, message));
-		};
-		input.addEventListener('blur', save);
-		input.addEventListener('keydown', event => {
-			if (event.key === 'Enter') {
-				event.preventDefault();
-				input.blur();
-			}
-		});
-		input.addEventListener('click', event => event.stopPropagation());
-		return input;
-	}
-
-	private ratingEditor(document: Document, book: LibraryBook): HTMLSelectElement {
-		const select = document.createElement('select');
-		select.className = 'rd-rating-select';
-		select.setAttribute('aria-label', `${book.title} 的评分`);
-		select.append(option(document, '', '未评分'));
-		for (let value = 1; value <= 10; value += 1) select.append(option(document, String(value), `${value} 分`));
-		select.value = book.rating ? String(book.rating) : '';
-		select.addEventListener('click', event => event.stopPropagation());
-		select.addEventListener('change', () => void this.updateBook(
-			book,
-			{ rating: select.value ? Number(select.value) : undefined },
-			message => showEditorError(select, message)
-		));
-		return select;
 	}
 
 	private createLoadingState(): HTMLElement {
@@ -452,8 +348,12 @@ export class ShelfView {
 	private createEmptyState(): HTMLElement {
 		const state = element('div', 'rd-shelf-state rd-shelf-empty');
 		state.setAttribute('role', 'status');
-		if (!this.query && !this.categoryId) {
+		if (!this.query && !this.categoryId && !this.historyOnly) {
 			state.textContent = '书架中还没有图书。请扫描已配置的书库文件夹。';
+			return state;
+		}
+		if (this.historyOnly && !this.query && !this.categoryId) {
+			state.textContent = '还没有任何阅读记录。打开一本书开始阅读后，这里会显示进度。';
 			return state;
 		}
 		state.textContent = this.query
@@ -466,6 +366,7 @@ export class ShelfView {
 	private clearFilters(): void {
 		this.query = '';
 		this.categoryId = undefined;
+		this.historyOnly = false;
 		if (this.search) this.search.value = '';
 		this.refreshContent();
 	}
@@ -490,10 +391,7 @@ export class ShelfView {
 		} catch (error) {
 			const message = errorMessage(error, '无法保存图书信息');
 			if (onError) onError(message);
-			else {
-				this.error = message;
-				this.paint();
-			}
+			else this.notify(message);
 		}
 	}
 
@@ -502,8 +400,7 @@ export class ShelfView {
 		try {
 			await this.host.openBook(book);
 		} catch (error) {
-			this.error = errorMessage(error, '无法打开图书');
-			this.paint();
+			this.notify(errorMessage(error, '无法打开图书'));
 		}
 	}
 
@@ -512,68 +409,18 @@ export class ShelfView {
 			await this.host.scan();
 			await this.reload();
 		} catch (error) {
-			this.error = errorMessage(error, '扫描书库失败');
-			this.paint();
+			this.notify(errorMessage(error, '扫描书库失败'));
 		}
+	}
+
+	private notify(message: string): void {
+		new Notice(message);
 	}
 }
 
-function element(tag: string, className: string, text?: string): HTMLElement {
-	const value = document.createElement(tag);
-	value.className = className;
-	if (text !== undefined) value.textContent = text;
-	return value;
-}
-
-function button(text: string, label: string, onClick: () => void): HTMLButtonElement {
-	const control = document.createElement('button');
-	control.type = 'button';
-	control.className = 'rd-button';
-	control.textContent = text;
-	control.setAttribute('aria-label', label);
-	control.addEventListener('click', event => {
-		event.stopPropagation();
-		onClick();
-	});
-	return control;
-}
-
-function documentInput(type: string, placeholder: string): HTMLInputElement {
-	const input = document.createElement('input');
-	input.type = type;
-	input.placeholder = placeholder;
-	return input;
-}
-
-function option(document: Document, value: string, label: string): HTMLOptionElement {
-	const item = document.createElement('option');
-	item.value = value;
-	item.textContent = label;
-	return item;
-}
-
-/** Surfaces an inline save failure beside the editor, keeping the row and its input intact. */
-function showEditorError(input: HTMLElement, message: string): void {
-	const cell = input.parentElement;
-	if (!cell) return;
-	cell.querySelector('.rd-table-error')?.remove();
-	const note = document.createElement('span');
-	note.className = 'rd-table-error';
-	note.setAttribute('role', 'alert');
-	note.textContent = message;
-	cell.append(note);
-}
-
-function bookMeta(book: LibraryBook): string {
-	const pages = book.pageCount ? `${book.pageCount} 页` : '页数未提供';
-	return `${pages} · ${formatFileSize(book.fileSize)}`;
-}
-
-function sameFieldValue(book: LibraryBook, field: 'author' | 'tags', value: string | string[]): boolean {
-	if (field === 'author') return book.author === value;
-	return book.tags.join('\u0000') === (value as string[]).join('\u0000');
-}
-
-function errorMessage(error: unknown, fallback: string): string {
-	return error instanceof Error && error.message ? error.message : fallback;
+function iconSpan(icon: string): HTMLElement {
+	const span = element('span', 'rd-button-icon');
+	span.setAttribute('aria-hidden', 'true');
+	setIcon(span, icon);
+	return span;
 }
