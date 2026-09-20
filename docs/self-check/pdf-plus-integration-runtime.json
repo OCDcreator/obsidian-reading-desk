@@ -1,0 +1,77 @@
+{
+  "capturedAt": "2026-09-20T01:52:42+08:00",
+  "kind": "real-obsidian-desktop-runtime",
+  "host": {
+    "obsidianVersion": "1.13.7",
+    "installerVersion": "1.13.4",
+    "vault": "testvault",
+    "cdpTargetId": "29052DF5C0D46667C07F46AD1AC71A88",
+    "buildId": "0.1.1+2026-09-19T17:51:19.553Z"
+  },
+  "deploymentSha256": {
+    "main.js": "f1239ac2ba8ec0dc7c0a1eddd7f2c1a21150fd0fe45179a3ab362a02a9c436c9",
+    "manifest.json": "236da1b1d1185193ac1e1bf462bed3c31da0f4f85ee06cdf924b2bf4a690a374",
+    "styles.css": "4dcd27b9c4ff033321c4cc5c9746bf87ba03136317550d1a64c6221fd7158442",
+    "pdf.worker.mjs": "7c237f83fa56bce645d8af51d183c9c56ba7b2d2928ff42754dc7020bea36323"
+  },
+  "assertions": {
+    "pluginReloaded": true,
+    "freshStartupIdentifierCaptured": true,
+    "readingDeskErrorsAfterReload": [],
+    "toolbarPageCopy": {
+      "ok": true,
+      "clipboard": "obsidian://reading-desk-highlight?file=Reading+Desk+Fixtures%2Freader-text-fixture.pdf&page=1&book=book-2827f668-8b3b-42b9-81fc-189a79561cc8"
+    },
+    "commandPageCopy": {
+      "ok": true,
+      "commandId": "obsidian-reading-desk:copy-current-reader-page-link",
+      "disabledOutsideReader": true
+    },
+    "highlightCopy": {
+      "ok": true,
+      "highlightId": "highlight-2ab55fda-9b59-4840-a94a-9702fce38c48",
+      "clipboard": "obsidian://reading-desk-highlight?file=Reading%20Desk%20Fixtures%2Freader-text-fixture.pdf&highlight=highlight-2ab55fda-9b59-4840-a94a-9702fce38c48"
+    },
+    "pageRoute": {
+      "ok": true,
+      "stalePathIgnored": true,
+      "resolvedPath": "Reading Desk Fixtures/reader-text-fixture.pdf",
+      "page": 1,
+      "surfaceAria": "PDF 第 1 页"
+    },
+    "highlightRoute": {
+      "ok": true,
+      "stalePathIgnored": true,
+      "resolvedPath": "Reading Desk Fixtures/reader-text-fixture.pdf",
+      "page": 1,
+      "surfaceAria": "PDF 第 1 页"
+    },
+    "clipboardPermissionFailure": {
+      "ok": true,
+      "notice": "复制失败：无法写入剪贴板，请检查系统权限后重试"
+    },
+    "scopeAndEmptyState": {
+      "bookCount": "当前显示 2 / 2 条",
+      "pageEmptyCount": "当前显示 0 / 1 条",
+      "pageEmptyText": "第 4 页没有高亮。查看本书全部",
+      "recoverable": true
+    },
+    "bidirectionalPreview": {
+      "markToRow": { "matchingRects": 11, "matchingRows": 1, "clearedOnMouseout": true },
+      "rowToMark": { "matchingRects": 11, "matchingRows": 1, "clearedOnMouseout": true },
+      "nativeKeyboardTab": { "firstHighlightRects": 11, "secondHighlightRects": 10, "oldRowCleared": true }
+    }
+  },
+  "restoration": {
+    "temporaryHighlightRemoved": true,
+    "themeRestored": "moonstone",
+    "readerRestored": { "pdfPath": "Books/原子结构与化学键核心问题详解（Atomic Structure and Chemical Bonding）.pdf", "page": 4 },
+    "drawerClosed": true,
+    "errorsAfterRestore": []
+  },
+  "limitations": [
+    "Exact 801/799 and 761/759 leaf widths were reached with Electron CDP viewport emulation; this proves Chromium/Electron layout, not a second physical display class.",
+    "The OS-level obsidian:// dispatch was exercised through the registered plugin protocol handler in the real loaded plugin rather than launching a second external process.",
+    "Plugin reload restored serialized leaf state but initially rendered the Reader empty until openPdf was invoked; this pre-existing hydration behavior is outside PDP-001–004 and remains recorded as a follow-up risk."
+  ]
+}

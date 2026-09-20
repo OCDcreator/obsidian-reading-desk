@@ -23,6 +23,8 @@ export interface HighlightListHost {
 	recolorHighlight(highlightId: string, color: HighlightColor): Promise<void> | void;
 	deleteHighlight(highlightId: string): Promise<void> | void;
 	jumpToHighlight(highlight: PdfHighlight): Promise<void> | void;
+	copyHighlightLink(highlight: PdfHighlight): Promise<void> | void;
+	setScope(scope: 'book' | 'page'): Promise<void> | void;
 }
 
 export function colorLabel(color: HighlightColor): string {

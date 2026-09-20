@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { CommentPopover } from '../../../src/ui/comments/CommentPopover';
-import { HighlightList } from '../../../src/ui/comments/HighlightList';
+import { filterHighlights, HighlightList } from '../../../src/ui/comments/HighlightList';
 import { contrastRatio, swatchForeground, type CommentPopoverHost, type HighlightListHost } from '../../../src/ui/comments/CommentUiTypes';
 import type { PdfComment, PdfHighlight } from '../../../src/types/contracts';
 
@@ -177,29 +177,62 @@ describe('HighlightList', () => {
 		Object.defineProperty(globalThis, 'document', { configurable: true, value: originalDocument });
 	});
 
+	it('filters by the internal zero-based page without mutating the book list', () => {
+		const another = { ...highlight, id: 'other', page: 2 };
+		const source = [highlight, another];
+		expect(filterHighlights(source, 'page', 1).map(item => item.id)).toEqual(['high light']);
+		expect(filterHighlights(source, 'book', 1)).toEqual(source);
+		expect(source).toHaveLength(2);
+	});
+
 	it('renders loading, empty, error, and populated list states with host-driven actions', async () => {
 		const calls: string[] = [];
 		const host: HighlightListHost = {
 			recolorHighlight: (id, color) => { calls.push(`color:${id}:${color}`); },
 			deleteHighlight: id => { calls.push(`delete:${id}`); },
-			jumpToHighlight: item => { calls.push(`jump:${item.id}`); }
+			jumpToHighlight: item => { calls.push(`jump:${item.id}`); },
+			copyHighlightLink: item => { calls.push(`copy:${item.id}`); },
+			setScope: scope => { calls.push(`scope:${scope}`); }
 		};
 		const root = new FakeElement();
 		const list = new HighlightList(host);
-		list.render(root as unknown as HTMLElement, { highlights: [], loading: true });
+		list.render(root as unknown as HTMLElement, { highlights: [], currentPage: 1, scope: 'book', loading: true });
 		expect(root.textContent).toContain('正在加载高亮…');
-		list.render(root as unknown as HTMLElement, { highlights: [] });
+		list.render(root as unknown as HTMLElement, { highlights: [], currentPage: 1, scope: 'book' });
 		expect(root.textContent).toContain('本书还没有高亮。');
-		list.render(root as unknown as HTMLElement, { highlights: [], error: '索引不可用' });
+		list.render(root as unknown as HTMLElement, { highlights: [], currentPage: 1, scope: 'book', error: '索引不可用' });
 		expect(root.textContent).toContain('高亮加载失败：索引不可用');
-		list.render(root as unknown as HTMLElement, { highlights: [highlight] });
+		list.render(root as unknown as HTMLElement, { highlights: [highlight], currentPage: 1, scope: 'book' });
 		expect(root.textContent).toContain('旧标签');
+		expect(root.textContent).toContain('当前显示 1 / 1 条');
 		expect(findByLabel(root, '颜色：苔绿').getAttribute('role')).toBe('img');
 		findByLabel(root, '跳转到高亮：一段中文原文').click();
+		findByLabel(root, '复制原文链接').click();
+		findByLabel(root, '当前页').click();
 		findByLabel(root, '选择梅紫高亮色').click();
 		findByLabel(root, '删除此高亮').click();
 		findByLabel(root, '确认删除此高亮').click();
 		await flushActions();
-		expect(calls).toEqual(expect.arrayContaining(['jump:high light', 'color:high light:plum', 'delete:high light']));
+		expect(calls).toEqual(expect.arrayContaining(['jump:high light', 'copy:high light', 'scope:page', 'color:high light:plum', 'delete:high light']));
+	});
+
+	it('renders a recoverable current-page empty state and copy failure feedback', async () => {
+		const calls: string[] = [];
+		const root = new FakeElement();
+		const list = new HighlightList({
+			recolorHighlight: () => undefined,
+			deleteHighlight: () => undefined,
+			jumpToHighlight: () => undefined,
+			copyHighlightLink: () => { throw new Error('剪贴板权限被拒绝'); },
+			setScope: scope => { calls.push(scope); }
+		});
+		list.render(root as unknown as HTMLElement, { highlights: [highlight], currentPage: 0, scope: 'page' });
+		expect(root.textContent).toContain('第 1 页没有高亮。');
+		findByLabel(root, '查看本书全部').click();
+		expect(calls).toEqual(['book']);
+		list.render(root as unknown as HTMLElement, { highlights: [highlight], currentPage: 1, scope: 'page' });
+		findByLabel(root, '复制原文链接').click();
+		await flushActions();
+		expect(root.textContent).toContain('操作失败：剪贴板权限被拒绝');
 	});
 });

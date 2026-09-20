@@ -1,7 +1,10 @@
 main.js
 styles.css
+!assets/styles.css
 node_modules/
 lib/
 .impeccable/
+.obsidian-debug/
+.omo/
 .opencode/
 .agents/

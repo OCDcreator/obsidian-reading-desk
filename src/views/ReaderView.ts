@@ -11,10 +11,14 @@ import { CropSelectionOverlay, type CropSelectionPayload } from '../ui/crop/Crop
 import { handleCropDrop, type PreparedCropDrag } from '../ui/crop/CropDragTransport';
 import { ExcerptTargetPanel, type ExcerptCard } from '../ui/targets/ExcerptTargetPanel';
 import { ReaderSessionState } from '../reader/ReaderSessionState';
-import { anchorBelowToolbar, trackToolbarHeight } from '../reader/ReaderChromeMetrics';
+import { afterLayout, anchorBelowToolbar, trackToolbarHeight } from '../reader/ReaderChromeMetrics';
+import { targetTypeLabel } from '../ui/targets/TargetUiTypes';
+import { parseDraggedHighlightRects } from '../reader/ReaderDragTransport';
+import { executeCopyReaderPage } from '../reader/ReaderCopyCommand';
+import { ReaderHighlightCoordinator, type HighlightScope } from '../reader/ReaderHighlightCoordinator';
+import { boundVisiblePage } from '../reader/ReaderPageNavigation';
 
 export const READER_VIEW_TYPE = 'reading-desk-reader';
-
 export interface ReaderHost {
 	createPdfRenderer(): PdfRenderer;
 	annotations: AnnotationStore;
@@ -32,6 +36,8 @@ export interface ReaderHost {
 	readExcerptCards(pdfPath: string): Promise<ExcerptCard[]>;
 	updateExcerptCard(highlightId: string, patch: { title?: string; folded?: boolean }): Promise<void>;
 	openTargetInSplit(path: string, objectId?: string): Promise<void>;
+	copyPageLink(path: string, page: number): Promise<void>;
+	copyHighlightLink(highlight: PdfHighlight): Promise<void>;
 }
 
 export class ReaderView extends ItemView {
@@ -61,10 +67,12 @@ export class ReaderView extends ItemView {
 	private readonly comments: CommentPopover;
 	private readonly highlightList: HighlightList;
 	private readonly excerptPanel: ExcerptTargetPanel;
+	private readonly highlightCoordinator: ReaderHighlightCoordinator;
 
 	constructor(leaf: WorkspaceLeaf, private readonly host: ReaderHost) {
 		super(leaf);
 		this.pdf = host.createPdfRenderer();
+		this.highlightCoordinator = new ReaderHighlightCoordinator(id => this.jumpToHighlightTarget(id));
 		this.comments = new CommentPopover(this.commentHost());
 		this.highlightList = new HighlightList(this.highlightHost());
 		this.excerptPanel = new ExcerptTargetPanel({
@@ -86,6 +94,7 @@ export class ReaderView extends ItemView {
 	}
 
 	async onClose(): Promise<void> {
+		this.highlightCoordinator.close();
 		this.stopFitWidthObserver();
 		this.stopToolbarTracking?.();
 		this.stopToolbarTracking = null;
@@ -100,7 +109,9 @@ export class ReaderView extends ItemView {
 		this.pages = await this.pdf.open(path);
 		this.outline = await this.pdf.getOutline();
 		this.outlineSyncedTargets.clear();
-		this.page = Math.min(this.pages, this.session.pageNumber());
+		const bounded = boundVisiblePage(this.session.pageNumber(), this.pages);
+		this.page = bounded.page;
+		if (bounded.notice) new Notice(bounded.notice);
 		this.session.setPage(this.page);
 		await this.render();
 	}
@@ -123,9 +134,9 @@ export class ReaderView extends ItemView {
 		const highlights = this.host.annotations.list(path);
 		if (this.pageEl) {
 			this.pdf.updateHighlights(this.pageEl, highlights);
-			this.exposeHighlightKeys();
 		}
 		this.renderDrawer();
+		this.bindHighlightPreview();
 		if (this.excerptContainer) await this.excerptPanel.render(this.excerptContainer, path);
 	}
 
@@ -154,6 +165,7 @@ export class ReaderView extends ItemView {
 
 	private async render(): Promise<void> {
 		this.stopFitWidthObserver();
+		this.highlightCoordinator.close();
 		const root = this.containerEl.children[1] as HTMLElement;
 		this.excerptContainer = null;
 		// containerEl's children can be replaced between renders, so replaceChildren may miss the previous drawer and leave a stale duplicate sharing the toggle's id.
@@ -178,7 +190,7 @@ export class ReaderView extends ItemView {
 		this.button(toolbar, '裁剪', () => this.enterCropMode());
 		this.button(toolbar, this.layout === 'split' ? '专注阅读' : '分栏目标', () => void this.toggleLayout());
 		const target = toolbar.createEl('select', { attr: { 'aria-label': '摘录目标类型' } });
-		for (const type of ['canvas', 'excalidraw', 'markdown'] as TargetType[]) target.createEl('option', { value: type, text: targetName(type) });
+		for (const type of ['canvas', 'excalidraw', 'markdown'] as TargetType[]) target.createEl('option', { value: type, text: targetTypeLabel(type) });
 		target.value = this.selectedTarget;
 		target.addEventListener('change', () => { this.selectedTarget = target.value as TargetType; this.selectedTargetPath = ''; void this.render(); });
 		this.createColorPalette(toolbar);
@@ -188,6 +200,8 @@ export class ReaderView extends ItemView {
 		input.disabled = this.pages === 0;
 		input.addEventListener('change', () => void this.goTo(input.value.trim() === '' ? this.page : Number(input.value)));
 		toolbar.createEl('span', { cls: 'rd-page-count', text: `/ ${this.pages}` });
+		const copyPage = this.button(toolbar, '复制本页链接', () => void executeCopyReaderPage(this, message => new Notice(message)));
+		copyPage.disabled = this.pages === 0;
 		const next = this.button(toolbar, '下一页', () => void this.goTo(this.page + 1));
 		next.disabled = this.page >= Math.max(this.pages, 1);
 		this.stopToolbarTracking?.();
@@ -208,7 +222,6 @@ export class ReaderView extends ItemView {
 		try {
 			await this.pdf.renderPage(this.page, this.pageEl, highlights);
 			await this.fitRenderedPageToHost(highlights);
-			this.exposeHighlightKeys();
 			await this.host.updateProgress(this.activePath(), this.pages ? this.page / this.pages : 0);
 		} catch (error) {
 			console.error('[Reading Desk] PDF 页面渲染失败', error);
@@ -219,8 +232,15 @@ export class ReaderView extends ItemView {
 		this.drawer = root.createDiv({ cls: 'rd-highlight-drawer', attr: { id: this.drawerId } });
 		this.renderDrawer();
 		this.syncDrawerState();
+		this.bindHighlightPreview();
 	}
 
+	async copyCurrentPageLink(): Promise<void> {
+		const path = this.activePath();
+		if (!path || this.pages === 0) throw new Error('当前没有可复制的 PDF 页面。');
+		await this.host.copyPageLink(path, this.page);
+	}
+	canCopyCurrentPage(): boolean { return !!this.activePath() && this.pages > 0; }
 	private button(parent: HTMLElement, label: string, action: () => void): HTMLButtonElement {
 		const button = parent.createEl('button', { text: label, cls: 'rd-button' });
 		button.type = 'button';
@@ -244,10 +264,9 @@ export class ReaderView extends ItemView {
 	}
 
 	private async goTo(page: number): Promise<void> {
-		const requested = Number.isFinite(page) ? Math.round(page) : this.page;
-		const bounded = Math.max(1, Math.min(Math.max(this.pages, 1), requested));
-		if (requested !== bounded) new Notice(`页码超出范围，已改为第 ${bounded} 页。`);
-		this.page = bounded;
+		const bounded = boundVisiblePage(Number.isFinite(page) ? page : this.page, this.pages);
+		if (bounded.notice) new Notice(bounded.notice);
+		this.page = bounded.page;
 		this.session.setPage(this.page);
 		await this.render();
 	}
@@ -277,7 +296,7 @@ export class ReaderView extends ItemView {
 		}
 		this.pdf.setScale(nextScale);
 		await this.pdf.renderPage(this.page, this.pageEl, highlights);
-		this.exposeHighlightKeys();
+		this.bindHighlightPreview();
 		await afterLayout(pageEl);
 		this.lastFittedColumnWidth = pageEl.clientWidth;
 	}
@@ -319,6 +338,7 @@ export class ReaderView extends ItemView {
 		if (!this.drawer || !this.drawerToggle) return;
 		this.drawer.classList.toggle('is-hidden', !this.drawerOpen);
 		this.drawerToggle.setAttribute('aria-expanded', String(this.drawerOpen));
+		if (!this.drawerOpen) this.highlightCoordinator.clear();
 		const toolbar = this.containerEl.children[1]?.querySelector<HTMLElement>('.rd-reader-toolbar');
 		if (toolbar) anchorBelowToolbar(this.drawer, toolbar);
 	}
@@ -339,9 +359,16 @@ export class ReaderView extends ItemView {
 
 	private renderDrawer(): void {
 		if (!this.drawer) return;
-		this.highlightList.render(this.drawer, { highlights: this.host.annotations.list(this.activePath()) });
+		this.highlightList.render(this.drawer, {
+			highlights: this.host.annotations.list(this.activePath()),
+			currentPage: this.page - 1,
+			scope: this.highlightCoordinator.getScope()
+		});
 	}
 
+	private bindHighlightPreview(): void {
+		this.highlightCoordinator.bind(this.pageEl, this.drawer);
+	}
 	private openSelectionMenu(event?: MouseEvent): void {
 		const selection = window.getSelection()?.toString().trim() ?? '';
 		if (!selection) {
@@ -352,7 +379,7 @@ export class ReaderView extends ItemView {
 		event?.preventDefault();
 		const menu = new Menu();
 		for (const type of ['canvas', 'markdown', 'excalidraw'] as TargetType[]) {
-			menu.addItem(item => item.setTitle(`添加到${targetName(type)}`).onClick(() => this.createExcerpt(selection, type)));
+			menu.addItem(item => item.setTitle(`添加到${targetTypeLabel(type)}`).onClick(() => this.createExcerpt(selection, type)));
 		}
 		if (event) menu.showAtMouseEvent(event);
 		else if (this.pageEl) {
@@ -375,7 +402,7 @@ export class ReaderView extends ItemView {
 		const selection = window.getSelection();
 		const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
 		if (!range && !frozenRects) return;
-		const viewport = await this.pageViewport();
+		const viewport = this.pdf.getRenderedViewport();
 		if (!viewport) return;
 		const bounds = this.pageEl.getBoundingClientRect();
 		const rects = frozenRects ?? Array.from(range?.getClientRects() ?? []).map(rect => normalizeClientRect(rect, bounds, viewport));
@@ -472,7 +499,7 @@ export class ReaderView extends ItemView {
 		if (await handleCropDrop(event, canvasTargetPath, (token, path) => this.host.commitPreparedCrop(token, path))) return;
 		event.preventDefault();
 		const text = event.dataTransfer?.getData('text/plain').trim() ?? '';
-		const rects = parseDraggedRects(event.dataTransfer?.getData('application/x-reading-desk-rects') ?? '');
+		const rects = parseDraggedHighlightRects(event.dataTransfer?.getData('application/x-reading-desk-rects') ?? '');
 		if (text && rects) await this.createExcerpt(text, this.selectedTarget, 'moss', rects);
 	}
 
@@ -515,10 +542,6 @@ export class ReaderView extends ItemView {
 		event.dataTransfer.effectAllowed = 'copy';
 	}
 
-	private async pageViewport(): Promise<{ width: number; height: number; viewBox: number[]; rotation: number; convertToPdfPoint(x: number, y: number): number[]; convertToViewportPoint(x: number, y: number): number[] } | null> {
-		return this.pdf.getRenderedViewport();
-	}
-
 	private async focusHighlight(highlight: PdfHighlight, openTarget = true): Promise<void> {
 		await this.goTo(highlight.page + 1);
 		const reduced = this.pageEl?.ownerDocument.defaultView?.matchMedia('(prefers-reduced-motion: reduce)').matches ?? false;
@@ -535,23 +558,6 @@ export class ReaderView extends ItemView {
 	private async jumpToHighlightTarget(id: string): Promise<void> {
 		const highlight = this.host.annotations.get(id);
 		if (highlight?.target) await this.host.showTarget(highlight.target.path, highlight.target.objectId);
-	}
-
-	/** Makes rendered highlight marks focusable and gives Enter and Space the double-click jump path. */
-	private exposeHighlightKeys(): void {
-		const pageEl = this.pageEl;
-		if (!pageEl) return;
-		for (const mark of Array.from(pageEl.querySelectorAll<HTMLElement>('[data-highlight-id]'))) {
-			mark.tabIndex = 0;
-			if (mark.dataset.rdKeysBound === 'true') continue;
-			mark.dataset.rdKeysBound = 'true';
-			mark.addEventListener('keydown', event => {
-				if (event.target !== mark || (event.key !== 'Enter' && event.key !== ' ')) return;
-				event.preventDefault();
-				event.stopPropagation();
-				void this.jumpToHighlightTarget(mark.dataset.highlightId ?? '');
-			});
-		}
 	}
 
 	private openComment(event: MouseEvent): void {
@@ -601,7 +607,17 @@ export class ReaderView extends ItemView {
 		};
 	}
 
-	private highlightHost() { return this.excerptHostActions(); }
+	private highlightHost() {
+		return {
+			...this.excerptHostActions(),
+			copyHighlightLink: (highlight: PdfHighlight) => this.host.copyHighlightLink(highlight),
+			setScope: (scope: HighlightScope) => {
+				this.highlightCoordinator.setScope(scope);
+				this.renderDrawer();
+				this.bindHighlightPreview();
+			}
+		};
+	}
 
 	private excerptHostActions() {
 		return {
@@ -628,21 +644,4 @@ export class ReaderView extends ItemView {
 		const candidates = this.outline.filter(entry => entry.page <= page).sort((left, right) => right.page - left.page || right.path.length - left.path.length);
 		return candidates[0]?.path ?? [];
 	}
-}
-
-function targetName(type: TargetType): string { return type === 'canvas' ? 'Canvas' : type === 'excalidraw' ? 'Excalidraw' : 'Markdown'; }
-
-function parseDraggedRects(value: string): PdfHighlight['rects'] | null {
-	try {
-		const parsed = JSON.parse(value);
-		return Array.isArray(parsed) && parsed.every(rect => typeof rect?.x === 'number' && typeof rect?.y === 'number' && typeof rect?.width === 'number' && typeof rect?.height === 'number') ? parsed : null;
-	} catch { return null; }
-}
-
-function afterLayout(element: HTMLElement): Promise<void> {
-	return new Promise(resolve => {
-		const view = element.ownerDocument.defaultView;
-		if (view) view.requestAnimationFrame(() => resolve());
-		else resolve();
-	});
 }

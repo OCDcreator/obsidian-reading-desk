@@ -1,0 +1,385 @@
+/* Reading Desk (Margin). Host-first: surface, ink, line and accent derive from
+ * Obsidian variables; shadows are reserved for the PDF document surface and
+ * true overlays. */
+
+/* Tokens. The comment portal host and the settings page carry these roots too,
+ * so detached surfaces inherit the same derivation without a second block. */
+.reading-desk-shell, .rd-reader, .rd-shelf, .reading-desk-settings {
+	--rd-surface: var(--background-primary, oklch(0.98 0.005 250));
+	--rd-surface-raised: var(--background-secondary, oklch(0.96 0.01 250));
+	--rd-surface-document: oklch(0.985 0.006 90);
+	--rd-ink: var(--text-normal, oklch(0.24 0.02 250));
+	--rd-ink-muted: var(--text-muted, oklch(0.48 0.02 250));
+	--rd-line: var(--background-modifier-border, oklch(0.75 0.02 250));
+	--rd-accent: var(--interactive-accent, oklch(0.62 0.13 235));
+	--rd-moss: var(--canvas-color-4, oklch(0.68 0.12 145));
+	--rd-amber: var(--canvas-color-3, oklch(0.77 0.14 80));
+	--rd-brick: var(--canvas-color-1, oklch(0.62 0.15 30));
+	--rd-indigo: var(--canvas-color-6, oklch(0.61 0.13 275));
+	--rd-plum: var(--canvas-color-5, oklch(0.62 0.13 325));
+	--rd-elevation: oklch(0.2 0.02 250 / 0.2);
+	color: var(--rd-ink);
+}
+
+.theme-dark .reading-desk-shell, .theme-dark .rd-reader, .theme-dark .rd-shelf {
+	--rd-surface-document: oklch(0.22 0.012 75);
+}
+
+/* Border-box is the control vocabulary. The portability panel renders inside
+ * the Obsidian settings modal, outside the three plugin roots. */
+.reading-desk-shell, .reading-desk-shell *,
+.rd-reader, .rd-reader *,
+.rd-shelf, .rd-shelf *,
+.rd-settings-portability, .rd-settings-portability * {
+	box-sizing: border-box;
+}
+
+/* Author display values below would otherwise beat the UA [hidden] rule, and
+ * the inline delete confirmations and crop controls rely on the hidden property. */
+.reading-desk-shell [hidden], .rd-reader [hidden], .rd-shelf [hidden], .rd-settings-portability [hidden] { display: none !important; }
+
+/* Heading roots that Obsidian already renders in the leaf header are kept for
+ * assistive tech without repeating the title on screen. */
+.rd-visually-hidden {
+	position: absolute; width: 1px; height: 1px; margin: -1px;
+	padding: 0; border: 0; overflow: hidden; white-space: nowrap; clip-path: inset(50%);
+}
+
+/* Shared control chrome. Every plugin button carries .rd-button; selects and
+ * inputs have no shared class, so their host regions are listed explicitly. */
+.rd-button,
+.rd-reader-toolbar select, .rd-reader-toolbar input,
+.rd-shelf button, .rd-shelf input, .rd-shelf select,
+.rd-target-panel select,
+.rd-crop-overlay select,
+.rd-comment-popover input, .rd-comment-popover textarea {
+	border: 1px solid var(--rd-line);
+	border-radius: 5px;
+	background: var(--rd-surface);
+	color: var(--rd-ink);
+	font: inherit;
+	min-height: 30px;
+	padding: 4px 8px;
+	transition: border-color 120ms ease, background-color 120ms ease;
+}
+.rd-button:focus-visible,
+.rd-reader-toolbar select:focus-visible, .rd-reader-toolbar input:focus-visible,
+.rd-shelf select:focus-visible, .rd-shelf input:focus-visible,
+.rd-target-panel select:focus-visible,
+.rd-crop-overlay select:focus-visible, .rd-crop-drag-handle:focus-visible,
+.rd-comment-popover input:focus-visible, .rd-comment-popover textarea:focus-visible,
+.rd-link:focus-visible, .rd-tag__remove:focus-visible, .rd-swatch:focus-visible {
+	outline: 2px solid var(--rd-accent);
+	outline-offset: 2px;
+}
+.rd-button:hover:not(:disabled):not([aria-disabled='true']),
+.rd-shelf button:hover:not(:disabled):not([aria-disabled='true']) {
+	border-color: var(--rd-accent);
+}
+.rd-button:active:not(:disabled):not([aria-disabled='true']) {
+	background: color-mix(in oklch, var(--rd-surface) 88%, var(--rd-accent));
+}
+.rd-button:disabled, .rd-button[aria-disabled='true'],
+.rd-reader-toolbar select:disabled, .rd-reader-toolbar input:disabled,
+.rd-shelf select:disabled, .rd-shelf input:disabled,
+.rd-target-panel select:disabled,
+.rd-crop-overlay select:disabled,
+.rd-comment-popover input:disabled, .rd-comment-popover textarea:disabled {
+	opacity: 0.6;
+	color: var(--rd-ink-muted);
+	cursor: default;
+}
+
+/* Obsidian ships `button:not(.clickable-icon) { background-color: var(--interactive-normal) }`
+ * at (0,1,1), which outranks every single-class rule the plugin can write. Without
+ * this block the toolbar palette, the drawer and the popover swatches all paint as
+ * flat theme buttons and the palette colours disappear entirely. Each value below is
+ * restated with a root scope so the documented surface and palette keys land. */
+.rd-reader .rd-button, .rd-shelf .rd-button,
+.reading-desk-shell .rd-button, .reading-desk-settings .rd-button { background: var(--rd-surface); }
+.rd-reader .rd-highlight-comment-button, .rd-reader .rd-crop-drag-handle { background: var(--rd-surface-raised); }
+.rd-highlight-drawer .rd-link, .rd-comment-popover .rd-link,
+.rd-comment-popover .rd-tag__remove { background: transparent; }
+.rd-shelf .rd-category-chip, .rd-shelf .rd-view-switch-button { background: var(--rd-surface); }
+
+/* Reader shell */
+.rd-reader, .rd-shelf { height: 100%; overflow: auto; background: var(--rd-surface); }
+.rd-reader { container-type: inline-size; }
+.rd-reader-toolbar {
+	display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+	padding: 12px 16px; position: sticky; top: 0; z-index: 4;
+	border-bottom: 1px solid var(--rd-line); background: var(--rd-surface-raised);
+	max-width: 100%;
+}
+.rd-reader-toolbar > * { min-width: 0; }
+.rd-page-count { align-self: center; color: var(--rd-ink-muted); font: inherit; white-space: nowrap; }
+.rd-reader-body { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; padding: 24px; min-height: calc(100% - 54px); min-width: 0; }
+.rd-reader-body--split { grid-template-columns: minmax(0, 1fr) minmax(220px, 32%); align-items: start; justify-items: stretch; gap: 16px; }
+.rd-reader-body--split .rd-pdf-page-host { justify-self: center; }
+/* The host keeps its own overflow so an over-wide page stays contained instead of
+ * spilling across the Reader; the Reader remains the primary scroll container. */
+.rd-pdf-page-host { position: relative; background: var(--rd-surface-document); box-shadow: 0 8px 22px var(--rd-elevation); max-width: 100%; overflow: auto; }
+.rd-pdf-canvas, .rd-pdf-text-layer, .rd-highlight-layer { inset: 0; position: absolute; }
+.rd-pdf-canvas { position: relative; display: block; }
+.rd-pdf-text-layer { overflow: hidden; line-height: 1; opacity: 1; user-select: text; -webkit-user-select: text; pointer-events: auto; }
+.rd-pdf-text-layer span { color: transparent; cursor: text; position: absolute; transform-origin: 0 0; user-select: text; -webkit-user-select: text; }
+.rd-highlight-layer { pointer-events: none; }
+.rd-highlight { position: absolute; opacity: 0.33; border-radius: 2px; pointer-events: auto; cursor: pointer; }
+.rd-highlight-comment-button { position: absolute; z-index: 4; width: 24px; height: 24px; border: 1px solid var(--rd-line); border-radius: 50%; background: var(--rd-surface-raised); color: var(--rd-ink); padding: 0; cursor: pointer; display: grid; place-items: center; }
+.rd-highlight-comment-button svg { width: 12px; height: 12px; display: block; }
+.rd-highlight-comment-button:focus-visible { outline: 2px solid var(--rd-accent); outline-offset: 2px; }
+
+/* Palette keys drive PDF highlights, swatches and Canvas nodes alike. The doubled
+ * class on the button carriers restores the key over Obsidian's button rule above. */
+.rd-highlight--moss, .rd-color-moss, .rd-swatch--moss { background: var(--rd-moss); }
+.rd-highlight--amber, .rd-color-amber, .rd-swatch--amber { background: var(--rd-amber); }
+.rd-highlight--brick, .rd-color-brick, .rd-swatch--brick { background: var(--rd-brick); }
+.rd-highlight--indigo, .rd-color-indigo, .rd-swatch--indigo { background: var(--rd-indigo); }
+.rd-highlight--plum, .rd-color-plum, .rd-swatch--plum { background: var(--rd-plum); }
+.rd-swatch.rd-swatch--moss, .rd-button.rd-swatch--moss { background: var(--rd-moss); }
+.rd-swatch.rd-swatch--amber, .rd-button.rd-swatch--amber { background: var(--rd-amber); }
+.rd-swatch.rd-swatch--brick, .rd-button.rd-swatch--brick { background: var(--rd-brick); }
+.rd-swatch.rd-swatch--indigo, .rd-button.rd-swatch--indigo { background: var(--rd-indigo); }
+.rd-swatch.rd-swatch--plum, .rd-button.rd-swatch--plum { background: var(--rd-plum); }
+.rd-toolbar-palette { display: flex; gap: 5px; }
+/* The toolbar palette is the one colour control without a text label: its glyph
+ * is a single character, so the name travels on aria-label alone. Every other
+ * swatch is a labelled control and keeps its visible colour name. */
+.rd-toolbar-palette .rd-button {
+	width: 28px; min-width: 28px; height: 28px; min-height: 28px;
+	border: 2px solid var(--rd-ink); border-radius: 50%;
+	font-size: 0; padding: 0;
+}
+.rd-swatch {
+	min-width: 52px; height: 28px; min-height: 28px; padding: 0 8px;
+	border: 1px solid var(--rd-line); border-radius: 5px;
+	font-size: 12px; font-weight: 650; line-height: 24px;
+	/* The runtime samples the resolved Canvas color and writes a WCAG foreground
+	 * inline with !important; this host-derived value only covers the first
+	 * frame before that sampling runs. */
+	color: var(--rd-ink);
+	text-shadow: none;
+}
+.rd-toolbar-palette .rd-button:hover, .rd-swatch[aria-pressed='true'] { outline: 3px solid var(--rd-accent); outline-offset: 2px; }
+
+/* Target panel and excerpt cards */
+.rd-target-panel { position: sticky; top: var(--rd-toolbar-height, 72px); border: 1px solid var(--rd-line); background: var(--rd-surface-raised); padding: 16px; display: grid; gap: 12px; min-height: 180px; min-width: 0; }
+.rd-target-panel h2, .rd-target-panel h3 { font-size: 16px; margin: 0; }
+.rd-target-panel p { color: var(--rd-ink-muted); font-size: 14px; line-height: 1.5; }
+.rd-target-panel:focus-within { border-color: var(--rd-accent); }
+.rd-target-panel select { width: 100%; min-width: 0; max-width: 100%; }
+.rd-excerpt-target-panel { display: grid; gap: 8px; border-top: 1px solid var(--rd-line); padding-top: 16px; }
+.rd-excerpt-target-panel h3 { font-size: 14px; margin: 0; }
+.rd-excerpt-target-panel__cards { display: grid; gap: 8px; padding: 0; margin: 0; list-style: none; }
+.rd-excerpt-card { border: 1px solid var(--rd-line); padding: 8px; display: grid; gap: 8px; }
+.rd-excerpt-card:focus-within { border-color: var(--rd-accent); }
+.rd-excerpt-card__title { width: 100%; min-width: 0; font-weight: 600; background: transparent; border: 0; border-bottom: 1px solid transparent; color: var(--rd-ink); }
+.rd-excerpt-card__title:focus { border-bottom-color: var(--rd-accent); outline: 2px solid var(--rd-accent); outline-offset: 2px; }
+.rd-excerpt-card__controls { display: flex; gap: 8px; flex-wrap: wrap; }
+.rd-excerpt-card__text { white-space: pre-wrap; margin: 0; color: var(--rd-ink-muted); font-size: 12px; line-height: 1.5; min-width: 0; overflow-wrap: anywhere; }
+.rd-loading { margin: 0; color: var(--rd-ink-muted); font-size: 12px; }
+
+/* Highlight drawer */
+.rd-highlight-drawer {
+	position: fixed; right: 16px; top: var(--rd-drawer-top, 72px); z-index: 8;
+	width: min(360px, calc(100vw - 32px)); max-height: calc(100vh - 96px); overflow: auto;
+	overscroll-behavior: contain;
+	border: 1px solid var(--rd-line); background: var(--rd-surface-raised);
+	box-shadow: 0 12px 28px var(--rd-elevation); padding: 12px;
+}
+.rd-highlight-drawer.is-hidden { display: none; }
+.rd-highlight-list, .rd-highlight-list__items { min-width: 0; }
+.rd-highlight-list__items { list-style: none; margin: 0; padding: 0; }
+.rd-highlight-list__scope { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; min-width: 0; }
+.rd-highlight-list__scope-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+.rd-highlight-list__scope .rd-button[aria-pressed='true'] { border-color: var(--rd-accent); outline: 2px solid var(--rd-accent); outline-offset: 2px; }
+.rd-highlight-list__count { color: var(--rd-ink-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.rd-highlight-list__page-empty { display: grid; gap: 8px; }
+.rd-highlight-list__page-empty .rd-link { justify-self: start; }
+.rd-highlight-row { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--rd-line); min-width: 0; }
+/* The colour dot owns column 1 alone. Every other child, including the excerpt
+ * jump control, belongs in the content column: leaving the jump control out let it
+ * size the auto track to ~196px and squeezed the swatches into a 90px column that
+ * stacked five 52px pills vertically, making one row 284px tall. */
+.rd-highlight-row__target, .rd-highlight-row__tags, .rd-highlight-row__jump,
+.rd-highlight-row .rd-swatch-group, .rd-highlight-row__copy, .rd-highlight-row__delete { grid-column: 2; min-width: 0; }
+/* Grid children stretch; a destructive action should not read as the row's CTA. */
+.rd-highlight-row__copy, .rd-highlight-row__delete { justify-self: start; }
+.rd-highlight-drawer .rd-highlight-row__jump { width: 100%; min-width: 0; height: auto; min-height: 30px; white-space: normal; line-height: 1.5; overflow-wrap: anywhere; }
+.rd-highlight-row .rd-swatch-group { display: flex; flex-wrap: wrap; }
+.rd-highlight.is-previewed { outline: 2px solid var(--rd-accent); outline-offset: 2px; }
+.rd-highlight-row.is-previewed { outline: 2px solid var(--rd-accent); outline-offset: -2px; }
+.rd-color-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.rd-link { text-align: left; background: transparent; border: 0; color: var(--rd-ink); cursor: pointer; }
+.rd-tag { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; min-width: 0; font-size: 12px; padding: 4px 8px; border: 1px solid var(--rd-line); border-radius: 999px; color: var(--rd-ink-muted); overflow-wrap: anywhere; }
+.rd-tag__remove { border: 0; background: transparent; color: inherit; font: inherit; padding: 0 0 0 2px; cursor: pointer; }
+
+/* Comment popover portal. The host carries .reading-desk-shell, so its tokens
+ * come from the shared block; dark themes raise it one surface further. */
+.rd-comment-popover-host {
+	position: fixed; z-index: 20;
+	width: min(360px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow: auto;
+	overscroll-behavior: contain;
+	border: 1px solid var(--rd-line); background: var(--rd-surface-raised);
+	box-shadow: 0 12px 28px var(--rd-elevation); padding: 12px;
+}
+.theme-dark.rd-comment-popover-host { --rd-surface-raised: var(--background-secondary-alt, oklch(0.22 0.012 75)); }
+.rd-comment-popover { display: grid; gap: 10px; max-height: min(560px, 70vh); overflow: auto; min-width: 0; }
+.rd-comment-popover h3, .rd-comment-popover h4 { margin: 0; }
+.rd-comment-popover__header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.rd-comment-popover__close { flex: none; }
+.rd-comment-popover__excerpt { margin: 0; color: var(--rd-ink); font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
+.rd-comment-popover__target { margin: 0; color: var(--rd-ink-muted); font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.rd-comment-popover__actions, .rd-swatch-group, .rd-comment-popover__tag-list { display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; border: 0; margin: 0; padding: 0; }
+.rd-comment-popover input, .rd-comment-popover textarea { width: 100%; min-width: 0; }
+.rd-comment-popover textarea { min-height: 84px; resize: vertical; }
+.rd-comment-popover__tags, .rd-comment-popover__comments, .rd-comment-popover__composer { display: grid; gap: 8px; min-width: 0; }
+/* Grid children stretch, which turned these secondary actions into 334px full-width
+ * bars that read as primary calls to action next to content-width siblings. */
+.rd-comment-popover__add-tag, .rd-comment-popover__add-comment { justify-self: start; }
+.rd-comment-popover__comments ol { display: grid; gap: 8px; margin: 0; padding-left: 16px; }
+.rd-comment-popover__comment { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; min-width: 0; }
+.rd-comment-popover__comment p { margin: 0; overflow-wrap: anywhere; }
+.rd-comment-popover__comment time { grid-column: 1; color: var(--rd-ink-muted); font-size: 12px; }
+.rd-comment-popover__delete-comment { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
+
+/* Crop overlay. Selection geometry stays inline; everything static lives here.
+ * The [hidden] overrides matter: author display beats the UA hidden rule. */
+.rd-crop-overlay { position: absolute; inset: 0; z-index: 2; cursor: crosshair; touch-action: none; }
+.rd-crop-overlay.is-disabled, .rd-crop-overlay[data-crop-state='disabled'] { cursor: default; }
+.rd-crop-overlay[data-crop-state='loading'] { cursor: progress; }
+.rd-crop-selection {
+	position: absolute; display: none; pointer-events: auto;
+	border: 1px solid var(--rd-accent);
+	background: color-mix(in oklch, var(--rd-accent) 16%, transparent);
+}
+.rd-crop-selection--active { display: block; }
+.rd-crop-overlay:focus-visible { outline: 2px solid var(--rd-accent); outline-offset: -2px; }
+.rd-crop-status {
+	position: absolute; top: 8px; left: 8px; max-width: calc(100% - 16px); pointer-events: none;
+	border: 1px solid var(--rd-line); background: var(--rd-surface-raised); color: var(--rd-ink);
+	font-size: 12px; line-height: 1.5; padding: 2px 8px; overflow-wrap: anywhere;
+}
+.rd-crop-overlay[data-crop-state='error'] .rd-crop-status { color: var(--text-error); }
+.rd-crop-controls { position: absolute; left: 8px; bottom: 8px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; cursor: default; }
+.rd-crop-controls[hidden], .rd-crop-drag-handle[hidden] { display: none; }
+.rd-crop-controls label { display: inline-flex; align-items: center; gap: 4px; color: var(--rd-ink); font-size: 12px; }
+.rd-crop-drag-handle {
+	position: absolute; right: 0; bottom: 0; cursor: grab;
+	border: 1px solid var(--rd-line); border-radius: 5px;
+	background: var(--rd-surface-raised); color: var(--rd-ink);
+	font: inherit; min-height: 30px; padding: 4px 8px;
+}
+.rd-crop-drag-handle img, .rd-crop-drag-preview { display: block; max-width: 112px; max-height: 72px; }
+
+/* Shelf */
+.rd-shelf { padding: 24px; }
+.rd-shelf-header, .rd-shelf-toolbar, .rd-shelf-actions, .rd-category-chips, .rd-category-manager, .rd-continue-reading-list { display: flex; gap: 8px; align-items: center; }
+.rd-shelf-header { justify-content: space-between; margin-bottom: 16px; }
+.rd-shelf-heading { font-size: 25px; font-weight: 600; }
+.rd-shelf-toolbar { justify-content: space-between; border-bottom: 1px solid var(--rd-line); padding-bottom: 12px; }
+.rd-shelf-search { min-width: min(360px, 60vw); }
+.rd-shelf-mode-host, .rd-view-switch, .rd-shelf-results { display: flex; min-width: 0; }
+.rd-view-switch { gap: 8px; align-items: center; }
+.rd-shelf-content { display: grid; gap: 24px; padding-top: 20px; min-width: 0; }
+.rd-section-title { font-size: 20px; margin: 0 0 12px; }
+.rd-continue-reading { min-width: 0; }
+.rd-continue-reading-list { overflow: auto; padding-bottom: 4px; align-items: stretch; }
+/* The rail is a resume affordance, not a second shelf. Carrying the full card's
+ * category editor and cover height made a one-book rail 483px tall, pushing the
+ * library grid entirely below the fold of a 792px pane. */
+.rd-continue-reading-list .rd-shelf-card { flex: 0 0 clamp(152px, 22vw, 196px); max-width: 196px; }
+.rd-continue-reading-list .rd-book-cover { max-height: 160px; }
+.rd-continue-reading-list .rd-book-category,
+.rd-continue-reading-list .rd-book-author,
+.rd-continue-reading-list .rd-book-meta { display: none; }
+/* Figures, page counts and timestamps stay column-aligned instead of jittering. */
+.rd-page-count, .rd-book-meta, .rd-progress-label, .rd-library-table td,
+.rd-comment-popover__comment time, .rd-crop-status { font-variant-numeric: tabular-nums; }
+.rd-shelf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(184px, 1fr)); gap: 16px; }
+.rd-shelf-card { min-width: 0; cursor: pointer; border: 1px solid var(--rd-line); background: var(--rd-surface-raised); padding: 12px; display: grid; gap: 8px; }
+.rd-shelf-card:hover, .rd-shelf-card.is-selected, .rd-library-table tr.is-selected { border-color: var(--rd-accent); background: color-mix(in oklch, var(--rd-surface-raised) 92%, var(--rd-accent)); }
+.rd-shelf-card:focus-visible, .rd-library-table tr:focus-visible { outline: 2px solid var(--rd-accent); outline-offset: 2px; }
+.rd-book-cover { aspect-ratio: 0.7; background: var(--rd-surface-document); display: grid; place-items: center; overflow: hidden; color: var(--rd-ink-muted); font-size: 12px; }
+.rd-book-cover img { width: 100%; height: 100%; object-fit: cover; }
+.rd-book-cover-unavailable { padding: 0 8px; text-align: center; overflow-wrap: anywhere; }
+.rd-book-details { min-width: 0; }
+.rd-book-title { font-size: 16px; font-weight: 500; margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.rd-book-author, .rd-book-meta { color: var(--rd-ink-muted); font-size: 12px; margin: 4px 0; min-width: 0; overflow-wrap: anywhere; }
+.rd-progress-group { display: grid; gap: 4px; }
+.rd-progress-label { font-size: 12px; color: var(--rd-ink-muted); }
+.rd-book-category { display: grid; gap: 4px; font-size: 12px; }
+.rd-rating-select { min-width: 0; max-width: 100%; }
+/* Filter chips and the create form share one wrapping row. Stacked, this panel cost
+ * 120px between the rail and the library grid, which pushed the grid below the fold. */
+.rd-category-panel { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.rd-category-chip.is-selected, .rd-view-switch-button.is-selected { border-color: var(--rd-accent); background: var(--rd-surface-raised); color: var(--rd-ink); outline: 2px solid var(--rd-accent); outline-offset: 1px; }
+.rd-category-order { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.rd-category-order-row { display: flex; gap: 4px; align-items: center; font-size: 12px; min-width: 0; }
+.rd-category-name { min-width: 0; overflow-wrap: anywhere; }
+.rd-category-order-actions { display: inline-flex; gap: 4px; flex: none; }
+.rd-library-table { width: 100%; border-collapse: collapse; }
+.rd-library-table td, .rd-library-table th { border-bottom: 1px solid var(--rd-line); text-align: left; padding: 8px; }
+.rd-library-table td { overflow-wrap: anywhere; }
+.rd-library-table tr { outline-offset: -2px; }
+.rd-table-editor { width: 100%; min-width: 0; }
+
+/* States and progress */
+.rd-shelf-state, .rd-shelf-loading, .rd-shelf-empty { padding: 32px 0; color: var(--rd-ink-muted); }
+.rd-shelf-error { color: var(--text-error); }
+.rd-shelf-error-message { margin: 0 0 12px; max-width: 75ch; overflow-wrap: anywhere; }
+.rd-empty, .rd-error { max-width: 75ch; color: var(--rd-ink-muted); padding: 24px; }
+.rd-error { color: var(--text-error); }
+/* Persistent live regions stay mounted and are mutated in place so a screen
+ * reader announces the change; while idle they are empty and must not reserve space. */
+.rd-empty:empty, .rd-error:empty { display: none; }
+.rd-table-error { display: block; margin-top: 4px; color: var(--text-error); font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.rd-progress { height: 3px; background: var(--rd-line); overflow: hidden; }
+.rd-progress > span {
+	display: block; width: 100%; height: 100%; background: var(--rd-accent);
+	transform-origin: 0 50%;
+	/* The runtime writes the fill ratio; transform keeps the 180ms update off layout. */
+	transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Portability panel (settings page) */
+.rd-import-export-panel { display: grid; gap: 12px; min-width: 0; }
+.rd-import-export-panel__heading { margin: 0; font-size: 20px; font-weight: 600; line-height: 1.25; }
+.rd-import-export-panel__import, .rd-import-export-panel__export { display: grid; gap: 8px; }
+.rd-import-export-panel__import p, .rd-import-export-panel__export p { margin: 0; color: var(--rd-ink-muted); font-size: 14px; line-height: 1.5; max-width: 75ch; overflow-wrap: anywhere; }
+.rd-import-export-panel__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.rd-import-export-panel__status-wrap { display: grid; gap: 8px; }
+.rd-import-export-panel__status { margin: 0; color: var(--rd-ink-muted); font-size: 14px; line-height: 1.5; max-width: 75ch; overflow-wrap: anywhere; }
+.rd-import-export-panel__status.is-idle,
+.rd-import-export-panel__status.is-loading-import,
+.rd-import-export-panel__status.is-loading-markdown,
+.rd-import-export-panel__status.is-loading-json { color: var(--rd-ink-muted); }
+.rd-import-export-panel__status.is-success { color: var(--text-success); }
+.rd-import-export-panel__status.is-error { color: var(--text-error); }
+.rd-import-export-panel__button { justify-self: start; }
+.rd-settings-portability { min-width: 0; }
+.reading-desk-settings h2.rd-setting-heading { font-size: 20px !important; font-weight: 650; line-height: 1.25; }
+.reading-desk-settings .rd-setting-intro { font-size: 14px; line-height: 1.5; color: var(--rd-ink-muted); }
+
+@media (prefers-reduced-motion: reduce) {
+	.reading-desk-shell *, .rd-reader *, .rd-shelf *, .rd-settings-portability * { transition: none; }
+}
+
+/* The Reader often occupies a narrow Obsidian leaf inside a wide window, so a
+ * container query guards the PDF column; the media query covers narrow windows. */
+@media (max-width: 760px) {
+	.rd-reader-toolbar { align-items: flex-start; padding: 8px; gap: 8px; }
+	.rd-reader-toolbar .rd-button, .rd-reader-toolbar select, .rd-reader-toolbar input { flex: 0 1 auto; }
+	.rd-reader-body, .rd-reader-body--split { grid-template-columns: minmax(0, 1fr); padding: 12px; }
+	.rd-target-panel { position: static; }
+	.rd-highlight-drawer { right: 8px; width: calc(100vw - 16px); }
+	.rd-shelf-toolbar { flex-wrap: wrap; }
+	.rd-shelf-search { min-width: 0; width: 100%; }
+}
+@container (max-width: 800px) {
+	.rd-reader-toolbar { align-items: flex-start; padding: 8px; gap: 8px; }
+	.rd-reader-toolbar .rd-button, .rd-reader-toolbar select, .rd-reader-toolbar input { flex: 0 1 auto; }
+	.rd-reader-body, .rd-reader-body--split { grid-template-columns: minmax(0, 1fr); padding: 12px; }
+	.rd-target-panel { position: static; }
+	.rd-pdf-page-host { justify-self: stretch; }
+}

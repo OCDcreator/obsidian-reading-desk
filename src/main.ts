@@ -11,9 +11,12 @@ import { ObjectStorageConfigurationError, ObjectStorageRequestError, ObjectStora
 import { ReadingDeskSettingTab } from './settings/ReadingDeskSettingTab';
 import { TargetService } from './targets';
 import type { PreparedCropDrag } from './ui/crop/CropDragTransport';
-import type { NormalizedPdfRect, ObjectStorageSettings, TargetType } from './types/contracts';
+import type { NormalizedPdfRect, ObjectStorageSettings, PdfHighlight, TargetType } from './types/contracts';
 import { ReaderView, READER_VIEW_TYPE } from './views/ReaderView';
 import { ShelfItemView, SHELF_VIEW_TYPE } from './views/ShelfItemView';
+import { createHighlightLink, createPageLink, writeReadingDeskLink } from './reader/ReadingDeskLinks';
+import { canCopyReaderPage, executeCopyReaderPage } from './reader/ReaderCopyCommand';
+import { routeReadingDeskLink } from './reader/ReadingDeskLinkRouter';
 
 const LEGACY_DATA_PATHS = ['.obsidian/plugins/obsidian-bookshelf/data.json', '.obsidian/plugins/obsidian-bookshelf/metadata.json'];
 const LEGACY_METADATA_FOLDER = '.obsidian/plugins/bookshelf/metadata';
@@ -22,7 +25,6 @@ const CROP_FOLDER = 'Reading Desk/裁剪';
 
 type PluginRegistry = { enabledPlugins: Set<string>; getPlugin(id: string): unknown; };
 type PreparedCropInput = { pdfPath: string; page: number; rect: NormalizedPdfRect; target: 'canvas' | 'image'; image: Blob; previewUrl: string; };
-
 export default class ReadingDeskPlugin extends Plugin {
 	repository!: ReadingDeskRepository;
 	ai!: AiIntegrationService;
@@ -59,7 +61,9 @@ export default class ReadingDeskPlugin extends Plugin {
 			getReaderLayout: () => this.getReaderLayout(),
 			setReaderLayout: layout => this.setReaderLayout(layout),
 			readExcerptCards: path => this.readExcerptCards(path),
-			updateExcerptCard: (highlightId, patch) => this.updateExcerptCard(highlightId, patch)
+			updateExcerptCard: (highlightId, patch) => this.updateExcerptCard(highlightId, patch),
+			copyPageLink: (path, page) => this.copyPageLink(path, page),
+			copyHighlightLink: highlight => this.copyHighlightLink(highlight)
 		}));
 		this.registerView(SHELF_VIEW_TYPE, leaf => new ShelfItemView(leaf, this.library, {
 			open: path => this.openReader(path),
@@ -74,6 +78,7 @@ export default class ReadingDeskPlugin extends Plugin {
 		this.addCommand({ id: 'export-library-markdown', name: '导出 Reading Desk 书架为 Markdown（写入仓库）', callback: () => this.exportToVault('markdown') });
 		this.addCommand({ id: 'export-library-json', name: '导出 Reading Desk 书架为 JSON（写入仓库）', callback: () => this.exportToVault('json') });
 		this.addCommand({ id: 'ask-ai-about-selection', name: '将当前 Reading Desk 选区交给 AI', checkCallback: checking => this.askAiAboutCurrentSelection(checking) });
+		this.addCommand({ id: 'copy-current-reader-page-link', name: '复制 Reading Desk 当前页链接', checkCallback: checking => this.copyActiveReaderPage(checking) });
 		this.addSettingTab(new ReadingDeskSettingTab(this));
 		this.registerObsidianProtocolHandler('reading-desk-highlight', params => void this.openReaderHighlight(params));
 		this.registerEvent(this.app.vault.on('create', file => void this.onVaultCreateOrModify(file)));
@@ -137,16 +142,46 @@ export default class ReadingDeskPlugin extends Plugin {
 	}
 
 	private async openReaderHighlight(params: Record<string, string>): Promise<void> {
-		const highlightId = params.highlight;
-		const stored = highlightId ? this.annotations.get(highlightId) : undefined;
-		const path = stored?.pdfPath ?? params.file;
-		if (!path || !highlightId) {
-			this.notice('Reading Desk 原文链接缺少文件或高亮标识。');
-			return;
-		}
+		await routeReadingDeskLink(params, {
+			annotations: this.annotations, library: this.library,
+			fileExists: path => this.app.vault.getAbstractFileByPath(path) instanceof TFile,
+			notice: message => this.notice(message),
+			openHighlight: (path, id) => this.openLinkedReader(path, id),
+			openPage: (path, page) => this.openLinkedReader(path, undefined, page)
+		});
+	}
+
+	private async openLinkedReader(path: string, highlightId?: string, page?: number): Promise<void> {
 		const leaf = this.app.workspace.getLeaf(true);
 		await leaf.setViewState({ type: READER_VIEW_TYPE, state: {}, active: true });
-		if (leaf.view instanceof ReaderView) await leaf.view.openPdfAtHighlight(path, highlightId);
+		if (!(leaf.view instanceof ReaderView)) return;
+		if (highlightId) await leaf.view.openPdfAtHighlight(path, highlightId);
+		else await leaf.view.openPdf(path, page);
+	}
+
+	private copyActiveReaderPage(checking: boolean): boolean | void {
+		const reader = this.app.workspace.getActiveViewOfType(ReaderView);
+		if (checking) return canCopyReaderPage(reader);
+		if (reader && canCopyReaderPage(reader)) void executeCopyReaderPage(reader, message => this.notice(message));
+	}
+
+	private async copyPageLink(path: string, page: number): Promise<void> {
+		const link = createPageLink({ file: path, page, bookId: this.library.getByPath(path)?.id });
+		await this.copyLink(link, `已复制第 ${page} 页链接。`);
+	}
+
+	private async copyHighlightLink(highlight: PdfHighlight): Promise<void> {
+		await this.copyLink(createHighlightLink(highlight), '已复制原文链接。');
+	}
+
+	private async copyLink(link: string, successMessage: string): Promise<void> {
+		try {
+			if (!navigator.clipboard) throw new Error('clipboard unavailable');
+			await writeReadingDeskLink(navigator.clipboard, link);
+			this.notice(successMessage);
+		} catch (_error) {
+			throw new Error('无法写入剪贴板，请检查系统权限后重试');
+		}
 	}
 
 	private async updateProgress(path: string, progress: number): Promise<void> {

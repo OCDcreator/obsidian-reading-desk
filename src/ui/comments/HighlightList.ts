@@ -13,8 +13,16 @@ import {
 
 export interface HighlightListState {
 	highlights: readonly PdfHighlight[];
+	currentPage: number;
+	scope: HighlightListScope;
 	loading?: boolean;
 	error?: string;
+}
+
+export type HighlightListScope = 'book' | 'page';
+
+export function filterHighlights(highlights: readonly PdfHighlight[], scope: HighlightListScope, currentPage: number): PdfHighlight[] {
+	return scope === 'page' ? highlights.filter(highlight => highlight.page === currentPage) : [...highlights];
 }
 
 const FAILURE_NEXT_STEP = '请重试；若持续失败，请重新打开阅读视图。';
@@ -22,7 +30,7 @@ const FAILURE_NEXT_STEP = '请重试；若持续失败，请重新打开阅读�
 /** A reusable, host-driven highlighter drawer with explicit empty/loading/error states. */
 export class HighlightList {
 	private container: HTMLElement | null = null;
-	private state: HighlightListState = { highlights: [] };
+	private state: HighlightListState = { highlights: [], currentPage: 0, scope: 'book' };
 	private actionError = '';
 	private stopSwatchWatcher: (() => void) | null = null;
 	private liveRegion: HTMLParagraphElement | null = null;
@@ -49,19 +57,48 @@ export class HighlightList {
 		if (!this.state.error) {
 			if (this.state.loading) {
 				root.append(this.renderMessage('rd-loading', '正在加载高亮…', 'status'));
-			} else if (!this.state.highlights.length) {
-				root.append(this.renderMessage('rd-empty', '本书还没有高亮。选中 PDF 正文并创建高亮后，它会显示在这里。', 'status'));
 			} else {
+				const visible = filterHighlights(this.state.highlights, this.state.scope, this.state.currentPage);
+				root.append(this.renderScopeControls(visible.length));
+				if (!this.state.highlights.length) {
+					root.append(this.renderMessage('rd-empty', '本书还没有高亮。选中 PDF 正文并创建高亮后，它会显示在这里。', 'status'));
+				} else if (!visible.length) {
+					const empty = this.renderMessage('rd-empty rd-highlight-list__page-empty', `第 ${this.state.currentPage + 1} 页没有高亮。`, 'status');
+					empty.append(createButton('查看本书全部', 'rd-link', () => this.host.setScope('book')));
+					root.append(empty);
+				} else {
 				const list = document.createElement('ol');
 				list.className = 'rd-highlight-list__items';
-				for (const highlight of this.state.highlights) list.append(this.renderRow(highlight));
+				for (const highlight of visible) list.append(this.renderRow(highlight));
 				root.append(list);
+				}
 			}
 		}
 		root.append(this.liveMessageNode());
 		this.container.replaceChildren(root);
 		this.setLiveMessage(this.failureText());
 		this.stopSwatchWatcher = watchSwatchContrast(root);
+	}
+
+	private renderScopeControls(visibleCount: number): HTMLElement {
+		const controls = document.createElement('div');
+		controls.className = 'rd-highlight-list__scope';
+		const group = document.createElement('div');
+		group.className = 'rd-highlight-list__scope-buttons';
+		group.setAttribute('role', 'group');
+		group.setAttribute('aria-label', '高亮显示范围');
+		for (const [scope, label] of [['book', '本书全部'], ['page', '当前页']] as const) {
+			const button = createButton(label, 'rd-button', () => this.host.setScope(scope));
+			button.setAttribute('aria-pressed', String(this.state.scope === scope));
+			group.append(button);
+		}
+		const count = document.createElement('span');
+		count.className = 'rd-highlight-list__count';
+		count.setAttribute('role', 'status');
+		count.setAttribute('aria-live', 'polite');
+		count.textContent = `当前显示 ${visibleCount} / ${this.state.highlights.length} 条`;
+		controls.append(group, count);
+		return controls;
 	}
 
 	/**
@@ -90,6 +127,7 @@ export class HighlightList {
 	private renderRow(highlight: PdfHighlight): HTMLElement {
 		const row = document.createElement('li');
 		row.className = 'rd-highlight-row';
+		row.dataset.highlightId = highlight.id;
 		const color = document.createElement('span');
 		color.className = `rd-color-dot rd-color-${highlight.color}`;
 		color.setAttribute('role', 'img');
@@ -113,6 +151,10 @@ export class HighlightList {
 			tags.append(tagEl);
 		}
 		row.append(tags);
+		const copy = createButton('复制原文链接', 'rd-button rd-highlight-row__copy', async () => {
+			await this.run(() => this.host.copyHighlightLink(highlight), [copy]);
+		});
+		row.append(copy);
 		const swatchButtons: HTMLButtonElement[] = [];
 		const swatches = document.createElement('div');
 		swatches.className = 'rd-swatch-group';

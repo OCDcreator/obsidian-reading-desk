@@ -6,7 +6,7 @@ const packageJson = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 
 const requiredScripts = {
 	'check:project-docs': 'node scripts/check-project-docs.mjs',
 	'check:owner-guard': 'node scripts/check-owner-guard.mjs',
-	verify: 'npm run check:project-docs && npm run check:owner-guard && npm run version:check && npm run lint && npm test && npm run build'
+	verify: 'npm run styles:sync && npm run check:project-docs && npm run check:owner-guard && npm run version:check && npm run lint && npm test && npm run build'
 };
 
 const requiredDocs = [
@@ -33,6 +33,15 @@ const requiredDocs = [
 ];
 
 const failures = [];
+
+const styleSource = path.join(root, 'assets/styles.css');
+const styleOutput = path.join(root, 'styles.css');
+if (!fs.existsSync(styleSource)) failures.push('assets/styles.css is missing');
+if (!fs.existsSync(styleOutput)) failures.push('styles.css build output is missing; run npm run styles:sync');
+if (fs.existsSync(styleSource) && fs.existsSync(styleOutput)
+	&& !fs.readFileSync(styleSource).equals(fs.readFileSync(styleOutput))) {
+	failures.push('styles.css must be regenerated from assets/styles.css by the build');
+}
 
 for (const [scriptName, expectedCommand] of Object.entries(requiredScripts)) {
 	if (packageJson.scripts?.[scriptName] !== expectedCommand) {

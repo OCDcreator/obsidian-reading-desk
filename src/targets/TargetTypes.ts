@@ -1,4 +1,5 @@
 import type { AnnotationTarget, PdfHighlight } from '../types/contracts';
+import { createHighlightLink } from '../reader/ReadingDeskLinks';
 
 export interface TargetCardOptions {
 	/** A user-facing card heading. */
@@ -39,7 +40,7 @@ export interface TargetCardMetadata {
 
 export function createSourceLink(highlight: PdfHighlight, supplied?: string): string {
 	if (supplied) return supplied;
-	return `obsidian://reading-desk-highlight?file=${encodeURIComponent(highlight.pdfPath)}&highlight=${encodeURIComponent(highlight.id)}`;
+	return createHighlightLink(highlight);
 }
 
 export function createCardTitle(highlight: PdfHighlight, supplied?: string): string {

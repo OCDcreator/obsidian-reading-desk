@@ -27,3 +27,11 @@ export function anchorBelowToolbar(overlay: HTMLElement, toolbar: HTMLElement, g
 	overlay.style.top = previous;
 	overlay.style.setProperty('--rd-drawer-top', `${Math.round(toolbar.getBoundingClientRect().bottom + gap - origin)}px`);
 }
+
+export function afterLayout(element: HTMLElement): Promise<void> {
+	return new Promise(resolve => {
+		const view = element.ownerDocument.defaultView;
+		if (view) view.requestAnimationFrame(() => resolve());
+		else resolve();
+	});
+}

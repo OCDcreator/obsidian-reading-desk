@@ -11,3 +11,5 @@ Reading Desk 使用独立仓库与插件 id。仅从只读 `../obsidian-bookshel
 ## 后果
 
 所有运行时代码从 `src/` 重新开始；旧仓库的 HEAD 与关键文件 SHA-256 基线记录在阶段 checkpoint，后续再次复核。
+
+插件样式的唯一可版本化真源是 `assets/styles.css`。`esbuild.config.mjs` 在 dev watch 或 production build 启动前确定性复制它为仓库根目录的 ignored `styles.css`；根文件和 `main.js`、`pdf.worker.mjs` 同属部署产物。`npm run check:project-docs` 会逐字节校验样式源与产物一致，AGENTS.md 规定的部署流程仍只复制根目录四件套。
