@@ -23,6 +23,7 @@ export interface ShelfViewHost {
 	openBook(book: LibraryBook): Awaitable<void>;
 	scan(): Awaitable<void>;
 	resolveCoverUrl?(coverPath: string): string | null;
+	openSettings?(): Awaitable<void>;
 }
 
 /** A framework-free shelf surface. Its host owns persistence and navigation. */
@@ -112,6 +113,7 @@ export class ShelfView {
 		header.append(element('h1', 'rd-shelf-heading', '书架'));
 		const actions = element('div', 'rd-shelf-actions');
 		actions.append(button('扫描书库', '重新扫描书库', () => void this.scan()));
+		if (this.host.openSettings) actions.append(button('设置', '打开 Reading Desk 设置', () => void this.host.openSettings?.()));
 		header.append(actions);
 		return header;
 	}

@@ -57,6 +57,7 @@ export interface ReaderHost {
 	openNavigation(): Promise<void>;
 	viewerSettings(): ViewerSettings;
 	updateViewerSettings(patch: Partial<ViewerSettings>): Promise<void>;
+	openSettings(): Promise<void>;
 }
 
 export class ReaderView extends ItemView {
@@ -332,14 +333,15 @@ export class ReaderView extends ItemView {
 			changeInvert: mode => void this.display.changeInvert(mode),
 			navigateHistory: direction => void this.navigateHistory(direction),
 			toggleSearch: () => this.tools.toggleSearch(),
-			toggleDrawer: () => this.toggleDrawer(),
+			toggleDrawer: () => { this.drawerOpen = !this.drawerOpen; this.syncDrawerState(); },
 			enterCropMode: () => void this.enterCropMode(),
 			toggleTargetPanel: () => this.targetPanelController.toggle(),
 			applyPalette: color => void this.createExcerptFromSelection(color),
 			goToPage: page => void this.goTo(page),
 			copyPageLink: () => void executeCopyReaderPage(this, message => new Notice(message)),
 			copySelectedText: () => void this.copySelectedText(),
-			openNavigation: () => void this.host.openNavigation()
+			openNavigation: () => void this.host.openNavigation(),
+			openSettings: () => void this.host.openSettings()
 		});
 		this.drawerToggle = this.controls.drawerToggle;
 		this.drawerToggle.setAttribute('aria-controls', this.drawerId);
@@ -481,7 +483,6 @@ export class ReaderView extends ItemView {
 		await this.fitController.fitTo(mode, true);
 	}
 
-	/** Rebuilds the page surface after rotation or scroll-mode changes. */
 	private async rebuildSurface(): Promise<void> {
 		this.surface?.destroy();
 		this.surface = null;
@@ -498,7 +499,6 @@ export class ReaderView extends ItemView {
 		await this.goTo(location.page, { smooth: false });
 	}
 
-	private toggleDrawer(): void { this.drawerOpen = !this.drawerOpen; this.syncDrawerState(); }
 
 	private syncDrawerState(): void {
 		if (!this.drawer || !this.drawerToggle) return;

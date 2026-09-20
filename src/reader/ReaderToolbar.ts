@@ -36,6 +36,7 @@ interface ReaderToolbarOptions {
 	onCopyPage: () => void;
 	onCopySelection: () => void;
 	onOpenNavigation: () => void;
+	onOpenSettings: () => void;
 }
 
 export interface ReaderToolbarControls {
@@ -107,6 +108,7 @@ export function createReaderToolbar(parent: HTMLElement, options: ReaderToolbarO
 	const zoomControl = createReaderZoomControl(zoomGroup, { scale: options.scale, setScale: options.onZoomSet, zoomOut: options.onZoomOut, zoomIn: options.onZoomIn });
 
 	createReaderPalette(group(parent, 'color', '颜色'), options.onColor);
+	const settings = overflow(createReaderButton(parent, '设置', options.onOpenSettings, 'settings'), 'secondary');
 	const more = createReaderButton(parent, '更多工具', () => {
 		const isHidden = (button: HTMLButtonElement): boolean => getComputedStyle(button).display === 'none';
 		const items: Array<[string, () => void]> = [];
@@ -119,6 +121,7 @@ export function createReaderToolbar(parent: HTMLElement, options: ReaderToolbarO
 		if (getComputedStyle(zoomGroup).display === 'none') items.push(['缩小', options.onZoomOut], ['放大', options.onZoomIn]);
 		if (isHidden(copyPage)) items.push(['复制本页链接', options.onCopyPage]);
 		if (isHidden(copySelection)) items.push(['复制选中文本', options.onCopySelection]);
+		if (isHidden(settings)) items.push(['设置', options.onOpenSettings]);
 		showMenu(more, items);
 	}, 'ellipsis');
 	more.addClass('rd-reader-toolbar__more');

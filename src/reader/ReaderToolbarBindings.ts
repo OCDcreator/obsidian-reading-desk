@@ -32,6 +32,7 @@ export interface ReaderToolbarView {
 	copyPageLink(): void;
 	copySelectedText(): void;
 	openNavigation(): void;
+	openSettings(): void;
 }
 
 /** Builds the reader toolbar from a view contract, keeping ReaderView free of option wiring. */
@@ -65,6 +66,7 @@ export function bindReaderToolbar(toolbar: HTMLElement, view: ReaderToolbarView)
 		onGoToPage: page => Promise.resolve(view.goToPage(page)),
 		onCopyPage: () => view.copyPageLink(),
 		onCopySelection: () => view.copySelectedText(),
-		onOpenNavigation: () => view.openNavigation()
+		onOpenNavigation: () => view.openNavigation(),
+		onOpenSettings: () => view.openSettings()
 	});
 }

@@ -8,6 +8,7 @@ export interface ShelfNavigation {
 	open(path: string): Promise<void>;
 	scan(): Promise<void>;
 	resourceUrl(path: string): string | null;
+	openSettings?(): Promise<void>;
 }
 
 export class ShelfItemView extends ItemView {

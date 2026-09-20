@@ -10,7 +10,7 @@ import { ClipboardImageError, MarkdownImagePasteService } from './storage/Markdo
 import { ObjectStorageConfigurationError, ObjectStorageRequestError, ObjectStorageService } from './storage/ObjectStorageService';
 import { ReadingDeskSettingTab } from './settings/ReadingDeskSettingTab';
 import { TargetService } from './targets';
-import type { ObjectStorageSettings, PdfHighlight, TargetType } from './types/contracts';
+import type { ObjectStorageSettings, PdfHighlight, TargetType, ViewerSettings } from './types/contracts';
 import { ReaderView, READER_VIEW_TYPE } from './views/ReaderView';
 import { CropImageService } from './storage/CropImageService';
 import { ProgressFlusher } from './library/ProgressFlusher';
@@ -69,7 +69,8 @@ export default class ReadingDeskPlugin extends Plugin {
 			discardPreparedCrop: token => this.crops.discard(token),
 			recordProgress: (path, progress) => this.progressFlusher.record(path, progress),
 			viewerSettings: () => this.repository.readSettings().viewer,
-			updateViewerSettings: async patch => { await this.repository.updateSettings({ viewer: { ...this.repository.readSettings().viewer, ...patch } }); },
+			updateViewerSettings: patch => this.updateViewerSettings(patch),
+			openSettings: () => this.openPluginSettings(),
 			showTarget: (path, objectId) => this.showTarget(path, objectId),
 			openTargetInSplit: (path, objectId) => this.openTargetInSplit(path, objectId),
 			readExcerptCards: path => this.readExcerptCards(path),
@@ -85,7 +86,8 @@ export default class ReadingDeskPlugin extends Plugin {
 		this.registerView(SHELF_VIEW_TYPE, leaf => new ShelfItemView(leaf, this.library, {
 			open: path => this.openReader(path),
 			scan: () => this.scanLibrary(),
-			resourceUrl: path => this.app.vault.adapter.getResourcePath(path)
+			resourceUrl: path => this.app.vault.adapter.getResourcePath(path),
+			openSettings: () => this.openPluginSettings()
 		}));
 		this.app.workspace.onLayoutReady(() => { if (this.app.workspace.getLeavesOfType(READER_VIEW_TYPE).some(leaf => !!leaf.view.getState().pdfPath)) void this.openPdfNavigation(false); });
 		this.addRibbonIcon('book-open', '打开 Reading Desk 书架', () => this.openShelf());
@@ -97,6 +99,7 @@ export default class ReadingDeskPlugin extends Plugin {
 		this.addCommand({ id: 'export-library-json', name: '导出 Reading Desk 书架为 JSON（写入仓库）', callback: () => this.exportToVault('json') });
 		this.addCommand({ id: 'ask-ai-about-selection', name: '将当前 Reading Desk 选区交给 AI', checkCallback: checking => this.askAiAboutCurrentSelection(checking) });
 		this.addCommand({ id: 'copy-current-reader-page-link', name: '复制 Reading Desk 当前页链接', checkCallback: checking => this.copyActiveReaderPage(checking) });
+		this.addCommand({ id: 'open-settings', name: '打开 Reading Desk 设置', callback: () => void this.openPluginSettings() });
 		this.addCommand({ id: 'copy-selected-reader-text', name: '复制 Reading Desk 选中文本', checkCallback: checking => this.copyActiveReaderSelection(checking) });
 		this.addCommand({ id: 'undo-last-excerpt', name: '撤销 Reading Desk 上一条摘录', checkCallback: checking => this.undoActiveReaderExcerpt(checking) });
 		this.addSettingTab(new ReadingDeskSettingTab(this));
@@ -116,6 +119,21 @@ export default class ReadingDeskPlugin extends Plugin {
 	}
 
 	notice(message: string): void { new Notice(message); }
+
+	/** Opens the host settings surface directly on this plugin's page. */
+	async openPluginSettings(): Promise<void> {
+		const settings = (this.app as unknown as { setting?: { open(): unknown; openTabById(id: string): unknown } }).setting;
+		if (!settings) {
+			this.notice('当前宿主不支持直接打开插件设置；请从设置面板手动进入 Reading Desk。');
+			return;
+		}
+		settings.open();
+		await settings.openTabById(this.manifest.id);
+	}
+
+	async updateViewerSettings(patch: Partial<ViewerSettings>): Promise<void> {
+		await this.repository.updateSettings({ viewer: { ...this.repository.readSettings().viewer, ...patch } });
+	}
 
 	async updateStorageSettings(patch: Partial<ObjectStorageSettings>): Promise<void> {
 		await this.repository.updateSettings({ storage: { ...this.repository.readSettings().storage, ...patch } });
