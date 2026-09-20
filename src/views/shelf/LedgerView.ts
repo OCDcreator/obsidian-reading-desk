@@ -1,5 +1,5 @@
 import type { LibraryBook, LibraryCategory } from '../../types/contracts';
-import { createCover, createProgressRow, type BookCardHost } from './BookCard';
+import { createCover, createProgressRow, isEditorTarget, type BookCardHost } from './BookCard';
 import { bindInlineInput, button, element, option } from './ShelfDom';
 import { formatFileSize, parseTags, type LedgerStats } from './ShelfViewModel';
 
@@ -42,8 +42,12 @@ function ledgerRow(document: Document, book: LibraryBook, categories: LibraryCat
 	row.tabIndex = 0;
 	row.dataset.bookId = book.id;
 	row.setAttribute('aria-label', `选择 ${book.title}`);
-	row.addEventListener('click', () => void host.openBook(book));
+	row.addEventListener('click', event => {
+		if (isEditorTarget(event)) return;
+		void host.openBook(book);
+	});
 	row.addEventListener('keydown', event => {
+		if (event.isComposing || isEditorTarget(event)) return;
 		if (event.key === 'Enter' || event.key === ' ') {
 			event.preventDefault();
 			void host.openBook(book);

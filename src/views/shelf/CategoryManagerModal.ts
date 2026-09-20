@@ -17,13 +17,17 @@ export interface CategoryManagerHost {
 /** 集中式分类管理面板：列表式重排/改名/删除，与 chips 右键共用同一套 LibraryIndex 写路径。 */
 export function openCategoryManager(host: CategoryManagerHost): void {
 	const document = window.document;
+	const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
 	const scrim = element('div', 'rd-modal-scrim');
 	const dialog = element('div', 'rd-category-modal');
 	dialog.setAttribute('role', 'dialog');
 	dialog.setAttribute('aria-modal', 'true');
 	dialog.setAttribute('aria-label', '管理分类');
 	dialog.tabIndex = -1;
-	const close = (): void => scrim.remove();
+	const close = (): void => {
+		scrim.remove();
+		opener?.focus();
+	};
 	const guarded = (work: () => Promise<void>): void => {
 		void work().then(() => host.refresh()).catch(error => host.notify(errorMessage(error, '无法保存分类')));
 	};
@@ -70,7 +74,26 @@ export function openCategoryManager(host: CategoryManagerHost): void {
 		if (event.target === scrim) close();
 	});
 	scrim.addEventListener('keydown', event => {
-		if (event.key === 'Escape') close();
+		if (event.key === 'Escape') {
+			event.preventDefault();
+			close();
+			return;
+		}
+		if (event.key !== 'Tab') return;
+		/* aria-modal dialog: keep Tab cycling inside the panel instead of the dimmed shelf. */
+		const focusable = Array.from(scrim.querySelectorAll<HTMLElement>('button:enabled, input:enabled, select:enabled, [tabindex]:not([tabindex="-1"])'))
+			.filter(item => item.offsetParent !== null);
+		if (focusable.length === 0) return;
+		const first = focusable[0];
+		const last = focusable[focusable.length - 1];
+		const active = scrim.ownerDocument.activeElement;
+		if (event.shiftKey && (active === first || active === scrim || active === dialog)) {
+			event.preventDefault();
+			last.focus();
+		} else if (!event.shiftKey && (active === last || active === scrim || active === dialog)) {
+			event.preventDefault();
+			first.focus();
+		}
 	});
 	document.body.append(scrim);
 	renderList();

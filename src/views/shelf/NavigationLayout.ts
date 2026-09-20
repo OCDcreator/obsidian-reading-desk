@@ -23,7 +23,6 @@ export function createNavigationLayout(args: {
 	const focus = focusBookFor(args.books);
 	if (focus) main.append(createFocusBook(focus, args.categories, args.host));
 	const rest = args.books.filter(book => book.id !== focus?.id);
-	if (rest.length === 0 && !focus) main.append(element('p', 'rd-shelf-state', '当前筛选下没有图书。'));
 	if (rest.length > 0) {
 		const grid = element('div', 'rd-shelf-grid rd-compact-grid');
 		grid.setAttribute('aria-label', '图书卡片');
@@ -66,7 +65,7 @@ function createFocusBook(book: LibraryBook, categories: LibraryCategory[], host:
 	const copy = element('div', 'rd-nav-focus-copy');
 	const page = lastReadPageOf(book);
 	if (page !== undefined) copy.append(element('span', 'rd-nav-focus-page', `上次读到第 ${page} 页`));
-	const title = element('h3', 'rd-nav-focus-title', book.title);
+	const title = element('p', 'rd-nav-focus-title', book.title);
 	title.title = book.title;
 	copy.append(
 		title,

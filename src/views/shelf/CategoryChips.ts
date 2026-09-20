@@ -22,9 +22,14 @@ export function createCategoryChips(host: CategoryChipsHost): HTMLElement {
 	chips.append(categoryChip(host, undefined, `全部 ${host.books.length}`));
 	host.categories.forEach((category, index) => {
 		const chip = categoryChip(host, category.id, `${category.name} ${categoryBookCount(host.books, category.id)}`);
-		chip.addEventListener('contextmenu', event => {
+		const openMenu = (event: Event): void => {
 			event.preventDefault();
 			openChipMenu(chip, category, index, host);
+		};
+		chip.addEventListener('contextmenu', openMenu);
+		/* The context-menu key (and Shift+F10) reach the same actions from the keyboard. */
+		chip.addEventListener('keydown', event => {
+			if (event.key === 'ContextMenu' || (event.key === 'F10' && event.shiftKey)) openMenu(event);
 		});
 		chips.append(chip);
 	});

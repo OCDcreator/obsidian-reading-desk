@@ -222,6 +222,7 @@ export class ShelfView {
 				mainHeading: this.createLibraryHeading(filtered.length, '全部图书'),
 				host: { ...this.cardHost(), onSelectCategory: id => this.setCategoryFilter(id) }
 			}));
+			if (filtered.length === 0) section.append(this.createEmptyState());
 			content.append(section);
 			return content;
 		}
@@ -248,7 +249,7 @@ export class ShelfView {
 		headingTitle.append(element('h2', 'rd-section-heading-main', title));
 		const note = this.historyOnly
 			? `仅含阅读记录 · ${count} 本 · 按${SHELF_SORT_LABELS.recent}排序`
-			: `${count} 本 · 按${SHELF_SORT_LABELS[this.sortMode]}排序`;
+			: `${count} 本 · 按${SHELF_SORT_LABELS[this.sortMode]}排序${title === '书目台账' && this.hasActiveFilters() ? ' · 摘要为全库口径' : ''}`;
 		if (this.historyOnly) {
 			headingTitle.append(element('span', 'rd-section-note', note));
 		} else {
@@ -261,8 +262,7 @@ export class ShelfView {
 		return heading;
 	}
 
-	private createChips(): HTMLElement {
-		return createCategoryChips({
+	private createChips(): HTMLElement {		return createCategoryChips({
 			books: this.books,
 			categories: this.categories,
 			selectedId: this.categoryId,
@@ -321,6 +321,10 @@ export class ShelfView {
 		this.sortMode = this.sortMode === 'recent' ? 'title' : 'recent';
 		this.stateStore.writeSortMode(this.sortMode);
 		this.refreshContent();
+	}
+
+	private hasActiveFilters(): boolean {
+		return !!this.query.trim() || !!this.categoryId || this.historyOnly;
 	}
 
 	/** Updates the selection in place so the focused row or card is not rebuilt under the user. */

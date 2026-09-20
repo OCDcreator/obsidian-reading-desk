@@ -13,7 +13,7 @@ export interface BookCardHost {
 export function createShelfCard(book: LibraryBook, category: LibraryCategory | undefined, host: BookCardHost): HTMLElement {
 	const card = element('article', 'rd-shelf-card');
 	activateCard(card, book, host, `打开 ${book.title}`);
-	const title = element('h3', 'rd-book-title', book.title);
+	const title = element('p', 'rd-book-title', book.title);
 	title.title = book.title;
 	const details = element('div', 'rd-book-details');
 	details.append(
@@ -30,7 +30,7 @@ export function createShelfCard(book: LibraryBook, category: LibraryCategory | u
 export function createContinueCard(book: LibraryBook, host: BookCardHost): HTMLElement {
 	const card = element('article', 'rd-continue-card');
 	activateCard(card, book, host, `继续阅读 ${book.title}`);
-	const title = element('h3', 'rd-continue-title', book.title);
+	const title = element('p', 'rd-continue-title', book.title);
 	title.title = book.title;
 	const copy = element('div', 'rd-continue-copy');
 	copy.append(title, element('p', 'rd-continue-author', book.author || '作者未填写'), createProgressRow(book));
@@ -82,13 +82,23 @@ function activateCard(card: HTMLElement, book: LibraryBook, host: BookCardHost, 
 	card.tabIndex = 0;
 	card.dataset.bookId = book.id;
 	card.setAttribute('aria-label', label);
-	card.addEventListener('click', () => void host.openBook(book));
+	card.addEventListener('click', event => {
+		if (isEditorTarget(event)) return;
+		void host.openBook(book);
+	});
 	card.addEventListener('keydown', event => {
+		if (event.isComposing || isEditorTarget(event)) return;
 		if (event.key === 'Enter' || event.key === ' ') {
 			event.preventDefault();
 			void host.openBook(book);
 		}
 	});
+}
+
+/** Clicks and keys inside an inline editor belong to the editor, never to the card's open action. */
+export function isEditorTarget(event: Event): boolean {
+	const target = event.target as HTMLElement | null;
+	return !!target?.closest('input, select, textarea');
 }
 
 function createMetaLine(book: LibraryBook): HTMLElement {
@@ -112,6 +122,7 @@ function createAuthorLine(book: LibraryBook, host: BookCardHost): HTMLElement {
 		input.type = 'text';
 		input.className = 'rd-author-input';
 		input.value = book.author;
+		input.placeholder = '作者姓名';
 		input.setAttribute('aria-label', `${book.title} 的作者`);
 		line.replaceWith(input);
 		input.focus();

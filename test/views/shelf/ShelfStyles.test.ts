@@ -10,9 +10,16 @@ function rule(selector: string): string {
 
 describe('Shelf layout contract (ADR 0007)', () => {
 	it('centers content in a 1368px frame over a 24px workspace', () => {
-		expect(styles).toMatch(/^\.rd-shelf \{ padding: 24px 24px 72px; \}$/m);
+		expect(styles).toMatch(/^\.rd-shelf \{ padding: 24px 24px 72px; container-type: inline-size; \}$/m);
 		expect(rule('.rd-shelf-frame')).toContain('max-width: 1368px');
 		expect(rule('.rd-shelf-frame')).toContain('margin: 0 auto');
+	});
+
+	it('breaks on the shelf container, not the host window', () => {
+		expect(styles).toContain('@container (max-width: 1180px)');
+		expect(styles).toContain('@container (max-width: 880px)');
+		expect(styles).not.toContain('@media (max-width: 1180px)');
+		expect(rule('.rd-shelf-search')).toContain('max-width: 440px');
 	});
 
 	it('keeps the 25/20/16/14/12 title ladder', () => {
@@ -77,7 +84,6 @@ describe('Shelf layout contract (ADR 0007)', () => {
 		const chip = rule('.rd-category-chip.is-selected');
 		expect(chip).toContain('border-color: var(--rd-accent)');
 		expect(chip).not.toContain('background: var(--rd-accent)');
-		expect(rule('.rd-shelf-search')).toContain('min-width: min(440px, 50vw)');
 		const viewSwitch = rule('.rd-shelf .rd-view-switch-button');
 		expect(viewSwitch).toContain('background: transparent');
 		expect(viewSwitch).toContain('box-shadow: none');

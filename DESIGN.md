@@ -17,6 +17,10 @@ colors:
   indigo: "var(--canvas-color-6, oklch(0.61 0.13 275))"
   plum: "var(--canvas-color-5, oklch(0.62 0.13 325))"
   elevation: "oklch(0.2 0.02 250 / 0.2)"
+  "cover-badge-bg": "rgb(18 21 27 / 82%)"
+  "cover-badge-border": "rgb(255 255 255 / 34%)"
+  "cover-badge-ink": "#fff"
+  "modal-scrim": "rgb(0 0 0 / 32%)"
 typography:
   page:
     fontFamily: "inherit"
@@ -48,6 +52,11 @@ typography:
     fontSize: "var(--font-ui-smaller)"
     fontWeight: 500
     lineHeight: 1.4
+  path:
+    fontFamily: "inherit"
+    fontSize: "11px"
+    fontWeight: 400
+    lineHeight: 1.5
 rounded:
   square: "0"
   highlight: "2px"
@@ -172,7 +181,7 @@ Reading Desk 是一个 desktop Obsidian 操作表面：像长期置于书桌上�
 
 Shelf 和 Reader 的外层各保留 `24px` 工作区 padding。Reader 的 sticky 工具栏使用 `12px 16px`，分栏 PDF/目标面板间距为 `16px`；目标面板自身 `16px` padding、`12px` 内部 gap。列表、摘录卡和工具组以 `8px` 为基本节奏。
 
-Shelf 内容限定 `max-width: 1368px` 居中容器（ADR 0007）。主书库采用 `repeat(auto-fill, minmax(184px, 1fr))` 封面墙；卡片是「固定信息槽的内容驱动等高卡」：封面 `0.7` aspect ratio 满宽 + 两行 clamp 书名槽（`2.6em`）/ 单行作者 / 单行元数据 / 进度行，槽位而非拉伸保证等高。继续阅读轨是三张横排卡（`88px` 封面 + `min-height 118px`），窄屏降两列；「查看阅读记录」把主列表切到仅含阅读记录 + 最近阅读排序的筛选态。分类筛选是单行可换行 chips（数量 + 选中 accent 描边），行尾「+」新建、chip 右键重排/改名/删除，「管理分类」开集中 modal；排序由「全部图书」副文案点击切换并记忆到 localStorage。台账视图（C）是统计摘要 4 格 + 高密度表格；导航工作台（B）是左侧 `224px` sticky 分类列（选中 inset `2px` accent）+ `172px` 重点卡 + 四列紧凑网格，复用同一书卡组件。表格是数据密集布局，不套用正文行宽规则。书架微节奏（chip `3px 10px`、书卡信息 `7px` gap、封面角标 `10px` 偏移/`21px` 高）是原型契约登记的刻度延伸，只用于书架表面。
+Shelf 内容限定 `max-width: 1368px` 居中容器（ADR 0007）。书架表面以自身 inline-size 容器查询（沿用 Reader 先例）承载 1180/880 断点，因为 Obsidian leaf 宽度与宿主窗口宽度无关。主书库采用 `repeat(auto-fill, minmax(184px, 1fr))` 封面墙；卡片是「固定信息槽的内容驱动等高卡」：封面 `0.7` aspect ratio 满宽 + 两行 clamp 书名槽（`2.6em`）/ 单行作者 / 单行元数据 / 进度行，槽位而非拉伸保证等高。继续阅读轨是三张横排卡（`88px` 封面 + `min-height 118px`），窄屏降两列；「查看阅读记录」把主列表切到仅含阅读记录 + 最近阅读排序的筛选态。分类筛选是单行可换行 chips（数量 + 选中 accent 描边），行尾「+」新建、chip 右键（及 ContextMenu 键）重排/改名/删除，「管理分类」开集中 modal（直角 overlay 家族、焦点陷阱、关闭归还焦点）；排序由「全部图书」副文案点击切换并记忆到 localStorage。台账视图（C）是统计摘要 4 格（恒为全库口径）+ 高密度表格；导航工作台（B）是左侧 `224px` sticky 分类列（选中 inset `2px` accent）+ `172px` 重点卡 + 四列紧凑网格，复用同一书卡组件。表格是数据密集布局，不套用正文行宽规则。书架微节奏（chip `3px 10px`/26px 高、书卡信息 `7px` gap、封面角标 `10px` 偏移/`21px` 高、台账行 `10px 12px`）是原型契约登记的刻度延伸，只用于书架表面。
 
 Reader leaf 始终只承载 PDF 工作面，真实 PDF 导航作为独立原生 Obsidian 左侧栏 leaf 呈现，不随 Reader 变窄而挤占中间阅读空间。导航 leaf 在真实页面缩略图与 PDF outline 层级之间切换，并跟随最近激活的 Reader；目录含当前章节、页码、加载、空和错误态。缩略图与目录复刻宿主原生 PDF 侧栏的视觉契约：纸面 `148px` 宽、宿主 `--pdf-thumbnail-shadow`、`8px` 透明光晕边框在 hover/当前页转为 `--background-modifier-hover`，页码以 `data-page-label` 徽章叠在右下角，未渲染纸面用 1px 虚线占位；导航按钮必须在 host 作用域下显式清除主题 button 底色/边框，否则光晕会透出主题按钮色。目录按范围匹配持续标出当前所在章节（宿主 `--nav-item-*-active` 配色）并随翻页保持可见，而不是只在章节起始页亮起。Reader 工具栏保留“PDF 导航”入口，用户折叠宿主左侧栏时导航按宿主行为隐藏，重新打开后仍保留两种页签。PDF 工作面保持 `min-width: 0` 与自身 overflow，不依赖全窗口宽度。
 

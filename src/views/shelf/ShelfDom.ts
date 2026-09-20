@@ -49,6 +49,8 @@ export function linkButton(text: string, label: string, onClick: () => void): HT
 export function bindInlineInput(input: HTMLInputElement, save: () => void): void {
 	let cancelled = false;
 	input.addEventListener('keydown', event => {
+		/* Keep keys inside the editor so a hosting card or table row never opens the book. */
+		event.stopPropagation();
 		if (event.key === 'Enter') {
 			event.preventDefault();
 			input.blur();
