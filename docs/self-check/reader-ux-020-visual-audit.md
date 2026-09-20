@@ -62,3 +62,10 @@
 - 键盘导航简化为左右方向键；移除 settings 容器查询断点（横排不再需要折叠）。
 - 探针断言：navCard 存在且包含 nav、flexDirection=row、五标签、上下文标签（阅读）生效、重复标题 0；五张截图重拍，中性提示词核验通过。
 - impeccable detect 复检 0 发现。
+
+## 「页边锚点」原创入口图标(追加验收)
+
+- src/ui/icons/ReadingDeskIcons.ts:日间版描边 8、夜间版 7(光学补偿),几何一致;页轮廓/折角/摘录线 currentColor,页边线 var(--interactive-accent),锚点 var(--canvas-color-1),宿主变量全局作用于 ribbon,深浅主题自动取值。
+- main.ts:addIcon 注册两个 id,ribbon 从 book-open 换为 reading-desk-margin-day;css-change + body 类 MutationObserver 双通道同步日/夜版本。
+- 实机探针:浅色 anchorFill rgb(233,49,71)/描边 8,深色 rgb(251,70,76)/描边 7,主题翻转即时切换;4 倍放大截图 09-ribbon-icon-{light,dark}.png 经中性核验:页/边线/锚点/摘录线四语义齐全、三色分明、笔画清晰。
+- 单测 4 项(语义片段、8/7 补偿、id 映射、主题探测)随套件通过(46 文件/151 用例)。

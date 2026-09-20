@@ -1,4 +1,4 @@
-import { MarkdownView, Notice, Plugin, TFile, type TAbstractFile, type WorkspaceLeaf } from 'obsidian';
+import { addIcon, MarkdownView, Notice, Plugin, setIcon, TFile, type TAbstractFile, type WorkspaceLeaf } from 'obsidian';
 import { AnnotationStore } from './annotations/AnnotationStore';
 import { ReadingDeskRepository } from './data/ReadingDeskRepository';
 import { LibraryIndex, type LibraryFile } from './library/LibraryIndex';
@@ -19,6 +19,7 @@ import { ShelfItemView, SHELF_VIEW_TYPE } from './views/ShelfItemView';
 import { createHighlightLink, createPageLink, writeReadingDeskLink } from './reader/ReadingDeskLinks';
 import { canCopyReaderPage, executeCopyReaderPage } from './reader/ReaderCopyCommand';
 import { routeReadingDeskLink } from './reader/ReadingDeskLinkRouter';
+import { hostThemeDark, marginAnchorIconId, READING_DESK_MARGIN_ANCHOR_DAY, READING_DESK_MARGIN_ANCHOR_NIGHT } from './ui/icons/ReadingDeskIcons';
 
 const LEGACY_DATA_PATHS = ['.obsidian/plugins/obsidian-bookshelf/data.json', '.obsidian/plugins/obsidian-bookshelf/metadata.json'];
 const LEGACY_METADATA_FOLDER = '.obsidian/plugins/bookshelf/metadata';
@@ -91,7 +92,20 @@ export default class ReadingDeskPlugin extends Plugin {
 			openSettings: () => this.openPluginSettings('library')
 		}));
 		this.app.workspace.onLayoutReady(() => { if (this.app.workspace.getLeavesOfType(READER_VIEW_TYPE).some(leaf => !!leaf.view.getState().pdfPath)) void this.openPdfNavigation(false); });
-		this.addRibbonIcon('book-open', '打开 Reading Desk 书架', () => this.openShelf());
+		addIcon('reading-desk-margin-day', READING_DESK_MARGIN_ANCHOR_DAY);
+		addIcon('reading-desk-margin-night', READING_DESK_MARGIN_ANCHOR_NIGHT);
+		const ribbon = this.addRibbonIcon('reading-desk-margin-day', '打开 Reading Desk 书架', () => this.openShelf());
+		const syncRibbonIcon = (): void => {
+			const doc = ribbon.ownerDocument;
+			setIcon(ribbon, marginAnchorIconId(hostThemeDark(doc)));
+		};
+		syncRibbonIcon();
+		this.registerEvent(this.app.workspace.on('css-change', syncRibbonIcon));
+		// css-change covers real theme/snippet switches; the body-class observer also
+		// covers popout windows and hosts that flip the class without the event.
+		const themeObserver = new MutationObserver(syncRibbonIcon);
+		themeObserver.observe(ribbon.ownerDocument.body, { attributes: true, attributeFilter: ['class'] });
+		this.register(() => themeObserver.disconnect());
 		this.addCommand({ id: 'open-reading-desk', name: '打开 Reading Desk 书架', callback: () => this.openShelf() });
 		this.addCommand({ id: 'scan-library', name: '扫描 Reading Desk 书库', callback: () => this.scanLibrary() });
 		this.addCommand({ id: 'open-reader-in-focus-layout', name: '打开 Reading Desk 阅读器（兼容命令）', callback: () => this.openReaderFromActiveFile() });
