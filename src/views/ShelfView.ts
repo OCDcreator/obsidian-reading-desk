@@ -277,8 +277,8 @@ export class ShelfView {
 
 	private openManager(): void {
 		openCategoryManager({
-			books: this.books,
-			categories: this.categories,
+			getBooks: () => this.books,
+			getCategories: () => this.categories,
 			addCategory: async name => { await this.host.addCategory(name); },
 			renameCategory: async (id, name) => { await this.host.renameCategory(id, name); },
 			removeCategory: async id => { await this.host.removeCategory(id); },

@@ -3,8 +3,9 @@ import { bindInlineInput, button, documentInput, element, errorMessage } from '.
 import { categoryBookCount } from './ShelfViewModel';
 
 export interface CategoryManagerHost {
-	books: LibraryBook[];
-	categories: LibraryCategory[];
+	/** Live accessors: the shelf swaps its arrays on every reload, so snapshots go stale. */
+	getBooks(): LibraryBook[];
+	getCategories(): LibraryCategory[];
 	addCategory(name: string): Promise<void>;
 	renameCategory(id: string, name: string): Promise<void>;
 	removeCategory(id: string): Promise<void>;
@@ -35,11 +36,12 @@ export function openCategoryManager(host: CategoryManagerHost): void {
 		const list = dialog.querySelector('.rd-category-modal-list');
 		if (!list) return;
 		list.replaceChildren();
-		if (host.categories.length === 0) {
+		const categories = host.getCategories();
+		if (categories.length === 0) {
 			list.append(element('p', 'rd-category-modal-empty', '还没有分类。在下方输入名称新建一个。'));
 			return;
 		}
-		host.categories.forEach((category, index) => list.append(categoryRow(category, index, host, guarded, renderList)));
+		categories.forEach((category, index) => list.append(categoryRow(category, index, host, guarded, renderList)));
 	};
 	const heading = element('div', 'rd-category-modal-heading');
 	heading.append(element('h2', 'rd-category-modal-title', '管理分类'));
@@ -109,7 +111,7 @@ function categoryRow(
 ): HTMLElement {
 	const row = element('li', 'rd-category-modal-row');
 	const name = element('span', 'rd-category-modal-name', category.name);
-	const count = categoryBookCount(host.books, category.id);
+	const count = categoryBookCount(host.getBooks(), category.id);
 	const actions = element('span', 'rd-category-modal-actions');
 	const rename = button('改名', `重命名 ${category.name}`, () => {
 		const input = name.ownerDocument.createElement('input');
@@ -133,7 +135,7 @@ function categoryRow(
 		});
 	});
 	const move = (offset: number): (() => void) => () => {
-		const ids = host.categories.map(item => item.id);
+		const ids = host.getCategories().map(item => item.id);
 		const target = index + offset;
 		if (target < 0 || target >= ids.length) return;
 		[ids[index], ids[target]] = [ids[target], ids[index]];
@@ -145,7 +147,7 @@ function categoryRow(
 	const up = button('上移', `上移 ${category.name}`, move(-1));
 	const down = button('下移', `下移 ${category.name}`, move(1));
 	up.disabled = index === 0;
-	down.disabled = index === host.categories.length - 1;
+	down.disabled = index === host.getCategories().length - 1;
 	const remove = button('删除', `删除 ${category.name}`, () => {
 		if (!remove.classList.contains('is-armed')) {
 			remove.classList.add('is-armed');
