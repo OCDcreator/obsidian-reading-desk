@@ -47,6 +47,8 @@ rounded:
   square: "0"
   highlight: "2px"
   control: "5px"
+  "control-lg": "6px"
+  card: "8px"
   circular: "50%"
   pill: "999px"
 spacing:
@@ -177,7 +179,7 @@ Reader leaf 始终只承载 PDF 工作面，真实 PDF 导航作为独立原生 
 
 ## Shapes
 
-组件使用克制的方正轮廓：常规 input、select 和按钮是 `5px` 圆角；PDF 高亮是 `2px`，避免在正文上形成胶囊；色盘和高亮末端评论入口是圆形；标签为 `999px` pill。Shelf 卡、目标面板、抽屉与评论容器保持直角容器和 1px 边线。
+组件使用克制的方正轮廓：常规 input、select 和按钮是 `5px` 圆角；PDF 高亮是 `2px`，避免在正文上形成胶囊；色盘和高亮末端评论入口是圆形；标签为 `999px` pill。Shelf 卡、目标面板、抽屉与评论容器保持直角容器和 1px 边线。设置页采用 shadcn 视觉变体：设置卡容器 `8px`（card），卡内输入与下拉 `6px`（control-lg），是刻意登记的系统延伸，不回灌到阅读器与书架表面。
 
 **The Native-Tool Rule.** 形状优先服从 Obsidian 控件和真实 PDF/Canvas 工作面；不使用侧色条、渐变文字、装饰玻璃或大数字指标模板。
 

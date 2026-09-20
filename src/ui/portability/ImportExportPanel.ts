@@ -75,17 +75,10 @@ export class ImportExportPanel {
 		const root = document.createElement('section');
 		root.className = 'rd-import-export-panel';
 		root.setAttribute('aria-label', '导入与导出');
-		root.append(this.createHeading(), this.createImportSection(), this.createExportSection(), this.createStatusWrap());
+		root.append(this.createImportSection(), this.createExportSection(), this.createStatusWrap());
 		this.root = root;
 		this.container.replaceChildren(root);
 		this.updateView();
-	}
-
-	private createHeading(): HTMLElement {
-		const heading = document.createElement('h3');
-		heading.className = 'rd-import-export-panel__heading';
-		heading.textContent = '导入与导出';
-		return heading;
 	}
 
 	private createImportSection(): HTMLElement {

@@ -422,7 +422,6 @@
 .rd-import-export-panel__status.is-success { color: var(--text-success); }
 .rd-import-export-panel__status.is-error { color: var(--text-error); }
 .rd-import-export-panel__button { justify-self: start; }
-.rd-settings-portability { min-width: 0; }
 .reading-desk-settings h2.rd-setting-heading { font-size: 20px !important; font-weight: 650; line-height: 1.25; }
 .reading-desk-settings .rd-setting-intro { font-size: 14px; line-height: 1.5; color: var(--rd-ink-muted); }
 
@@ -512,7 +511,7 @@
 .rd-settings-tab {
 	display: flex; align-items: center; text-align: left;
 	border: 0; border-radius: 6px; background: transparent; color: var(--rd-ink-muted);
-	font: inherit; font-size: 13px; line-height: 1.4; min-height: 32px; padding: 6px 10px;
+	font: inherit; font-size: 14px; line-height: 1.4; min-height: 32px; padding: 6px 10px;
 	cursor: pointer; white-space: nowrap;
 }
 .rd-settings-tab:hover { color: var(--rd-ink); background: color-mix(in oklch, var(--rd-surface) 96%, var(--rd-ink) 4%); }
@@ -530,20 +529,23 @@
 /* Rows inside cards replace Obsidian's default setting block with quiet dividers. */
 .reading-desk-settings .setting-item { border: 0; border-top: 1px solid var(--rd-line); padding: 12px 16px; margin: 0; }
 .reading-desk-settings .setting-item:first-child { border-top: 0; }
-.reading-desk-settings .setting-item-name { font-size: 13px; font-weight: 500; color: var(--rd-ink); }
+.reading-desk-settings .setting-item-name { font-size: 14px; font-weight: 500; color: var(--rd-ink); }
 .reading-desk-settings .setting-item-description { font-size: 12px; color: var(--rd-ink-muted); }
 .reading-desk-settings .rd-card-content .setting-item-control { gap: 8px; }
 .reading-desk-settings .rd-card-content input[type='text'],
 .reading-desk-settings .rd-card-content input[type='password'],
 .reading-desk-settings .rd-card-content select {
 	border: 1px solid var(--rd-line); border-radius: 6px; background: var(--rd-surface);
-	color: var(--rd-ink); font: inherit; font-size: 13px; min-height: 30px; padding: 4px 8px;
+	color: var(--rd-ink); font: inherit; font-size: 14px; min-height: 30px; padding: 4px 8px;
 }
 .reading-desk-settings .rd-card-content input:focus-visible,
 .reading-desk-settings .rd-card-content select:focus-visible { outline: 2px solid var(--rd-accent); outline-offset: 1px; border-color: var(--rd-accent); }
 .rd-settings-portability { min-width: 0; padding: 0 16px 16px; }
+.rd-setting-result.is-success { color: var(--text-success, var(--rd-ink)); }
+.rd-setting-result.is-error { color: var(--text-error, var(--rd-ink)); }
+.reading-desk-settings .rd-card-content input[type="text"] { width: 100%; max-width: 480px; }
 
-@container (max-width: 640px) {
+@container (max-width: 480px) {
 	.rd-settings-layout { grid-template-columns: minmax(0, 1fr); gap: 12px; }
-	.rd-settings-nav { flex-direction: row; overflow-x: auto; position: static; padding-bottom: 4px; }
+	.rd-settings-nav { flex-direction: row; flex-wrap: wrap; position: static; padding-bottom: 4px; }
 }

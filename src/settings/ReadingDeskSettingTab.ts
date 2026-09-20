@@ -46,10 +46,12 @@ export class ReadingDeskSettingTab extends PluginSettingTab {
 		this.portabilityPanel?.destroy();
 		this.portabilityPanel = null;
 		this.tabButtons.clear();
+		const hint = this.readingDesk.consumeSettingsTabHint();
+		if (hint && SETTINGS_TABS.some(item => item.key === hint)) this.activeTab = hint;
 		containerEl.empty();
 		containerEl.addClass('reading-desk-settings');
 		containerEl.createEl('h2', { cls: 'rd-setting-heading', text: 'Reading Desk 设置' });
-		containerEl.createEl('p', { cls: 'rd-setting-intro', text: '书架、阅读器和标注共用同一份本地数据；凭据仅保存在此插件的本地设置中。' });
+		containerEl.createEl('p', { cls: 'rd-setting-intro', text: '书架、阅读器和标注共用同一份本地数据。' });
 		const layout = containerEl.createDiv({ cls: 'rd-settings-layout' });
 		const nav = layout.createDiv({ cls: 'rd-settings-nav', attr: { role: 'tablist', 'aria-orientation': 'vertical', 'aria-label': '设置分类' } });
 		for (const definition of SETTINGS_TABS) nav.append(this.createTabButton(definition));
@@ -179,28 +181,40 @@ export class ReadingDeskSettingTab extends PluginSettingTab {
 				return toggle.setValue(storage.imageHostEnabled).setDisabled(!storage.enabled).onChange(async imageHostEnabled => this.readingDesk.updateStorageSettings({ imageHostEnabled }));
 			});
 		const credentials = this.createCard(panel, '对象存储凭据', '填写 OSS 或 COS 的访问信息，可先用只读请求测试连通。');
+		const regionRow = new Setting(credentials).setName('Region').setDesc('仅腾讯云 COS 需要。')
+			.addText(text => {
+				text.inputEl.setAttribute('aria-label', 'Region');
+				text.inputEl.placeholder = 'ap-guangzhou';
+				return text.setValue(storage.region).onChange(async value => this.readingDesk.updateStorageSettings({ region: value }));
+			});
+		regionRow.settingEl.hidden = storage.provider !== 'cos';
 		new Setting(credentials).setName('提供商')
 			.addDropdown(dropdown => {
 				dropdown.selectEl.setAttribute('aria-label', '对象存储提供商');
 				return dropdown.addOption('oss', '阿里云 OSS').addOption('cos', '腾讯云 COS')
 					.setValue(storage.provider).setDisabled(!storage.enabled)
-					.onChange(async provider => this.readingDesk.updateStorageSettings({ provider: provider as 'oss' | 'cos' }));
+					.onChange(async provider => {
+						regionRow.settingEl.hidden = provider !== 'cos';
+						await this.readingDesk.updateStorageSettings({ provider: provider as 'oss' | 'cos' });
+					});
 			});
-		this.addStorageText(credentials, 'Endpoint', 'endpoint');
-		this.addStorageText(credentials, 'Region（COS 必填）', 'region');
-		this.addStorageText(credentials, 'Bucket', 'bucket');
-		this.addStorageText(credentials, '对象存储路径', 'prefix');
+		this.addStorageText(credentials, 'Endpoint', 'endpoint', false, 'https://oss-cn-hangzhou.aliyuncs.com');
+		this.addStorageText(credentials, 'Bucket', 'bucket', false, 'reading-desk');
+		this.addStorageText(credentials, '对象存储路径', 'prefix', false, 'reading-desk/');
 		this.addStorageText(credentials, 'Access Key', 'accessKeyId');
 		this.addStorageText(credentials, 'Secret Key', 'secretAccessKey', true);
 		const testSetting = new Setting(credentials).setName('测试连接').setDesc(storage.enabled ? '发送已签名的只读请求；不会上传文件。' : '先启用对象存储并填写凭据后才可测试。');
 		testSetting
 			.addButton(button => button.setButtonText('测试连接').setDisabled(!storage.enabled).onClick(async () => {
 				button.setDisabled(true).setButtonText('测试中…');
+				testSetting.descEl.className = 'rd-setting-desc';
 				try {
 					const result = await this.readingDesk.testStorageConnection();
 					testSetting.setDesc(`连接成功：HTTP ${result.status}，${result.endpoint}`);
+					testSetting.descEl.className = 'rd-setting-result is-success';
 				} catch (error) {
 					testSetting.setDesc(describeConnectionFailure(error));
+					testSetting.descEl.className = 'rd-setting-result is-error';
 				} finally {
 					button.setDisabled(false).setButtonText('测试连接');
 				}
@@ -227,9 +241,10 @@ export class ReadingDeskSettingTab extends PluginSettingTab {
 		this.portabilityPanel.render(portability);
 	}
 
-	private addStorageText(panel: HTMLElement, label: string, key: 'endpoint' | 'region' | 'bucket' | 'prefix' | 'accessKeyId' | 'secretAccessKey', secret = false): void {
+	private addStorageText(panel: HTMLElement, label: string, key: 'endpoint' | 'region' | 'bucket' | 'prefix' | 'accessKeyId' | 'secretAccessKey', secret = false, placeholder = ''): void {
 		new Setting(panel).setName(label).addText(text => {
 			text.inputEl.setAttribute('aria-label', label);
+			if (placeholder) text.inputEl.placeholder = placeholder;
 			text.setValue(this.readingDesk.repository.readSettings().storage[key]);
 			if (secret) text.inputEl.type = 'password';
 			text.onChange(async value => this.readingDesk.updateStorageSettings({ [key]: value }));

@@ -33,6 +33,7 @@ export default class ReadingDeskPlugin extends Plugin {
 	private targets!: TargetService;
 	private crops!: CropImageService;
 	private progressFlusher!: ProgressFlusher;
+	private settingsTabHint: string | null = null;
 
 	async onload(): Promise<void> {
 		this.repository = new ReadingDeskRepository({ load: () => this.loadData(), save: data => this.saveData(data) });
@@ -70,7 +71,7 @@ export default class ReadingDeskPlugin extends Plugin {
 			recordProgress: (path, progress) => this.progressFlusher.record(path, progress),
 			viewerSettings: () => this.repository.readSettings().viewer,
 			updateViewerSettings: patch => this.updateViewerSettings(patch),
-			openSettings: () => this.openPluginSettings(),
+			openSettings: () => this.openPluginSettings('reader'),
 			showTarget: (path, objectId) => this.showTarget(path, objectId),
 			openTargetInSplit: (path, objectId) => this.openTargetInSplit(path, objectId),
 			readExcerptCards: path => this.readExcerptCards(path),
@@ -87,7 +88,7 @@ export default class ReadingDeskPlugin extends Plugin {
 			open: path => this.openReader(path),
 			scan: () => this.scanLibrary(),
 			resourceUrl: path => this.app.vault.adapter.getResourcePath(path),
-			openSettings: () => this.openPluginSettings()
+			openSettings: () => this.openPluginSettings('library')
 		}));
 		this.app.workspace.onLayoutReady(() => { if (this.app.workspace.getLeavesOfType(READER_VIEW_TYPE).some(leaf => !!leaf.view.getState().pdfPath)) void this.openPdfNavigation(false); });
 		this.addRibbonIcon('book-open', '打开 Reading Desk 书架', () => this.openShelf());
@@ -121,7 +122,8 @@ export default class ReadingDeskPlugin extends Plugin {
 	notice(message: string): void { new Notice(message); }
 
 	/** Opens the host settings surface directly on this plugin's page. */
-	async openPluginSettings(): Promise<void> {
+	async openPluginSettings(initialTab?: string): Promise<void> {
+		if (initialTab) this.settingsTabHint = initialTab;
 		const settings = (this.app as unknown as { setting?: { open(): unknown; openTabById(id: string): unknown } }).setting;
 		if (!settings) {
 			this.notice('当前宿主不支持直接打开插件设置；请从设置面板手动进入 Reading Desk。');
@@ -129,6 +131,13 @@ export default class ReadingDeskPlugin extends Plugin {
 		}
 		settings.open();
 		await settings.openTabById(this.manifest.id);
+	}
+
+	/** Hands a context tab (阅读器/书架 entry) to the next settings render. */
+	consumeSettingsTabHint(): string | null {
+		const hint = this.settingsTabHint;
+		this.settingsTabHint = null;
+		return hint;
 	}
 
 	async updateViewerSettings(patch: Partial<ViewerSettings>): Promise<void> {
