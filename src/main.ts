@@ -14,7 +14,7 @@ import type { ObjectStorageSettings, PdfHighlight, TargetType, ViewerSettings } 
 import { ReaderView, READER_VIEW_TYPE } from './views/ReaderView';
 import { CropImageService } from './storage/CropImageService';
 import { ProgressFlusher } from './library/ProgressFlusher';
-import { PdfNavigationView, PDF_NAVIGATION_VIEW_TYPE } from './views/PdfNavigationView';
+import { detachDuplicateNavigationLeaves, PdfNavigationView, PDF_NAVIGATION_VIEW_TYPE } from './views/PdfNavigationView';
 import { ShelfItemView, SHELF_VIEW_TYPE } from './views/ShelfItemView';
 import { createHighlightLink, createPageLink, writeReadingDeskLink } from './reader/ReadingDeskLinks';
 import { canCopyReaderPage, executeCopyReaderPage } from './reader/ReaderCopyCommand';
@@ -205,10 +205,7 @@ export default class ReadingDeskPlugin extends Plugin {
 
 	/** Reuses the reader leaf already showing this PDF so links never stack duplicate tabs. */
 	private readerLeafFor(path: string): WorkspaceLeaf | null {
-		for (const leaf of this.app.workspace.getLeavesOfType(READER_VIEW_TYPE)) {
-			if (leaf.view.getState().pdfPath === path) return leaf;
-		}
-		return null;
+		return this.app.workspace.getLeavesOfType(READER_VIEW_TYPE).find(leaf => leaf.view.getState().pdfPath === path) ?? null;
 	}
 
 	private async openReaderHighlight(params: Record<string, string>): Promise<void> {
@@ -273,13 +270,16 @@ export default class ReadingDeskPlugin extends Plugin {
 		if (!path) throw new Error('没有可打开的 PDF。请先扫描书库或打开一个 PDF。');
 		await this.openReader(path);
 	}
+
 	private async openPdfNavigation(focus = true): Promise<void> {
-		let leaf = this.app.workspace.getLeavesOfType(PDF_NAVIGATION_VIEW_TYPE)[0];
+		const existing = this.app.workspace.getLeavesOfType(PDF_NAVIGATION_VIEW_TYPE);
+		let leaf = existing.find(item => item.view instanceof PdfNavigationView) ?? existing[0];
 		if (!leaf) {
 			leaf = this.app.workspace.getLeftLeaf(true) ?? undefined;
 			if (!leaf) return;
 			await leaf.setViewState({ type: PDF_NAVIGATION_VIEW_TYPE, state: {}, active: focus });
 		}
+		detachDuplicateNavigationLeaves(this.app.workspace, PDF_NAVIGATION_VIEW_TYPE, leaf);
 		if (leaf.view instanceof PdfNavigationView) leaf.view.refresh();
 		if (focus) await this.app.workspace.revealLeaf(leaf);
 	}

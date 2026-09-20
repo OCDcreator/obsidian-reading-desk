@@ -1,4 +1,5 @@
-import { PluginSettingTab, Setting } from 'obsidian';
+import { PluginSettingTab, setIcon, Setting } from 'obsidian';
+import { hostThemeDark, marginAnchorIconId, observeHostTheme } from '../ui/icons/ReadingDeskIcons';
 import type ReadingDeskPlugin from '../main';
 import { ObjectStorageConfigurationError, ObjectStorageRequestError } from '../storage/ObjectStorageService';
 import { ImportExportPanel } from '../ui/portability/ImportExportPanel';
@@ -35,6 +36,8 @@ export class ReadingDeskSettingTab extends PluginSettingTab {
 	private activeTab = 'library';
 	private panel?: HTMLElement;
 	private tabButtons = new Map<string, HTMLButtonElement>();
+	private headingIcon?: HTMLElement;
+	private stopHeadingIconSync: (() => void) | null = null;
 
 	constructor(private readonly readingDesk: ReadingDeskPlugin) {
 		super(readingDesk.app, readingDesk);
@@ -49,8 +52,14 @@ export class ReadingDeskSettingTab extends PluginSettingTab {
 		const hint = this.readingDesk.consumeSettingsTabHint();
 		if (hint && SETTINGS_TABS.some(item => item.key === hint)) this.activeTab = hint;
 		containerEl.empty();
+		this.stopHeadingIconSync?.();
+		this.stopHeadingIconSync = null;
 		containerEl.addClass('reading-desk-settings');
-		containerEl.createEl('h2', { cls: 'rd-setting-heading', text: 'Reading Desk 设置' });
+		const heading = containerEl.createDiv({ cls: 'rd-setting-heading-row' });
+		this.headingIcon = heading.createSpan({ cls: 'rd-setting-heading-icon', attr: { 'aria-hidden': 'true' } });
+		this.syncHeadingIcon();
+		this.stopHeadingIconSync = observeHostTheme(containerEl.ownerDocument, () => this.syncHeadingIcon());
+		heading.createEl('h2', { cls: 'rd-setting-heading', text: 'Reading Desk 设置' });
 		containerEl.createEl('p', { cls: 'rd-setting-intro', text: '书架、阅读器和标注共用同一份本地数据。' });
 		const navCard = containerEl.createDiv({ cls: 'rd-card rd-settings-nav-card' });
 		const nav = navCard.createDiv({ cls: 'rd-settings-nav', attr: { role: 'tablist', 'aria-label': '设置分类' } });
@@ -62,6 +71,14 @@ export class ReadingDeskSettingTab extends PluginSettingTab {
 	onClose(): void {
 		this.portabilityPanel?.destroy();
 		this.portabilityPanel = null;
+		this.stopHeadingIconSync?.();
+		this.stopHeadingIconSync = null;
+	}
+
+	private syncHeadingIcon(): void {
+		const icon = this.headingIcon;
+		if (!icon) return;
+		setIcon(icon, marginAnchorIconId(hostThemeDark(icon.ownerDocument)));
 	}
 
 	private createTabButton(definition: SettingsTabDefinition): HTMLButtonElement {

@@ -57,3 +57,11 @@ export function marginAnchorIconId(themeDark: boolean): string {
 export function hostThemeDark(doc: Document): boolean {
 	return doc.body.classList.contains('theme-dark') || doc.documentElement.classList.contains('theme-dark');
 }
+
+/** Observes host theme class flips; returns the disconnect function. */
+export function observeHostTheme(doc: Document, onChange: () => void): () => void {
+	if (typeof MutationObserver === 'undefined') return () => undefined;
+	const observer = new MutationObserver(onChange);
+	observer.observe(doc.body, { attributes: true, attributeFilter: ['class'] });
+	return () => observer.disconnect();
+}

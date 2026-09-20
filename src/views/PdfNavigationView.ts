@@ -1,7 +1,14 @@
-import { ItemView, type WorkspaceLeaf } from 'obsidian';
+import { ItemView, type Workspace, type WorkspaceLeaf } from 'obsidian';
 import type { ReaderView } from './ReaderView';
 
 export const PDF_NAVIGATION_VIEW_TYPE = 'reading-desk-pdf-navigation';
+
+/** Reload cycles can strand duplicate navigation leaves in the left sidebar; keep exactly one. */
+export function detachDuplicateNavigationLeaves(workspace: Workspace, viewType: string, keep: WorkspaceLeaf): void {
+	for (const duplicate of workspace.getLeavesOfType(viewType)) {
+		if (duplicate !== keep) duplicate.detach();
+	}
+}
 
 export class PdfNavigationView extends ItemView {
 	private stopWorkspaceListener: (() => void) | null = null;

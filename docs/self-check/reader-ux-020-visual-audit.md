@@ -69,3 +69,9 @@
 - main.ts:addIcon 注册两个 id,ribbon 从 book-open 换为 reading-desk-margin-day;css-change + body 类 MutationObserver 双通道同步日/夜版本。
 - 实机探针:浅色 anchorFill rgb(233,49,71)/描边 8,深色 rgb(251,70,76)/描边 7,主题翻转即时切换;4 倍放大截图 09-ribbon-icon-{light,dark}.png 经中性核验:页/边线/锚点/摘录线四语义齐全、三色分明、笔画清晰。
 - 单测 4 项(语义片段、8/7 补偿、id 映射、主题探测)随套件通过(46 文件/151 用例)。
+
+## 用户反馈修复:侧栏重复导航与设置页图标(追加)
+
+- 根因:反复 reload 期间 openPdfNavigation 找不到既有 leaf 时新建,旧 leaf 残留,左侧栏堆积多个「PDF 导航」空态面板(用户截图证实约 6 个)。修复:每次打开导航时 detach 除保留 leaf 外的全部同型 leaf(detachDuplicateNavigationLeaves);重载后实测 nav leaves=1,存量已清。
+- 「页边锚点」图标补进设置界面:标题行左置 22px 彩色图标(与 ribbon 同源,宿主主题双通道同步),10-settings-heading-icon.png 经中性核验:图标语义齐全、颜色正确、比例协调,无布局缺陷。
+- 命令直达与设置窗口陈旧 DOM 的注意事项已在本文件先前小节记录,本轮验证沿用了先关旧窗再开新的流程。

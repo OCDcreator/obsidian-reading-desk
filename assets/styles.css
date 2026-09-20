@@ -422,6 +422,9 @@
 .rd-import-export-panel__status.is-success { color: var(--text-success); }
 .rd-import-export-panel__status.is-error { color: var(--text-error); }
 .rd-import-export-panel__button { justify-self: start; }
+.rd-setting-heading-row { display: flex; align-items: center; gap: 10px; }
+.rd-setting-heading-icon { display: inline-flex; width: 22px; height: 22px; }
+.rd-setting-heading-icon svg { width: 22px; height: 22px; }
 .reading-desk-settings h2.rd-setting-heading { font-size: 20px !important; font-weight: 650; line-height: 1.25; }
 .reading-desk-settings .rd-setting-intro { font-size: 14px; line-height: 1.5; color: var(--rd-ink-muted); }
 
