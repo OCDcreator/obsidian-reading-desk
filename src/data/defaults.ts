@@ -13,6 +13,10 @@ export const DEFAULT_SETTINGS: ReadingDeskSettings = {
 		accessKeyId: '',
 		secretAccessKey: ''
 	},
+	viewer: {
+		scrollMode: 'continuous',
+		invertPdf: 'auto'
+	},
 	importedBookshelf: false
 };
 

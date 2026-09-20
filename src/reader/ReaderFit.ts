@@ -1,6 +1,6 @@
 import { scaleToFitHeight, scaleToFitWidth } from './PdfRenderer';
 
-export type ReaderFitMode = 'width' | 'height' | 'manual';
+export type ReaderFitMode = 'width' | 'height' | 'page' | 'manual';
 export interface ReaderBox { clientWidth: number; clientHeight: number; }
 export interface ReaderInsets { horizontal: number; vertical: number; }
 
@@ -14,17 +14,16 @@ export function fitInsets(stage: HTMLElement): ReaderInsets {
 
 /** Uses the bounded Reader body for height, never the document-sized PDF element. */
 export function availableFitExtent(mode: Exclude<ReaderFitMode, 'manual'>, stage: ReaderBox, body: ReaderBox, insets: ReaderInsets): number {
-	return mode === 'width'
-		? Math.max(0, stage.clientWidth - insets.horizontal)
-		: Math.max(0, body.clientHeight - insets.vertical);
+	if (mode === 'width' || mode === 'page') return Math.max(0, stage.clientWidth - insets.horizontal);
+	return Math.max(0, body.clientHeight - insets.vertical);
 }
 
 export function fitScale(mode: ReaderFitMode, currentScale: number, rendered: { width: number; height: number }, stage: ReaderBox, body: ReaderBox, insets: ReaderInsets): number {
 	if (mode === 'manual') return currentScale;
-	const available = availableFitExtent(mode, stage, body, insets);
-	return mode === 'width'
-		? scaleToFitWidth(currentScale, rendered.width, available)
-		: scaleToFitHeight(currentScale, rendered.height, available);
+	const byWidth = scaleToFitWidth(currentScale, rendered.width, availableFitExtent('width', stage, body, insets));
+	if (mode === 'width') return byWidth;
+	const byHeight = scaleToFitHeight(currentScale, rendered.height, availableFitExtent('height', stage, body, insets));
+	return mode === 'height' ? byHeight : Math.min(byWidth, byHeight);
 }
 
 export function observeReaderFit(body: HTMLElement, measure: () => number, onResize: () => void): () => void {

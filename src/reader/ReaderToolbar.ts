@@ -1,22 +1,40 @@
+import { Menu } from 'obsidian';
 import type { PdfHighlight, TargetType } from '../types/contracts';
 import { createReaderPalette } from './ReaderPalette';
-import { createReaderButton, createReaderPageControl } from './ReaderPageControl';
+import { createReaderButton, createReaderPageControl, createReaderZoomControl, type ReaderPageControl, type ReaderZoomControl } from './ReaderPageControl';
+import { INVERT_LABELS, type InvertSetting } from './ReaderViewerOptions';
+
+export type ReaderScrollMode = 'continuous' | 'single';
 
 interface ReaderToolbarOptions {
 	page: number;
 	pages: number;
+	scale: number;
 	selectedTarget: TargetType;
+	scrollMode: ReaderScrollMode;
+	invert: InvertSetting;
+	canBack: boolean;
+	canForward: boolean;
 	onTargetChange: (target: TargetType) => void;
 	onZoomOut: () => void;
 	onZoomIn: () => void;
+	onZoomSet: (scale: number) => void;
 	onFitWidth: () => void;
 	onFitHeight: () => void;
+	onFitPage: () => void;
+	onRotate: (delta: 90 | -90) => void;
+	onScrollMode: (mode: ReaderScrollMode) => void;
+	onInvert: (mode: InvertSetting) => void;
+	onBack: () => void;
+	onForward: () => void;
+	onSearch: () => void;
 	onToggleHighlights: () => void;
 	onCrop: () => void;
 	onToggleTargetPanel: () => void;
 	onColor: (color: PdfHighlight['color']) => void;
 	onGoToPage: (page: number) => Promise<void>;
 	onCopyPage: () => void;
+	onCopySelection: () => void;
 	onOpenNavigation: () => void;
 }
 
@@ -24,6 +42,10 @@ export interface ReaderToolbarControls {
 	drawerToggle: HTMLButtonElement;
 	targetPanelToggle: HTMLButtonElement;
 	copyPage: HTMLButtonElement;
+	copySelection: HTMLButtonElement;
+	pageControl: ReaderPageControl;
+	zoomControl: ReaderZoomControl;
+	updateHistory(canBack: boolean, canForward: boolean): void;
 }
 
 function group(parent: HTMLElement, name: string, label: string): HTMLDivElement {
@@ -56,14 +78,32 @@ export function createReaderToolbar(parent: HTMLElement, options: ReaderToolbarO
 	const drawerToggle = overflow(createReaderButton(annotationGroup, '高亮列表', options.onToggleHighlights, 'list'), 'tight');
 	const crop = overflow(createReaderButton(annotationGroup, '裁剪', options.onCrop, 'crop'), 'secondary');
 
+	const navigationGroup = group(parent, 'navigation', '定位');
+	const back = overflow(createReaderButton(navigationGroup, '返回上一位置', options.onBack, 'arrow-left'), 'secondary');
+	const forward = overflow(createReaderButton(navigationGroup, '前往下一位置', options.onForward, 'arrow-right'), 'secondary');
+	back.disabled = !options.canBack;
+	forward.disabled = !options.canForward;
+	createReaderButton(navigationGroup, '全文搜索', options.onSearch, 'search');
+
 	const fitGroup = group(parent, 'fit', '显示适配');
-	const zoom = overflow(createReaderButton(fitGroup, '缩放', () => showMenu(zoom, [['缩小', options.onZoomOut], ['放大', options.onZoomIn]]), 'zoom-in'), 'secondary');
 	createReaderButton(fitGroup, '适合宽度', options.onFitWidth, 'move-horizontal');
 	createReaderButton(fitGroup, '适合高度', options.onFitHeight, 'move-vertical');
+	const display = overflow(createReaderButton(fitGroup, '显示选项', () => showMenu(display, [
+		['适合整页', options.onFitPage],
+		['向右旋转 90°', () => options.onRotate(90)],
+		['向左旋转 90°', () => options.onRotate(-90)],
+		[options.scrollMode === 'continuous' ? '切换为单页模式' : '切换为连续滚动', () => options.onScrollMode(options.scrollMode === 'continuous' ? 'single' : 'continuous')],
+		...INVERT_LABELS.filter(([mode]) => mode !== options.invert).map(([mode, label]) => [label, () => options.onInvert(mode)] as [string, () => void])
+	]), 'sliders-horizontal'), 'tight');
 
 	const pageGroup = group(parent, 'page', '页码');
-	createReaderPageControl(pageGroup, { page: options.page, pages: options.pages, goTo: options.onGoToPage });
+	const pageControl = createReaderPageControl(pageGroup, { page: options.page, pages: options.pages, goTo: options.onGoToPage });
 	const copyPage = overflow(createReaderButton(pageGroup, '复制本页链接', options.onCopyPage, 'link'), 'secondary');
+	const copySelection = overflow(createReaderButton(pageGroup, '复制选中文本', options.onCopySelection, 'copy'), 'secondary');
+
+	const zoomGroup = group(parent, 'zoom', '缩放');
+	const zoomControl = createReaderZoomControl(zoomGroup, { scale: options.scale, setScale: options.onZoomSet, zoomOut: options.onZoomOut, zoomIn: options.onZoomIn });
+
 	createReaderPalette(group(parent, 'color', '颜色'), options.onColor);
 	const more = createReaderButton(parent, '更多工具', () => {
 		const isHidden = (button: HTMLButtonElement): boolean => getComputedStyle(button).display === 'none';
@@ -72,11 +112,18 @@ export function createReaderToolbar(parent: HTMLElement, options: ReaderToolbarO
 		if (isHidden(targetPanelToggle)) items.push(['摘录管理', options.onToggleTargetPanel]);
 		if (isHidden(drawerToggle)) items.push(['高亮列表', options.onToggleHighlights]);
 		if (isHidden(crop)) items.push(['裁剪', options.onCrop]);
-		if (isHidden(zoom)) items.push(['缩小', options.onZoomOut], ['放大', options.onZoomIn]);
+		if (isHidden(back)) items.push(['返回上一位置', options.onBack]);
+		if (isHidden(forward)) items.push(['前往下一位置', options.onForward]);
 		if (isHidden(copyPage)) items.push(['复制本页链接', options.onCopyPage]);
+		if (isHidden(copySelection)) items.push(['复制选中文本', options.onCopySelection]);
 		showMenu(more, items);
 	}, 'ellipsis');
 	more.addClass('rd-reader-toolbar__more');
-	return { drawerToggle, targetPanelToggle, copyPage };
+	return {
+		drawerToggle, targetPanelToggle, copyPage, copySelection, pageControl, zoomControl,
+		updateHistory(canBack: boolean, canForward: boolean): void {
+			back.disabled = !canBack;
+			forward.disabled = !canForward;
+		}
+	};
 }
-import { Menu } from 'obsidian';

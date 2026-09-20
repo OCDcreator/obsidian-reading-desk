@@ -1,4 +1,4 @@
-import { MarkdownView, Notice, Plugin, TFile, type TAbstractFile } from 'obsidian';
+import { MarkdownView, Notice, Plugin, TFile, type TAbstractFile, type WorkspaceLeaf } from 'obsidian';
 import { AnnotationStore } from './annotations/AnnotationStore';
 import { ReadingDeskRepository } from './data/ReadingDeskRepository';
 import { LibraryIndex, type LibraryFile } from './library/LibraryIndex';
@@ -10,9 +10,10 @@ import { ClipboardImageError, MarkdownImagePasteService } from './storage/Markdo
 import { ObjectStorageConfigurationError, ObjectStorageRequestError, ObjectStorageService } from './storage/ObjectStorageService';
 import { ReadingDeskSettingTab } from './settings/ReadingDeskSettingTab';
 import { TargetService } from './targets';
-import type { PreparedCropDrag } from './ui/crop/CropDragTransport';
-import type { NormalizedPdfRect, ObjectStorageSettings, PdfHighlight, TargetType } from './types/contracts';
+import type { ObjectStorageSettings, PdfHighlight, TargetType } from './types/contracts';
 import { ReaderView, READER_VIEW_TYPE } from './views/ReaderView';
+import { CropImageService } from './storage/CropImageService';
+import { ProgressFlusher } from './library/ProgressFlusher';
 import { PdfNavigationView, PDF_NAVIGATION_VIEW_TYPE } from './views/PdfNavigationView';
 import { ShelfItemView, SHELF_VIEW_TYPE } from './views/ShelfItemView';
 import { createHighlightLink, createPageLink, writeReadingDeskLink } from './reader/ReadingDeskLinks';
@@ -22,17 +23,16 @@ import { routeReadingDeskLink } from './reader/ReadingDeskLinkRouter';
 const LEGACY_DATA_PATHS = ['.obsidian/plugins/obsidian-bookshelf/data.json', '.obsidian/plugins/obsidian-bookshelf/metadata.json'];
 const LEGACY_METADATA_FOLDER = '.obsidian/plugins/bookshelf/metadata';
 const AI_CONTEXT_FOLDER = 'Reading Desk/AI Context';
-const CROP_FOLDER = 'Reading Desk/裁剪';
 
 type PluginRegistry = { enabledPlugins: Set<string>; getPlugin(id: string): unknown; };
-type PreparedCropInput = { pdfPath: string; page: number; rect: NormalizedPdfRect; target: 'canvas' | 'image'; image: Blob; previewUrl: string; };
 export default class ReadingDeskPlugin extends Plugin {
 	repository!: ReadingDeskRepository;
 	ai!: AiIntegrationService;
 	private annotations!: AnnotationStore;
 	private library!: LibraryIndex;
 	private targets!: TargetService;
-	private readonly preparedCrops = new Map<string, PreparedCropInput>();
+	private crops!: CropImageService;
+	private progressFlusher!: ProgressFlusher;
 
 	async onload(): Promise<void> {
 		this.repository = new ReadingDeskRepository({ load: () => this.loadData(), save: data => this.saveData(data) });
@@ -45,6 +45,14 @@ export default class ReadingDeskPlugin extends Plugin {
 		this.targets = new TargetService({
 			atomicTransform: (path, transform) => this.atomicTransform(path, transform)
 		});
+		this.crops = new CropImageService({ app: this.app, ensureFile: (path, content) => this.ensureFile(path, content), atomicTransform: (path, transform) => this.atomicTransform(path, transform), writeBinary: (path, value) => this.writeBinary(path, value) }, () => this.repository.readSettings().storage);
+		this.progressFlusher = new ProgressFlusher({ write: async ({ path, progress }) => {
+			const book = this.library.getByPath(path);
+			if (book) {
+				await this.library.updateProgress(book.id, progress);
+				await this.refreshShelves();
+			}
+		} });
 		this.ai = new AiIntegrationService(this.pluginRegistry(), { opencodian: plugin => this.createOpenCodianBridge(plugin) });
 		this.registerView(READER_VIEW_TYPE, leaf => new ReaderView(leaf, {
 			createPdfRenderer: () => this.createPdfRenderer(),
@@ -53,10 +61,15 @@ export default class ReadingDeskPlugin extends Plugin {
 			openFile: path => this.openReader(path),
 			createTarget: type => this.createTarget(type),
 			listTargets: type => this.listTargets(type),
-			prepareCropDrag: input => this.prepareCropDrag(input),
-			commitPreparedCrop: (token, targetPath) => this.commitPreparedCrop(token, targetPath),
-			discardPreparedCrop: token => this.discardPreparedCrop(token),
-			updateProgress: (path, progress) => this.updateProgress(path, progress),
+			prepareCropDrag: async input => {
+				const prepared = this.crops.prepare({ pdfPath: input.pdfPath, page: input.page, rect: input.rect, target: input.target, image: input.image });
+				return { dragToken: prepared.dragToken, previewUrl: prepared.previewUrl, mimeType: prepared.mimeType };
+			},
+			commitPreparedCrop: (token, targetPath) => this.crops.commit(token, targetPath),
+			discardPreparedCrop: token => this.crops.discard(token),
+			recordProgress: (path, progress) => this.progressFlusher.record(path, progress),
+			viewerSettings: () => this.repository.readSettings().viewer,
+			updateViewerSettings: async patch => { await this.repository.updateSettings({ viewer: { ...this.repository.readSettings().viewer, ...patch } }); },
 			showTarget: (path, objectId) => this.showTarget(path, objectId),
 			openTargetInSplit: (path, objectId) => this.openTargetInSplit(path, objectId),
 			readExcerptCards: path => this.readExcerptCards(path),
@@ -84,6 +97,8 @@ export default class ReadingDeskPlugin extends Plugin {
 		this.addCommand({ id: 'export-library-json', name: '导出 Reading Desk 书架为 JSON（写入仓库）', callback: () => this.exportToVault('json') });
 		this.addCommand({ id: 'ask-ai-about-selection', name: '将当前 Reading Desk 选区交给 AI', checkCallback: checking => this.askAiAboutCurrentSelection(checking) });
 		this.addCommand({ id: 'copy-current-reader-page-link', name: '复制 Reading Desk 当前页链接', checkCallback: checking => this.copyActiveReaderPage(checking) });
+		this.addCommand({ id: 'copy-selected-reader-text', name: '复制 Reading Desk 选中文本', checkCallback: checking => this.copyActiveReaderSelection(checking) });
+		this.addCommand({ id: 'undo-last-excerpt', name: '撤销 Reading Desk 上一条摘录', checkCallback: checking => this.undoActiveReaderExcerpt(checking) });
 		this.addSettingTab(new ReadingDeskSettingTab(this));
 		this.registerObsidianProtocolHandler('reading-desk-highlight', params => void this.openReaderHighlight(params));
 		this.registerEvent(this.app.vault.on('create', file => void this.onVaultCreateOrModify(file)));
@@ -95,8 +110,9 @@ export default class ReadingDeskPlugin extends Plugin {
 	}
 
 	onunload(): void {
-		for (const prepared of this.preparedCrops.values()) URL.revokeObjectURL(prepared.previewUrl);
-		this.preparedCrops.clear();
+		void this.progressFlusher.flush().catch(() => undefined);
+		this.progressFlusher.dispose();
+		this.crops.revokeAll();
 	}
 
 	notice(message: string): void { new Notice(message); }
@@ -139,11 +155,19 @@ export default class ReadingDeskPlugin extends Plugin {
 		await leaf.setViewState({ type: SHELF_VIEW_TYPE, state: {}, active: true });
 	}
 
-	private async openReader(path: string): Promise<void> {
-		const leaf = this.app.workspace.getLeaf(true);
+	private async openReader(path: string, page?: number): Promise<void> {
+		const leaf = this.readerLeafFor(path) ?? this.app.workspace.getLeaf(true);
 		await leaf.setViewState({ type: READER_VIEW_TYPE, state: {}, active: true });
 		const reader = leaf.view instanceof ReaderView ? leaf.view : null;
-		if (reader) { await reader.openPdf(path); await this.openPdfNavigation(false); }
+		if (reader) { await reader.openPdf(path, page ?? 1); await this.openPdfNavigation(false); }
+	}
+
+	/** Reuses the reader leaf already showing this PDF so links never stack duplicate tabs. */
+	private readerLeafFor(path: string): WorkspaceLeaf | null {
+		for (const leaf of this.app.workspace.getLeavesOfType(READER_VIEW_TYPE)) {
+			if (leaf.view.getState().pdfPath === path) return leaf;
+		}
+		return null;
 	}
 
 	private async openReaderHighlight(params: Record<string, string>): Promise<void> {
@@ -157,7 +181,7 @@ export default class ReadingDeskPlugin extends Plugin {
 	}
 
 	private async openLinkedReader(path: string, highlightId?: string, page?: number): Promise<void> {
-		const leaf = this.app.workspace.getLeaf(true);
+		const leaf = this.readerLeafFor(path) ?? this.app.workspace.getLeaf(true);
 		await leaf.setViewState({ type: READER_VIEW_TYPE, state: {}, active: true });
 		if (!(leaf.view instanceof ReaderView)) return;
 		if (highlightId) await leaf.view.openPdfAtHighlight(path, highlightId);
@@ -169,6 +193,18 @@ export default class ReadingDeskPlugin extends Plugin {
 		const reader = this.app.workspace.getActiveViewOfType(ReaderView);
 		if (checking) return canCopyReaderPage(reader);
 		if (reader && canCopyReaderPage(reader)) void executeCopyReaderPage(reader, message => this.notice(message));
+	}
+
+	private copyActiveReaderSelection(checking: boolean): boolean | void {
+		const reader = this.app.workspace.getActiveViewOfType(ReaderView);
+		if (checking) return reader?.canCopySelection() === true;
+		if (reader?.canCopySelection()) void reader.copySelectedText();
+	}
+
+	private undoActiveReaderExcerpt(checking: boolean): boolean | void {
+		const reader = this.app.workspace.getActiveViewOfType(ReaderView);
+		if (checking) return reader?.canUndoLastExcerpt() === true;
+		if (reader?.canUndoLastExcerpt()) void reader.undoLastExcerpt();
 	}
 
 	private async copyPageLink(path: string, page: number): Promise<void> {
@@ -190,13 +226,6 @@ export default class ReadingDeskPlugin extends Plugin {
 		}
 	}
 
-	private async updateProgress(path: string, progress: number): Promise<void> {
-		const book = this.library.getByPath(path);
-		if (book) {
-			await this.library.updateProgress(book.id, progress);
-			await this.refreshShelves();
-		}
-	}
 	private async openReaderFromActiveFile(): Promise<void> {
 		const active = this.app.workspace.getActiveFile();
 		const path = active?.extension.toLowerCase() === 'pdf' ? active.path : this.library.list().find(book => book.format === 'pdf')?.path;
@@ -245,70 +274,6 @@ export default class ReadingDeskPlugin extends Plugin {
 		const next = { ...this.repository.readExcerptCards()[highlightId], ...patch };
 		await this.targets.writeExcerpt(highlight.target, highlight, next);
 		await this.repository.commit(() => { this.repository.readExcerptCards()[highlightId] = next; });
-	}
-
-	private async prepareCropDrag(input: Omit<PreparedCropInput, 'previewUrl'>): Promise<PreparedCropDrag> {
-		const dragToken = `crop-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-		const previewUrl = URL.createObjectURL(input.image);
-		this.preparedCrops.set(dragToken, { ...input, previewUrl });
-		return { dragToken, previewUrl, mimeType: input.image.type || 'image/png' };
-	}
-
-	private async discardPreparedCrop(dragToken: string): Promise<void> {
-		const prepared = this.preparedCrops.get(dragToken);
-		if (!prepared) return;
-		this.preparedCrops.delete(dragToken);
-		URL.revokeObjectURL(prepared.previewUrl);
-	}
-
-	private async commitPreparedCrop(dragToken: string, targetPath?: string): Promise<void> {
-		const prepared = this.preparedCrops.get(dragToken);
-		if (!prepared) throw new Error('裁剪预览已失效，请重新框选。');
-		this.preparedCrops.delete(dragToken);
-		URL.revokeObjectURL(prepared.previewUrl);
-		await this.persistCrop(prepared, targetPath);
-	}
-
-	private async persistCrop(input: Omit<PreparedCropInput, 'previewUrl'>, targetPath?: string): Promise<void> {
-		const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-		const storage = this.repository.readSettings().storage;
-		const imagePath = `${CROP_FOLDER}/裁剪-${id}.png`;
-		let renderedImage: string;
-		if (storage.enabled) {
-			const uploaded = await new ObjectStorageService(storage).upload({ key: `crops/${id}.png`, body: input.image, contentType: 'image/png' });
-			renderedImage = `![PDF 裁剪](<${uploaded.url}>)`;
-		} else {
-			await this.writeBinary(imagePath, await input.image.arrayBuffer());
-			renderedImage = `![[${imagePath}]]`;
-		}
-		if (input.target === 'image') {
-			const notePath = `Reading Desk/裁剪-${id}.md`;
-			await this.ensureFile(notePath, `# PDF 裁剪\n\n${renderedImage}\n\n来源：${input.pdfPath} 第 ${input.page + 1} 页\n`);
-			await this.app.workspace.openLinkText(notePath, '', false);
-			this.notice('PDF 裁剪已保存为图片笔记。');
-			return;
-		}
-		const canvasPath = targetPath ?? `Reading Desk/裁剪-${id}.canvas`;
-		const cropNode = storage.enabled
-			? { id: `rd-crop-${id}`, type: 'text', text: `${renderedImage}\n\n来源：${input.pdfPath} 第 ${input.page + 1} 页`, x: 0, y: 0, width: 640, height: 420,
-				readingDesk: { schemaVersion: 1, kind: 'crop', pdfPath: input.pdfPath, page: input.page, rect: input.rect, remoteImage: renderedImage } }
-			: { id: `rd-crop-${id}`, type: 'file', file: imagePath, x: 0, y: 0, width: 640, height: 420,
-				readingDesk: { schemaVersion: 1, kind: 'crop', pdfPath: input.pdfPath, page: input.page, rect: input.rect } };
-		await this.appendCropNode(canvasPath, cropNode);
-		await this.app.workspace.openLinkText(canvasPath, '', false);
-		this.notice('PDF 裁剪已保存并加入 Canvas。');
-	}
-
-	private async appendCropNode(path: string, node: Record<string, unknown>): Promise<void> {
-		const initial = '{\n  "nodes": [],\n  "edges": []\n}\n';
-		const existing = this.app.vault.getAbstractFileByPath(path);
-		if (!(existing instanceof TFile)) await this.ensureFile(path, initial);
-		await this.atomicTransform(path, current => {
-			const parsed: unknown = JSON.parse(current);
-			if (!isCanvasDocument(parsed)) throw new Error('裁剪目标不是有效 Canvas 文件。');
-			parsed.nodes.push(node);
-			return `${JSON.stringify(parsed, null, 2)}\n`;
-		});
 	}
 
 	private async showTarget(path: string, objectId?: string): Promise<void> {
@@ -627,12 +592,6 @@ function targetMatches(file: TFile, type: TargetType): boolean {
 
 function isAlreadyExistingFolderError(error: unknown): boolean {
 	return error instanceof Error && /folder already exists|already exists/i.test(error.message);
-}
-
-function isCanvasDocument(value: unknown): value is { nodes: Record<string, unknown>[]; edges: unknown[] } {
-	return typeof value === 'object' && value !== null
-		&& Array.isArray((value as { nodes?: unknown }).nodes)
-		&& Array.isArray((value as { edges?: unknown }).edges);
 }
 
 function readingDeskHighlightId(element: { customData?: Record<string, unknown> }): string | undefined {

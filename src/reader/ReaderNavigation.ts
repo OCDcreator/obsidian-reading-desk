@@ -73,7 +73,11 @@ export class ReaderNavigation {
 	private readonly panelId = createId('rd-pdf-navigation-panel');
 	private readonly tabIds = { thumbnails: createId('rd-pdf-thumbnails-tab'), outline: createId('rd-pdf-outline-tab') };
 
-	constructor(private readonly pdf: PdfRenderer, private readonly pages: number, private readonly currentPage: () => number, private readonly goTo: (page: number) => Promise<void>, mode: ReaderNavigationMode = 'thumbnails') { this.mode = mode; }
+	constructor(private readonly pdf: PdfRenderer, private readonly pages: number, private readonly currentPage: () => number, private readonly goTo: (page: number) => Promise<void>, mode: ReaderNavigationMode = 'thumbnails', private readonly onModeChange?: (mode: ReaderNavigationMode) => void) { this.mode = mode; }
+	private switchMode(mode: ReaderNavigationMode): void {
+		this.mode = mode;
+		this.onModeChange?.(mode);
+	}
 	getMode(): ReaderNavigationMode { return this.mode; }
 
 	render(container: HTMLElement): void {
@@ -89,6 +93,18 @@ export class ReaderNavigation {
 		const panel = container.createDiv({ cls: 'rd-reader-navigation__panel', attr: { id: this.panelId, role: 'tabpanel', tabindex: '0', 'aria-labelledby': this.tabIds[this.mode] } });
 		if (this.mode === 'thumbnails') this.renderThumbnails(panel);
 		else this.renderOutline(panel);
+	}
+
+	/** Refreshes the current-page marker and scrolls it into view after page changes. */
+	revealPage(page: number): void {
+		if (!this.container) return;
+		const zeroBased = page - 1;
+		for (const button of Array.from(this.container.querySelectorAll<HTMLElement>('[data-nav-page]'))) {
+			const isCurrent = Number(button.dataset.navPage) === zeroBased;
+			const role = button.classList.contains('rd-reader-thumbnail') ? 'page' : 'location';
+			button.setAttribute('aria-current', isCurrent ? role : 'false');
+			if (isCurrent) button.scrollIntoView({ block: 'nearest' });
+		}
 	}
 
 	setOutline(entries: readonly PdfOutlineEntry[], state: OutlineLoadState, error = ''): void {
@@ -108,11 +124,11 @@ export class ReaderNavigation {
 		const selected = this.mode === mode;
 		const button = parent.createEl('button', { cls: 'rd-reader-navigation__tab', text: label, attr: { id: this.tabIds[mode], role: 'tab', 'aria-controls': this.panelId, 'aria-selected': String(selected), tabindex: selected ? '0' : '-1' } });
 		button.type = 'button';
-		button.addEventListener('click', () => { this.mode = mode; if (this.container) this.render(this.container); });
+		button.addEventListener('click', () => { this.switchMode(mode); if (this.container) this.render(this.container); });
 		button.addEventListener('keydown', event => {
 			if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
 			event.preventDefault();
-			this.mode = mode === 'outline' ? 'thumbnails' : 'outline';
+			this.switchMode(mode === 'outline' ? 'thumbnails' : 'outline');
 			if (this.container) { this.render(this.container); this.container.querySelector<HTMLButtonElement>('[role="tab"][aria-selected="true"]')?.focus(); }
 		});
 	}
@@ -129,7 +145,7 @@ export class ReaderNavigation {
 		if (Observer) this.thumbnailLifecycle = new ThumbnailObserverLifecycle((callback, root) => new Observer(callback, { root, rootMargin: '160px 0px' }));
 		for (let page = 1; page <= this.pages; page += 1) {
 			const item = list.createEl('li');
-			const button = item.createEl('button', { cls: 'rd-reader-thumbnail', attr: { 'aria-label': `跳到第 ${page} 页`, 'aria-current': page === this.currentPage() ? 'page' : 'false' } });
+			const button = item.createEl('button', { cls: 'rd-reader-thumbnail', attr: { 'aria-label': `跳到第 ${page} 页`, 'aria-current': page === this.currentPage() ? 'page' : 'false', 'data-nav-page': String(page - 1) } });
 			button.type = 'button';
 			const canvas = button.createEl('canvas', { attr: { 'aria-hidden': 'true', 'data-page': String(page) } });
 			button.createEl('span', { text: `第 ${page} 页` });
@@ -152,7 +168,7 @@ export class ReaderNavigation {
 		for (const node of nodes) {
 			const item = list.createEl('li');
 			const active = node.path.join('\u0000') === activePath.join('\u0000');
-			const button = item.createEl('button', { cls: 'rd-reader-outline__item', attr: { 'aria-current': active ? 'location' : 'false', title: `${node.title}，第 ${node.page + 1} 页` } });
+			const button = item.createEl('button', { cls: 'rd-reader-outline__item', attr: { 'aria-current': active ? 'location' : 'false', title: `${node.title}，第 ${node.page + 1} 页`, 'data-nav-page': String(node.page) } });
 			button.type = 'button';
 			button.createEl('span', { text: node.title });
 			button.createEl('span', { cls: 'rd-reader-outline__page', text: `p.${node.page + 1}` });

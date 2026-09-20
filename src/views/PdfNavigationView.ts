@@ -44,7 +44,15 @@ export class PdfNavigationView extends ItemView {
 			return;
 		}
 		this.activeReader = reader;
+		this.restorePreferredMode(reader);
 		reader.attachNavigation(this.navigationRoot);
+	}
+	/** Restores the last-used thumbnail/outline tab across sessions. */
+	private restorePreferredMode(reader: ReaderView): void {
+		try {
+			const saved = window.localStorage.getItem('reading-desk-nav-mode');
+			if (saved === 'thumbnails' || saved === 'outline') reader.setPreferredNavigationMode(saved);
+		} catch { /* Storage can be unavailable in private windows. */ }
 	}
 	refresh(): void { this.render(); }
 	private isReader(view: unknown): view is ReaderView { return typeof (view as ReaderView | undefined)?.attachNavigation === 'function'; }

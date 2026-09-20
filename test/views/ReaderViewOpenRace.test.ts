@@ -4,6 +4,7 @@ import { ReaderSessionState } from '../../src/reader/ReaderSessionState';
 import { ReaderOutlineLoader } from '../../src/reader/ReaderOutlineLoader';
 import { ReaderOpenRequests } from '../../src/reader/ReaderOpenRequests';
 import { ReaderViewLifecycle } from '../../src/reader/ReaderViewLifecycle';
+import { ReaderHistory } from '../../src/reader/ReaderHistory';
 import type { PdfOutlineEntry, PdfRenderer } from '../../src/reader/PdfRenderer';
 
 function deferred<T>(): { promise: Promise<T>; resolve(value: T): void } {
@@ -45,6 +46,9 @@ describe('ReaderView.openPdf document ownership', () => {
 			lifecycle: new ReaderViewLifecycle(),
 			outlineLoader: new ReaderOutlineLoader(),
 			outlineSyncedTargets: new Set<string>(),
+			history: new ReaderHistory(),
+			tools: { resetForDocument: () => undefined } as never,
+			scannedNoticeShown: false,
 			readerNavigation: navigation,
 			sourceMissing: false,
 			pages: 0,
@@ -93,6 +97,9 @@ describe('ReaderView.openPdf document ownership', () => {
 			openRequests: new ReaderOpenRequests(),
 			outlineLoader: new ReaderOutlineLoader(),
 			outlineSyncedTargets: new Set<string>(),
+			history: new ReaderHistory(),
+			tools: { resetForDocument: () => undefined } as never,
+			scannedNoticeShown: false,
 			readerNavigation: { setOutline: vi.fn() },
 			sourceMissing: false,
 			pages: 0,

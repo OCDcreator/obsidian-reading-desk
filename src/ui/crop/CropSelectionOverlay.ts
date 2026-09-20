@@ -15,7 +15,7 @@ import {
 	writeCropDragPayload
 } from './CropDragTransport';
 
-export type CropTargetKind = 'canvas' | 'image';
+export type CropTargetKind = 'canvas' | 'image' | 'markdown';
 export type CropOverlayState = 'ready' | 'loading' | 'disabled' | 'error';
 
 export interface CropSelectionPayload {
@@ -164,7 +164,7 @@ export class CropSelectionOverlay {
 		input.className = 'rd-button rd-crop-target-select';
 		input.setAttribute('aria-label', '裁剪目标类型');
 		input.setAttribute('data-crop-control', 'true');
-		input.append(option('canvas', 'Canvas 图片卡片'), option('image', '图片目标'));
+		input.append(option('canvas', 'Canvas 图片卡片'), option('image', '图片目标'), option('markdown', 'Markdown 文档'));
 		input.value = this.options.defaultTarget ?? 'canvas';
 		input.addEventListener('change', () => {
 			this.discardPreparedCrop();

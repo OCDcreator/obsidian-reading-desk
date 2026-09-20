@@ -455,3 +455,47 @@
 	.rd-reader .rd-toolbar-palette { display: none; }
 	.rd-reader .rd-reader-toolbar .rd-toolbar-palette__more { display: inline-grid; }
 }
+
+
+/* Continuous page deck: a centered column of real page hosts inside the stage. */
+.rd-pdf-stage--deck { display: block; }
+.rd-pdf-deck { display: flex; flex-direction: column; align-items: center; gap: 16px; width: fit-content; min-width: 100%; margin: 0 auto; }
+.rd-pdf-page-host--placeholder { box-shadow: none; background: color-mix(in oklch, var(--rd-surface) 92%, var(--rd-ink) 8%); }
+.rd-pdf-page-host.is-rendering { opacity: 0.85; }
+.rd-reader[data-rd-size='narrow'] .rd-pdf-deck { gap: 12px; }
+
+/* Night inversion follows the viewer setting; it recolors the paper only,
+ * keeping text-layer geometry and highlights untouched. */
+.rd-reader[data-rd-pdf-invert='on'] .rd-pdf-canvas { filter: invert(0.92) hue-rotate(180deg); }
+
+/* Zoom control mirrors the page control's compact numeric chrome. */
+.rd-zoom-control { display: flex; align-items: center; gap: 4px; min-width: 0; white-space: nowrap; }
+.rd-reader-toolbar .rd-zoom-control input { width: 46px; min-width: 46px; height: 30px; min-height: 30px; padding: 2px; font-variant-numeric: tabular-nums; text-align: center; }
+.rd-zoom-control__suffix { color: var(--rd-ink-muted); }
+
+/* Docked full-text search panel under the toolbar. */
+.rd-search-panel {
+	display: grid; gap: 8px; padding: 8px 16px;
+	border-bottom: 1px solid var(--rd-line); background: var(--rd-surface-raised);
+}
+.rd-search-panel.is-hidden { display: none; }
+.rd-search-panel__bar { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.rd-search-panel__bar input[type='search'] {
+	flex: 1 1 240px; min-width: 120px; height: 30px; min-height: 30px; padding: 4px 8px;
+	border: 1px solid var(--rd-line); border-radius: 5px; background: var(--rd-surface); color: var(--rd-ink); font: inherit;
+}
+.rd-search-panel__bar input[type='search']:focus-visible { outline: 2px solid var(--rd-accent); outline-offset: 2px; }
+.rd-search-panel__status { color: var(--rd-ink-muted); font-size: 12px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.rd-search-panel__list { display: grid; gap: 4px; max-height: 220px; overflow: auto; }
+.rd-search-panel__hit {
+	display: flex; align-items: baseline; gap: 8px; min-height: 30px; padding: 4px 8px;
+	border: 1px solid var(--rd-line); border-radius: 5px; background: var(--rd-surface); color: var(--rd-ink);
+	font: inherit; text-align: left; cursor: pointer;
+}
+.rd-search-panel__hit:hover { border-color: var(--rd-accent); }
+.rd-search-panel__hit.is-active { border-color: var(--rd-accent); background: color-mix(in oklch, var(--rd-surface) 90%, var(--rd-accent)); }
+.rd-search-panel__hit:focus-visible { outline: 2px solid var(--rd-accent); outline-offset: 2px; }
+.rd-search-panel__hit-page { color: var(--rd-ink-muted); font-size: 12px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.rd-search-panel__hit-snippet { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rd-search-panel__more { color: var(--rd-ink-muted); font-size: 12px; }
+.rd-pdf-text-layer .rd-search-hit { box-shadow: 0 0 0 2px var(--rd-accent); border-radius: 2px; }

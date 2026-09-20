@@ -92,9 +92,17 @@ export interface ObjectStorageSettings {
 	secretAccessKey: string;
 }
 
+export interface ViewerSettings {
+	/** Continuous scroll renders a virtualized page deck; single keeps one page per view. */
+	scrollMode: 'continuous' | 'single';
+	/** 'auto' inverts the PDF paper only while the host runs a dark theme. */
+	invertPdf: 'auto' | 'on' | 'off';
+}
+
 export interface ReadingDeskSettings {
 	libraryFolders: string[];
 	storage: ObjectStorageSettings;
+	viewer: ViewerSettings;
 	importedBookshelf: boolean;
 }
 
