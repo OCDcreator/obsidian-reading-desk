@@ -49,6 +49,8 @@ rounded:
   control: "5px"
   "control-lg": "6px"
   card: "8px"
+  "thumbnail-halo": "4px"
+  "thumbnail-badge": "3px"
   circular: "50%"
   pill: "999px"
 spacing:
@@ -167,7 +169,7 @@ Shelf 和 Reader 的外层各保留 `24px` 工作区 padding。Reader 的 sticky
 
 Shelf 的主书库采用 `repeat(auto-fill, minmax(184px, 1fr))`，卡片不是营销式的固定等高网格：封面容器保持 `0.7` aspect ratio，继续阅读轨单卡限定为 `clamp(152px, 22vw, 196px)` / 最大 `196px`，其余高度由真实元数据、标题与进度决定。表格是数据密集布局，不套用正文行宽规则。
 
-Reader leaf 始终只承载 PDF 工作面，真实 PDF 导航作为独立原生 Obsidian 左侧栏 leaf 呈现，不随 Reader 变窄而挤占中间阅读空间。导航 leaf 在真实页面缩略图与 PDF outline 层级之间切换，并跟随最近激活的 Reader；目录含当前章节、页码、加载、空和错误态。缩略图与目录复刻宿主原生 PDF 侧栏的视觉契约：纸面 `112px` 宽、宿主 `--pdf-thumbnail-shadow`、`8px` 透明光晕边框在 hover/当前页转为 `--background-modifier-hover`，页码以 `data-page-label` 徽章叠在右下角，未渲染纸面用 1px 虚线占位；目录按范围匹配持续标出当前所在章节（宿主 `--nav-item-*-active` 配色）并随翻页保持可见，而不是只在章节起始页亮起。Reader 工具栏保留“PDF 导航”入口，用户折叠宿主左侧栏时导航按宿主行为隐藏，重新打开后仍保留两种页签。PDF 工作面保持 `min-width: 0` 与自身 overflow，不依赖全窗口宽度。
+Reader leaf 始终只承载 PDF 工作面，真实 PDF 导航作为独立原生 Obsidian 左侧栏 leaf 呈现，不随 Reader 变窄而挤占中间阅读空间。导航 leaf 在真实页面缩略图与 PDF outline 层级之间切换，并跟随最近激活的 Reader；目录含当前章节、页码、加载、空和错误态。缩略图与目录复刻宿主原生 PDF 侧栏的视觉契约：纸面 `148px` 宽、宿主 `--pdf-thumbnail-shadow`、`8px` 透明光晕边框在 hover/当前页转为 `--background-modifier-hover`，页码以 `data-page-label` 徽章叠在右下角，未渲染纸面用 1px 虚线占位；导航按钮必须在 host 作用域下显式清除主题 button 底色/边框，否则光晕会透出主题按钮色。目录按范围匹配持续标出当前所在章节（宿主 `--nav-item-*-active` 配色）并随翻页保持可见，而不是只在章节起始页亮起。Reader 工具栏保留“PDF 导航”入口，用户折叠宿主左侧栏时导航按宿主行为隐藏，重新打开后仍保留两种页签。PDF 工作面保持 `min-width: 0` 与自身 overflow，不依赖全窗口宽度。
 
 真实 Canvas、Excalidraw 与 Markdown 由宿主相邻 leaf 呈现。创建 Canvas 摘录后 Reader 立即调用宿主打开相邻 Canvas 并聚焦新 node；Reader 内“摘录管理”只是按需打开的辅助 overlay，不占第三列、不模拟 Canvas。高亮抽屉和评论浮层同样是有边界的 overlay。工具栏在窄 leaf 中换行，overlay 偏移读取工具栏实测高度。PDF 页宿主保留自身 `overflow: auto`，避免过宽页面溅出 Reader。
 

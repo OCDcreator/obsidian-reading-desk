@@ -96,7 +96,7 @@ export class ReaderNavigation {
 	}
 
 	/** Mirrors the host PDF sidebar's thumbnail paper width so the leaf reads as native chrome. */
-	private static readonly THUMBNAIL_WIDTH = 112;
+	private static readonly THUMBNAIL_WIDTH = 148;
 
 	/** Refreshes the page marker and the outline's current-section marker after page changes. */
 	revealPage(page: number): void {
@@ -158,6 +158,8 @@ export class ReaderNavigation {
 			if (this.thumbnailLifecycle) this.thumbnailLifecycle.observe(canvas, page, panel, render);
 			else render(canvas, page);
 		}
+		const current = list.querySelector('.rd-reader-thumbnail[aria-current="page"]');
+		current?.scrollIntoView({ block: 'nearest' });
 	}
 
 	private renderOutline(panel: HTMLElement): void {

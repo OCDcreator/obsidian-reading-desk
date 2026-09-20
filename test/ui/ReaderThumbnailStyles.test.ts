@@ -21,10 +21,18 @@ describe('Reader thumbnail layout styles', () => {
 
 	it('keeps thumbnail papers at the native width with the host thumbnail shadow', () => {
 		const rule = styles.match(/\.reading-desk-pdf-navigation-host \.rd-reader-thumbnail canvas\s*\{([^}]*)\}/)?.[1] ?? '';
-		expect(rule).toContain('width: 112px');
+		expect(rule).toContain('width: 148px');
 		expect(rule).toContain('max-width: 100%');
 		expect(rule).toContain('height: auto');
 		expect(rule).toContain('box-shadow: var(--pdf-thumbnail-shadow');
+	});
+
+	it('wraps papers in centered rows by shrink-wrapping list items', () => {
+		const list = styles.match(/\.rd-reader-thumbnails\s*\{([^}]*)\}/)?.[1] ?? '';
+		const item = styles.match(/\.rd-reader-thumbnails > li\s*\{([^}]*)\}/)?.[1] ?? '';
+		expect(list).toContain('flex-wrap: wrap');
+		expect(list).toContain('justify-content: center');
+		expect(item).toContain('width: fit-content');
 	});
 
 	it('flags pending papers with a dashed placeholder until rendered', () => {
@@ -35,6 +43,18 @@ describe('Reader thumbnail layout styles', () => {
 	it('highlights the current page through the host halo instead of accent chrome', () => {
 		const rule = styles.match(/\.reading-desk-pdf-navigation-host \.rd-reader-thumbnail\[aria-current='page'\]\s*\{([^}]*)\}/)?.[1] ?? '';
 		expect(rule).toContain('border-color: var(--background-modifier-hover');
+	});
+
+	it('neutralizes theme button chrome on host navigation buttons', () => {
+		const thumb = styles.match(/\.reading-desk-pdf-navigation-host \.rd-reader-thumbnail\s*\{([^}]*)\}/)?.[1] ?? '';
+		const tab = styles.match(/\.reading-desk-pdf-navigation-host \.rd-reader-navigation__tab:not\(\[aria-selected='true'\]\)\s*\{([^}]*)\}/)?.[1] ?? '';
+		const outline = styles.match(/\.reading-desk-pdf-navigation-host \.rd-reader-outline__item\s*\{([^}]*)\}/)?.[1] ?? '';
+		expect(thumb).toContain('background: transparent');
+		expect(thumb).toContain('border-color: transparent');
+		expect(thumb).toContain('box-shadow: none');
+		expect(tab).toContain('background: transparent');
+		expect(tab).toContain('border-color: transparent');
+		expect(outline).toContain('box-shadow: none');
 	});
 
 	it('marks the current outline section with the host nav-item active tokens', () => {
