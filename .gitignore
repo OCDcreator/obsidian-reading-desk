@@ -8,3 +8,4 @@ lib/
 .omo/
 .opencode/
 .agents/
+.DS_Store
