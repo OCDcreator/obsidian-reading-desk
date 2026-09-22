@@ -1,4 +1,0 @@
-MATCH    main.js  937c71c95ab0692f8671ca089d5f172cf468a469840343c6dec6de7c59b2bc82
-MATCH    manifest.json  236da1b1d1185193ac1e1bf462bed3c31da0f4f85ee06cdf924b2bf4a690a374
-MATCH    styles.css  40bd7af96197adfe3c828395a1e96da8ce515a4e1795ae36347fdaa0e52ae946
-MATCH    pdf.worker.mjs  7c237f83fa56bce645d8af51d183c9c56ba7b2d2928ff42754dc7020bea36323

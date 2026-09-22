@@ -1,4 +1,0 @@
-MATCH main.js
-MATCH manifest.json
-MATCH styles.css
-MATCH pdf.worker.mjs

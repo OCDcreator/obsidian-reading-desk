@@ -1,5 +1,0 @@
-23:04:08 Uncaught NotFoundError: Failed to execute 'setPointerCapture' on 'Element': No active pointer with the given id is found.
-NotFoundError: Failed to execute 'setPointerCapture' on 'Element': No active pointer with the given id is found.
-    at CropSelectionOverlay.beginSelection (plugin:obsidian-reading-desk:27799:15)
-    at HTMLDivElement.eval (plugin:obsidian-reading-desk:27783:63)
-    at eval (eval at <anonymous> (app://obsidian.md/app.js:1:1601405), <anonymous>:1:469)

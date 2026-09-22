@@ -1,4 +1,0 @@
-00:33:46 Received CLI command {"0":"dev:console","1":"clear"}
-00:33:46 Received CLI command {"0":"dev:errors","1":"clear"}
-00:33:46 Received CLI command {"0":"plugin:reload","1":"id=obsidian-reading-desk"}
-00:33:46 [INFO] [Reading Desk] Margin v0.1.1 build 0.1.1+2026-09-18T16:32:50.656Z

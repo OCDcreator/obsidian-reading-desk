@@ -1,4 +1,0 @@
-23:12:46 Received CLI command {"0":"eval","1":"code=const input=document.querySelector('.rd-shelf…TabById('obsidian-reading-desk'); 'settings-open'"}
-23:17:26 Received CLI command {"0":"eval","1":"code=JSON.stringify(app.plugins.plugins['obsidian-reading-desk'].repository.readBooks())"}
-23:23:37 Received CLI command {"0":"plugin:reload","1":"id=obsidian-reading-desk"}
-23:23:37 [INFO] [Reading Desk] Margin v0.1.0 build 0.1.0+2026-09-18T15:23:18.277Z
