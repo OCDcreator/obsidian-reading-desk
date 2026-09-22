@@ -1,0 +1,649 @@
+<!doctype html>
+<html lang="zh-CN" class="theme-dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Reading Desk 书架原型</title>
+  <!--
+    THROWAWAY UI PROTOTYPE — not production code.
+    Question: three structural variants of the Reading Desk bookshelf,
+    switchable with ?variant=A|B|C. Variant A is the recommended capture.
+  -->
+  <style>
+    :root {
+      color-scheme: dark;
+      --surface: #191b22;
+      --surface-raised: #20232c;
+      --surface-elevated: #272b36;
+      --surface-paper: #ece9df;
+      --ink: #e8e9ed;
+      --ink-soft: #bdc1ca;
+      --ink-muted: #8e949f;
+      --line: #343946;
+      --line-strong: #474e5e;
+      --accent: #64bde8;
+      --accent-soft: #213a49;
+      --focus: #79cfff;
+      --danger: #ed7d7d;
+      --shadow: rgb(0 0 0 / 26%);
+      --tight: 8px;
+      --panel: 16px;
+      --workspace: 24px;
+      --control-radius: 5px;
+      --font-ui: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body { height: 100%; }
+
+    body {
+      margin: 0;
+      min-width: 760px;
+      background: #14161c;
+      color: var(--ink);
+      font-family: var(--font-ui);
+      font-size: 14px;
+      line-height: 1.5;
+      overflow: hidden;
+    }
+
+    button, input { font: inherit; }
+    button { color: inherit; }
+
+    button:focus-visible, input:focus-visible, [tabindex]:focus-visible {
+      outline: 2px solid var(--focus);
+      outline-offset: 2px;
+    }
+
+    ::selection { background: color-mix(in srgb, var(--accent) 36%, transparent); }
+
+    .app-shell {
+      height: 100vh;
+      display: grid;
+      grid-template-columns: 52px minmax(0, 1fr);
+      grid-template-rows: 44px minmax(0, 1fr);
+      background: var(--surface);
+    }
+
+    .app-topbar {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: 52px minmax(0, 1fr) auto;
+      align-items: center;
+      height: 44px;
+      border-bottom: 1px solid var(--line);
+      background: #171920;
+      color: var(--ink-soft);
+      user-select: none;
+    }
+
+    .window-mark {
+      display: grid;
+      place-items: center;
+      height: 100%;
+      border-right: 1px solid var(--line);
+    }
+
+    .window-mark svg { width: 18px; height: 18px; }
+
+    .tabs {
+      height: 100%;
+      display: flex;
+      align-items: stretch;
+      padding-left: 8px;
+      overflow: hidden;
+    }
+
+    .tab {
+      min-width: 190px;
+      max-width: 260px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-inline: 1px solid var(--line);
+      background: var(--surface-raised);
+      color: var(--ink);
+    }
+
+    .tab svg { width: 16px; height: 16px; color: var(--accent); }
+    .tab span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .topbar-actions { display: flex; gap: 14px; padding: 0 18px; color: var(--ink-muted); }
+
+    .nav-rail {
+      grid-row: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 12px 8px;
+      border-right: 1px solid var(--line);
+      background: #171920;
+    }
+
+    .rail-button {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border: 1px solid transparent;
+      border-radius: var(--control-radius);
+      background: transparent;
+      color: var(--ink-muted);
+    }
+
+    .rail-button svg { width: 18px; height: 18px; }
+    .rail-button.is-active { color: var(--ink); background: var(--surface-elevated); border-color: var(--line); }
+    .rail-spacer { flex: 1; }
+
+    .workspace {
+      grid-column: 2;
+      grid-row: 2;
+      min-width: 0;
+      overflow: auto;
+      scrollbar-color: var(--line-strong) transparent;
+      scrollbar-width: thin;
+      background: var(--surface);
+    }
+
+    .shelf {
+      width: min(100%, 1368px);
+      min-height: 100%;
+      margin: 0 auto;
+      padding: 24px 24px 72px;
+    }
+
+    .shelf-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 24px;
+      margin-bottom: 16px;
+    }
+
+    .title-wrap { min-width: 0; }
+    .title-wrap h1 { margin: 0; font-size: 25px; line-height: 1.25; font-weight: 650; letter-spacing: -0.02em; }
+    .title-wrap p { margin: 4px 0 0; color: var(--ink-muted); max-width: 68ch; }
+    .actions, .toolbar, .view-switch, .chips, .section-heading, .meta-line { display: flex; align-items: center; }
+    .actions, .view-switch, .chips { gap: 8px; }
+
+    .button, .icon-button, .chip, .view-button {
+      min-height: 30px;
+      border: 1px solid var(--line-strong);
+      border-radius: var(--control-radius);
+      background: var(--surface-raised);
+      color: var(--ink);
+      cursor: pointer;
+    }
+
+    .button { display: inline-flex; align-items: center; gap: 7px; padding: 4px 10px; }
+    .button svg, .icon-button svg { width: 16px; height: 16px; }
+    .button.primary { border-color: var(--accent); background: var(--accent-soft); }
+    .icon-button { width: 30px; display: grid; place-items: center; padding: 0; }
+    .button:hover, .icon-button:hover, .chip:hover, .view-button:hover { border-color: var(--accent); }
+
+    .toolbar {
+      justify-content: space-between;
+      gap: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .search {
+      position: relative;
+      width: min(440px, 50vw);
+    }
+
+    .search svg {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      width: 16px;
+      height: 16px;
+      color: var(--ink-muted);
+      transform: translateY(-50%);
+      pointer-events: none;
+    }
+
+    .search input {
+      width: 100%;
+      height: 32px;
+      padding: 5px 10px 5px 34px;
+      border: 1px solid var(--line-strong);
+      border-radius: var(--control-radius);
+      background: #171920;
+      color: var(--ink);
+    }
+
+    .search input::placeholder { color: var(--ink-muted); opacity: 1; }
+
+    .view-switch { padding: 2px; border: 1px solid var(--line); border-radius: var(--control-radius); background: #171920; }
+    .view-button { min-width: 62px; padding: 3px 10px; border-color: transparent; background: transparent; color: var(--ink-muted); }
+    .view-button.is-selected { border-color: var(--line-strong); background: var(--surface-elevated); color: var(--ink); }
+
+    .section { margin-top: 24px; }
+    .section-heading { justify-content: space-between; gap: 16px; margin-bottom: 12px; }
+    .section-title { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+    .section-title h2 { margin: 0; font-size: 20px; line-height: 1.25; font-weight: 620; letter-spacing: -0.015em; }
+    .section-title span { color: var(--ink-muted); font-size: 12px; }
+    .section-link { border: 0; background: transparent; color: var(--accent); padding: 2px 0; cursor: pointer; }
+
+    .continue-rail {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .continue-card {
+      display: grid;
+      grid-template-columns: 88px minmax(0, 1fr);
+      min-width: 0;
+      border: 1px solid var(--line);
+      background: var(--surface-raised);
+      cursor: pointer;
+    }
+
+    .continue-cover { min-height: 118px; }
+    .continue-copy { min-width: 0; display: flex; flex-direction: column; padding: 12px; }
+    .continue-copy h3, .book-copy h3 { margin: 0; font-size: 16px; line-height: 1.3; font-weight: 580; }
+    .continue-copy p { margin: 5px 0 0; color: var(--ink-muted); font-size: 12px; }
+    .continue-progress { margin-top: auto; }
+
+    .chips { flex-wrap: wrap; }
+    .chip { padding: 4px 10px; color: var(--ink-soft); }
+    .chip.is-selected { border-color: var(--accent); outline: 1px solid var(--accent); outline-offset: 1px; color: var(--ink); background: var(--surface-raised); }
+
+    .book-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .book-card {
+      min-width: 0;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      border: 1px solid var(--line);
+      background: var(--surface-raised);
+      cursor: pointer;
+    }
+
+    .book-card:hover { border-color: var(--line-strong); }
+    .book-card.is-focused { border-color: var(--accent); outline: 2px solid var(--accent); outline-offset: 2px; }
+    .book-copy { min-width: 0; display: grid; gap: 7px; padding: 12px; }
+    .book-copy h3 { min-height: 2.6em; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+    .book-author { color: var(--ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .meta-line { gap: 8px; color: var(--ink-muted); font-size: 12px; }
+    .meta-line .dot { width: 2px; height: 2px; border-radius: 50%; background: currentColor; }
+    .progress-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; }
+    .progress-track { height: 3px; overflow: hidden; background: #3a404e; }
+    .progress-fill { display: block; height: 100%; width: var(--progress); background: var(--accent); }
+    .progress-value { min-width: 28px; color: var(--ink-muted); font-variant-numeric: tabular-nums; font-size: 12px; text-align: right; }
+    .category-mark { position: absolute; left: 10px; top: 10px; height: 21px; padding: 1px 7px; border: 1px solid rgb(255 255 255 / 34%); border-radius: 999px; background: rgb(18 21 27 / 82%); color: #fff; font-size: 11px; }
+
+    .cover {
+      position: relative;
+      isolation: isolate;
+      overflow: hidden;
+      aspect-ratio: .7;
+      padding: 18px;
+      background: var(--cover-bg, #d9d7cf);
+      color: var(--cover-ink, #17191f);
+      box-shadow: 0 8px 22px var(--shadow);
+    }
+
+    .cover::before, .cover::after { content: ""; position: absolute; z-index: -1; }
+    .cover::before { inset: 12px; border: 1px solid currentColor; opacity: .34; }
+    .cover::after { left: 18px; right: 18px; bottom: 42px; height: 1px; background: currentColor; opacity: .38; }
+    .cover-kicker { font-size: 10px; font-weight: 650; letter-spacing: .12em; text-transform: uppercase; opacity: .72; }
+    .cover-title { display: block; margin-top: 30%; font-size: clamp(19px, 2vw, 30px); line-height: 1.04; font-weight: 720; letter-spacing: -0.05em; }
+    .cover-subtitle { display: block; margin-top: 8px; max-width: 18ch; font-size: 11px; line-height: 1.35; opacity: .76; }
+    .cover-author { position: absolute; left: 18px; bottom: 18px; font-size: 10px; font-weight: 600; letter-spacing: .04em; }
+    .continue-cover.cover { aspect-ratio: auto; padding: 12px; box-shadow: none; }
+    .continue-cover .cover-title { margin-top: 22px; font-size: 18px; }
+    .continue-cover .cover-kicker, .continue-cover .cover-subtitle { display: none; }
+    .continue-cover .cover-author { left: 12px; bottom: 12px; }
+
+    .cover--01 { --cover-bg: #d8ddd6; --cover-ink: #20382f; }
+    .cover--02 { --cover-bg: #d4c7b2; --cover-ink: #4e2b25; }
+    .cover--03 { --cover-bg: #1f3440; --cover-ink: #e8d7b5; }
+    .cover--04 { --cover-bg: #ebe7dd; --cover-ink: #26394d; }
+    .cover--05 { --cover-bg: #8e3d35; --cover-ink: #f1e9d9; }
+    .cover--06 { --cover-bg: #b5c0bf; --cover-ink: #253237; }
+    .cover--07 { --cover-bg: #3b3150; --cover-ink: #f0dfc1; }
+    .cover--08 { --cover-bg: #d7c57a; --cover-ink: #28302f; }
+    .cover--09 { --cover-bg: #25342f; --cover-ink: #d8ddca; }
+    .cover--10 { --cover-bg: #bdc6d5; --cover-ink: #253148; }
+
+    /* Variant B: category rail and reading queue */
+    .variant-b {
+      display: grid;
+      grid-template-columns: 224px minmax(0, 1fr);
+      gap: 24px;
+      align-items: start;
+    }
+
+    .category-sidebar { position: sticky; top: 0; display: grid; gap: 20px; }
+    .category-sidebar h1 { margin: 0; font-size: 25px; }
+    .category-sidebar p { margin: 4px 0 0; color: var(--ink-muted); font-size: 12px; }
+    .category-list { list-style: none; margin: 0; padding: 0; border-block: 1px solid var(--line); }
+    .category-list li { border-bottom: 1px solid var(--line); }
+    .category-list li:last-child { border-bottom: 0; }
+    .category-list button { width: 100%; display: flex; justify-content: space-between; gap: 12px; padding: 10px 8px; border: 0; background: transparent; color: var(--ink-soft); text-align: left; cursor: pointer; }
+    .category-list button.is-selected { color: var(--ink); background: var(--surface-raised); box-shadow: inset 2px 0 var(--accent); }
+    .category-count { color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+    .variant-b-main { min-width: 0; }
+    .variant-b-main .toolbar { padding-bottom: 16px; }
+    .focus-book { display: grid; grid-template-columns: 172px minmax(0, 1fr); gap: 20px; padding: 16px; border: 1px solid var(--line); background: var(--surface-raised); }
+    .focus-book .cover { aspect-ratio: .7; padding: 14px; }
+    .focus-copy { display: flex; flex-direction: column; min-width: 0; }
+    .focus-copy h2 { margin: 0; font-size: 20px; }
+    .focus-copy p { margin: 8px 0 0; color: var(--ink-muted); max-width: 62ch; }
+    .focus-copy .progress-row { margin-top: auto; max-width: 360px; }
+    .compact-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+    /* Variant C: library ledger */
+    .ledger-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid var(--line); }
+    .summary-cell { padding: 12px 16px; border-right: 1px solid var(--line); }
+    .summary-cell:last-child { border-right: 0; }
+    .summary-cell strong { display: block; font-size: 16px; font-weight: 620; }
+    .summary-cell span { color: var(--ink-muted); font-size: 12px; }
+    .ledger { width: 100%; border-collapse: collapse; border: 1px solid var(--line); background: var(--surface-raised); }
+    .ledger th, .ledger td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: left; }
+    .ledger th { color: var(--ink-muted); font-size: 12px; font-weight: 560; background: #1b1e25; }
+    .ledger tbody tr:hover { background: var(--surface-elevated); }
+    .ledger tbody tr:last-child td { border-bottom: 0; }
+    .ledger-book { display: grid; grid-template-columns: 42px minmax(0, 1fr); gap: 10px; align-items: center; min-width: 260px; }
+    .ledger-cover { width: 42px; aspect-ratio: .7; padding: 0; box-shadow: none; }
+    .ledger-cover::before { inset: 4px; }
+    .ledger-cover > * { display: none; }
+    .ledger-title { font-weight: 580; }
+    .ledger-path { color: var(--ink-muted); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 44ch; }
+    .ledger .progress-row { min-width: 130px; }
+    .tag { display: inline-block; padding: 2px 7px; border: 1px solid var(--line-strong); border-radius: 999px; color: var(--ink-soft); font-size: 11px; white-space: nowrap; }
+    .rating { color: #e4c56d; font-variant-numeric: tabular-nums; }
+
+    .prototype-switcher {
+      position: fixed;
+      left: 50%;
+      bottom: 16px;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 5px;
+      border: 1px solid #596174;
+      border-radius: 999px;
+      background: #0f1117;
+      box-shadow: 0 10px 30px rgb(0 0 0 / 40%);
+      transform: translateX(-50%);
+    }
+
+    .prototype-switcher button { width: 32px; height: 32px; border: 0; border-radius: 50%; background: transparent; color: #e8e9ed; cursor: pointer; }
+    .prototype-switcher button:hover { background: #292e39; }
+    .prototype-label { min-width: 230px; text-align: center; font-size: 12px; }
+    .prototype-label strong { display: block; font-size: 13px; }
+    .prototype-label span { color: #9ca2ad; }
+    body.capture .prototype-switcher { display: none; }
+
+    @media (max-width: 1180px) {
+      .book-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      .compact-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .continue-rail { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .continue-card:last-child { display: none; }
+      .variant-b { grid-template-columns: 190px minmax(0, 1fr); }
+    }
+
+    @media (max-width: 880px) {
+      .shelf { padding: 16px 16px 72px; }
+      .shelf-header, .toolbar { flex-wrap: wrap; }
+      .actions { width: 100%; }
+      .search { width: 100%; }
+      .book-grid, .compact-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .variant-b { grid-template-columns: 1fr; }
+      .category-sidebar { position: static; }
+      .category-list { display: flex; overflow: auto; border: 0; gap: 8px; }
+      .category-list li { border: 0; }
+      .category-list button { border: 1px solid var(--line); white-space: nowrap; }
+      .ledger-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .summary-cell:nth-child(2) { border-right: 0; }
+      .summary-cell:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-topbar">
+      <div class="window-mark" data-icon="panel"></div>
+      <div class="tabs">
+        <div class="tab"><span data-icon="book"></span><span>Reading Desk 书架</span></div>
+      </div>
+      <div class="topbar-actions"><span data-icon="plus"></span><span data-icon="chevron-down"></span></div>
+    </header>
+    <aside class="nav-rail" aria-label="Obsidian 导航">
+      <button class="rail-button" aria-label="搜索" data-icon="search"></button>
+      <button class="rail-button" aria-label="文件" data-icon="file"></button>
+      <button class="rail-button" aria-label="关系图" data-icon="network"></button>
+      <button class="rail-button is-active" aria-label="Reading Desk" data-icon="book"></button>
+      <div class="rail-spacer"></div>
+      <button class="rail-button" aria-label="设置" data-icon="settings"></button>
+    </aside>
+    <main class="workspace" id="workspace"></main>
+  </div>
+
+  <nav class="prototype-switcher" aria-label="原型变体切换">
+    <button type="button" id="previous" aria-label="上一个变体">←</button>
+    <div class="prototype-label"><strong id="variant-label"></strong><span>THROWAWAY PROTOTYPE · ← → 切换</span></div>
+    <button type="button" id="next" aria-label="下一个变体">→</button>
+  </nav>
+
+  <script>
+    const books = [
+      { title: '设计中的设计', author: '原研哉', pages: 244, size: '18.6 MB', progress: 64, category: '设计方法', cover: 1, kicker: 'DESIGN', subtitle: '重新理解日常与设计的关系' },
+      { title: '如何阅读一本书', author: '莫提默·艾德勒', pages: 426, size: '12.4 MB', progress: 38, category: '学习方法', cover: 2, kicker: 'READING', subtitle: '从基础阅读到主题阅读' },
+      { title: '认知觉醒', author: '周岭', pages: 275, size: '8.9 MB', progress: 72, category: '认知', cover: 3, kicker: 'COGNITION', subtitle: '开启自我改变的原动力' },
+      { title: '机器学习基础', author: 'Xiaogang Wang', pages: 218, size: '6.3 MB', progress: 12, category: '学术研究', cover: 4, kicker: 'MACHINE LEARNING', subtitle: 'Models, Data and Practice' },
+      { title: '局外人', author: '阿尔贝·加缪', pages: 185, size: '2.2 MB', progress: 8, category: '文学', cover: 5, kicker: 'L’ÉTRANGER', subtitle: '阿尔贝·加缪作品' },
+      { title: '研究是一门艺术', author: 'Wayne C. Booth', pages: 336, size: '14.1 MB', progress: 46, category: '学术研究', cover: 6, kicker: 'RESEARCH', subtitle: '从问题到论证的完整路径' },
+      { title: '卡片笔记写作法', author: '申克·阿伦斯', pages: 288, size: '7.5 MB', progress: 91, category: '学习方法', cover: 7, kicker: 'NOTES', subtitle: '如何实现从阅读到写作' },
+      { title: '思考，快与慢', author: '丹尼尔·卡尼曼', pages: 568, size: '22.8 MB', progress: 31, category: '认知', cover: 8, kicker: 'THINKING', subtitle: '两个系统与判断机制' },
+      { title: '观看之道', author: '约翰·伯格', pages: 176, size: '5.4 MB', progress: 54, category: '设计方法', cover: 9, kicker: 'WAYS OF SEEING', subtitle: '图像、观看与权力' },
+      { title: '有限与无限的游戏', author: '詹姆斯·卡斯', pages: 248, size: '4.8 MB', progress: 19, category: '未分类', cover: 10, kicker: 'FINITE / INFINITE', subtitle: '关于生命与可能性的洞见' }
+    ];
+
+    const names = {
+      A: 'A · 紧凑研究书架（推荐）',
+      B: 'B · 分类导航工作台',
+      C: 'C · 书目台账'
+    };
+
+    const iconPaths = {
+      panel: '<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 4v16"/>',
+      book: '<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11a3 3 0 0 1 3 3v15a3 3 0 0 0-3-3H4z"/><path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H14v18a3 3 0 0 1 3-3h3z"/>',
+      search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>',
+      file: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',
+      network: '<circle cx="5" cy="6" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="12" cy="18" r="2"/><path d="m7 7 4 9m6-9-4 9M7 6h10"/>',
+      settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21h-4v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H3v-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1A1.7 1.7 0 0 0 9 4.6 1.7 1.7 0 0 0 10 3V3h4v.1a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.1v4H21a1.7 1.7 0 0 0-1.6 1Z"/>',
+      scan: '<path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 12h10"/>',
+      import: '<path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M4 17v3h16v-3"/>',
+      more: '<circle cx="5" cy="12" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="19" cy="12" r="1" fill="currentColor"/>',
+      plus: '<path d="M12 5v14M5 12h14"/>',
+      'chevron-down': '<path d="m6 9 6 6 6-6"/>'
+    };
+
+    function icon(name) {
+      return `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${iconPaths[name]}</svg>`;
+    }
+
+    document.querySelectorAll('[data-icon]').forEach((node) => { node.innerHTML = icon(node.dataset.icon); });
+
+    function cover(book, extraClass = '') {
+      return `<div class="cover cover--${String(book.cover).padStart(2, '0')} ${extraClass}">
+        <span class="cover-kicker">${book.kicker}</span>
+        <strong class="cover-title">${book.title}</strong>
+        <span class="cover-subtitle">${book.subtitle}</span>
+        <span class="cover-author">${book.author}</span>
+        ${book.category === '学术研究' ? '<span class="category-mark">学术</span>' : ''}
+      </div>`;
+    }
+
+    function progress(book) {
+      return `<div class="progress-row" aria-label="阅读进度 ${book.progress}%">
+        <div class="progress-track"><span class="progress-fill" style="--progress:${book.progress}%"></span></div>
+        <span class="progress-value">${book.progress}%</span>
+      </div>`;
+    }
+
+    function bookCard(book, index, compact = false) {
+      return `<article class="book-card ${index === 1 && !compact ? 'is-focused' : ''}" tabindex="0" aria-label="打开 ${book.title}">
+        ${cover(book)}
+        <div class="book-copy">
+          <h3>${book.title}</h3>
+          <div class="book-author">${book.author}</div>
+          <div class="meta-line"><span>${book.pages} 页</span><span class="dot"></span><span>${book.size}</span></div>
+          ${progress(book)}
+        </div>
+      </article>`;
+    }
+
+    function continueCard(book) {
+      return `<article class="continue-card" tabindex="0" aria-label="继续阅读 ${book.title}">
+        ${cover(book, 'continue-cover')}
+        <div class="continue-copy"><h3>${book.title}</h3><p>${book.author}</p><div class="continue-progress">${progress(book)}</div></div>
+      </article>`;
+    }
+
+    function header() {
+      return `<header class="shelf-header">
+        <div class="title-wrap"><h1>书架</h1><p>原文、摘录与进度在同一处</p></div>
+        <div class="actions">
+          <button class="button primary">${icon('scan')}扫描书库</button>
+          <button class="button">${icon('import')}导入</button>
+          <button class="icon-button" aria-label="更多操作">${icon('more')}</button>
+        </div>
+      </header>`;
+    }
+
+    function toolbar(mode = 'cards') {
+      return `<div class="toolbar">
+        <label class="search">${icon('search')}<input type="search" placeholder="搜索书名、作者或标签" aria-label="搜索书架"></label>
+        <div class="view-switch" aria-label="书架视图">
+          <button class="view-button ${mode === 'cards' ? 'is-selected' : ''}">卡片</button>
+          <button class="view-button ${mode === 'table' ? 'is-selected' : ''}">表格</button>
+        </div>
+      </div>`;
+    }
+
+    function variantA() {
+      return `<div class="shelf variant-a">
+        ${header()}
+        ${toolbar('cards')}
+        <section class="section">
+          <div class="section-heading"><div class="section-title"><h2>继续阅读</h2><span>按最近打开排序</span></div><button class="section-link">查看阅读记录</button></div>
+          <div class="continue-rail">${books.slice(0, 3).map(continueCard).join('')}</div>
+        </section>
+        <section class="section" aria-label="分类筛选">
+          <div class="chips"><button class="chip is-selected">全部 18</button><button class="chip">学术研究 6</button><button class="chip">设计方法 4</button><button class="chip">文学 5</button><button class="chip">未分类 3</button></div>
+        </section>
+        <section class="section">
+          <div class="section-heading"><div class="section-title"><h2>全部图书</h2><span>18 本 · 按最近阅读排序</span></div><button class="section-link">管理分类</button></div>
+          <div class="book-grid">${books.map(bookCard).join('')}</div>
+        </section>
+      </div>`;
+    }
+
+    function variantB() {
+      return `<div class="shelf variant-b">
+        <aside class="category-sidebar">
+          <div><h1>书架</h1><p>原文、摘录与进度在同一处</p></div>
+          <label class="search" style="width:100%">${icon('search')}<input type="search" placeholder="搜索书架" aria-label="搜索书架"></label>
+          <ul class="category-list">
+            <li><button class="is-selected"><span>全部图书</span><span class="category-count">18</span></button></li>
+            <li><button><span>学术研究</span><span class="category-count">6</span></button></li>
+            <li><button><span>设计方法</span><span class="category-count">4</span></button></li>
+            <li><button><span>文学</span><span class="category-count">5</span></button></li>
+            <li><button><span>未分类</span><span class="category-count">3</span></button></li>
+          </ul>
+          <button class="button primary">${icon('scan')}扫描书库</button>
+        </aside>
+        <div class="variant-b-main">
+          <div class="toolbar"><div class="section-title"><h2>最近阅读</h2><span>今天</span></div><div class="actions"><button class="button">${icon('import')}导入</button><button class="icon-button" aria-label="更多">${icon('more')}</button></div></div>
+          <section class="section focus-book">
+            ${cover(books[0])}
+            <div class="focus-copy"><span class="cover-kicker">上次读到第 156 页</span><h2>设计中的设计</h2><p>从日常物件重新理解设计。关联 12 条摘录、4 条评论和 1 个 Canvas 目标。</p>${progress(books[0])}</div>
+          </section>
+          <section class="section">
+            <div class="section-heading"><div class="section-title"><h2>全部图书</h2><span>最近更新</span></div><div class="view-switch"><button class="view-button is-selected">卡片</button><button class="view-button">表格</button></div></div>
+            <div class="book-grid compact-grid">${books.slice(1).map((book, index) => bookCard(book, index, true)).join('')}</div>
+          </section>
+        </div>
+      </div>`;
+    }
+
+    function tableRow(book) {
+      return `<tr tabindex="0">
+        <td><div class="ledger-book">${cover(book, 'ledger-cover')}<div><div class="ledger-title">${book.title}</div><div class="ledger-path">Books/${book.category}/${book.title}.pdf</div></div></div></td>
+        <td>${book.author}</td>
+        <td><span class="tag">${book.category}</span></td>
+        <td><span class="rating">${(3.8 + (book.cover % 4) * .3).toFixed(1)}</span></td>
+        <td>${progress(book)}</td>
+        <td>${book.pages} 页</td>
+        <td>${book.size}</td>
+      </tr>`;
+    }
+
+    function variantC() {
+      return `<div class="shelf variant-c">
+        ${header()}
+        ${toolbar('table')}
+        <section class="section ledger-summary">
+          <div class="summary-cell"><strong>18 本</strong><span>全部图书</span></div>
+          <div class="summary-cell"><strong>6 本</strong><span>正在阅读</span></div>
+          <div class="summary-cell"><strong>142 条</strong><span>原文摘录</span></div>
+          <div class="summary-cell"><strong>38%</strong><span>平均阅读进度</span></div>
+        </section>
+        <section class="section">
+          <div class="section-heading"><div class="section-title"><h2>书目台账</h2><span>可按任意列排序</span></div><div class="chips"><button class="chip is-selected">全部</button><button class="chip">学术研究</button><button class="chip">文学</button></div></div>
+          <table class="ledger">
+            <thead><tr><th>书名</th><th>作者</th><th>分类</th><th>评分</th><th>进度</th><th>页数</th><th>大小</th></tr></thead>
+            <tbody>${books.map(tableRow).join('')}</tbody>
+          </table>
+        </section>
+      </div>`;
+    }
+
+    const renderers = { A: variantA, B: variantB, C: variantC };
+    const order = Object.keys(renderers);
+    const params = new URLSearchParams(location.search);
+    let current = (params.get('variant') || 'A').toUpperCase();
+    if (!renderers[current]) current = 'A';
+    if (params.get('capture') === '1') document.body.classList.add('capture');
+
+    function render() {
+      document.getElementById('workspace').innerHTML = renderers[current]();
+      document.getElementById('variant-label').textContent = names[current];
+      document.title = `Reading Desk 书架原型 · ${current}`;
+    }
+
+    function cycle(offset) {
+      const index = order.indexOf(current);
+      current = order[(index + offset + order.length) % order.length];
+      const nextParams = new URLSearchParams(location.search);
+      nextParams.set('variant', current);
+      history.replaceState(null, '', `${location.pathname}?${nextParams}`);
+      render();
+    }
+
+    document.getElementById('previous').addEventListener('click', () => cycle(-1));
+    document.getElementById('next').addEventListener('click', () => cycle(1));
+    document.addEventListener('keydown', (event) => {
+      if (event.target.matches('input, textarea, [contenteditable]')) return;
+      if (event.key === 'ArrowLeft') cycle(-1);
+      if (event.key === 'ArrowRight') cycle(1);
+    });
+
+    render();
+  </script>
+</body>
+</html>

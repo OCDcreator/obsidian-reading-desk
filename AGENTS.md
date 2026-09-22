@@ -26,6 +26,20 @@ Keep source modules under 650 lines and functions under 220 lines. `LibraryIndex
 
 `npm run check:project-docs` and `npm run check:owner-guard` are mandatory parts of `npm run verify`. Update ADRs and module documentation when ownership or persistence changes.
 
+## Agent skills
+
+### Issue tracker
+
+Issues and specs are tracked in this repository's GitHub Issues. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Use the five canonical Matt Pocock triage labels without aliases. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+This repository uses a single-context domain-doc layout. See `docs/agents/domain.md`.
+
 ## Deployment
 
 After build, copy root-level `main.js`, `manifest.json`, `styles.css`, and `pdf.worker.mjs` sequentially to `/Volumes/SDD2T/obsidian-vault-write/testvault/.obsidian/plugins/obsidian-reading-desk/`, then verify SHA-256 and a fresh, Reading Desk-scoped console startup identifier. Do not treat unrelated plugin errors as Reading Desk failures and do not touch other plugins.

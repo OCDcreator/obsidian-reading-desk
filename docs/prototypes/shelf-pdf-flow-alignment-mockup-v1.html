@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>书架样式对齐 PDF Flow · 双变体设计稿 v1</title>
+<style>
+	/* ---------- 说明书例(非产品 UI) ---------- */
+	* { box-sizing: border-box; margin: 0; padding: 0; }
+	body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: #ececec; color: #222; padding: 32px 40px 80px; }
+
+	/* Obsidian 默认浅色 token 近似值 — 实机以用户主题为准 */
+	.theme-scope {
+		--background-primary: #ffffff;
+		--background-secondary: #f6f6f6;
+		--background-modifier-border: #dbdbdb;
+		--background-modifier-hover: rgba(0,0,0,0.06);
+		--text-normal: #222222;
+		--text-muted: #5c5c5c;
+		--interactive-accent: #8a5cf5;
+		--nav-item-background-active: rgba(138,92,245,0.12);
+		background: var(--background-primary);
+	}
+	.theme-scope.dark {
+		--background-primary: #1e1e1e;
+		--background-secondary: #262626;
+		--background-modifier-border: #3f3f3f;
+		--background-modifier-hover: rgba(255,255,255,0.07);
+		--text-normal: #dadada;
+		--text-muted: #999999;
+		--interactive-accent: #a882ff;
+		--nav-item-background-active: rgba(168,130,255,0.16);
+	}
+
+	.notes { max-width: 1080px; margin: 0 auto 28px; background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 20px 24px; }
+	.notes h1 { font-size: 20px; margin-bottom: 10px; }
+	.notes p { font-size: 13px; line-height: 1.7; color: #444; }
+	.notes ul { margin: 8px 0 0 18px; font-size: 13px; line-height: 1.8; color: #444; }
+	.notes .settled { color: #1a7f37; }
+	.notes .open { color: #b35900; font-weight: 600; }
+
+	.variants { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; max-width: 1680px; margin: 0 auto; }
+	.variant-frame { border-radius: 10px; overflow: hidden; border: 1px solid #cfcfcf; }
+	.variant-frame h2 { font-size: 15px; padding: 12px 18px; background: #2c2c2c; color: #fff; display: flex; justify-content: space-between; align-items: baseline; }
+	.variant-frame h2 small { font-weight: 400; opacity: .7; font-size: 12px; }
+
+	/* ---------- 以下是产品 UI 模拟:书架壳 ---------- */
+	.shelf { padding: 20px 22px 26px; background: var(--background-primary); color: var(--text-normal); }
+	.shelf-toolbar { display: flex; gap: 8px; margin-bottom: 14px; }
+	.shelf-toolbar .search { flex: 0 0 240px; border: 1px solid var(--background-modifier-border); background: var(--background-secondary); border-radius: 5px; padding: 5px 10px; font-size: 13px; color: var(--text-muted); }
+
+	.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(192px, 1fr)); gap: 14px; }
+
+	/* 封面示意:实机为 PDF 首页渲染 / EPUB 封面图,设计稿用排印纸面示意 */
+	.cover-art { width: 100%; height: 100%; display: grid; place-items: center; padding: 14px; text-align: center; }
+	.cover-art .cover-title { font-size: 13px; line-height: 1.5; font-weight: 600; color: rgba(255,255,255,.92); display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+	.cover-art .cover-author { margin-top: 6px; font-size: 10px; color: rgba(255,255,255,.6); }
+	.cover-empty { width: 100%; height: 100%; display: grid; place-items: center; padding: 18px; background: var(--background-secondary); border-bottom: 1px solid var(--background-modifier-border); }
+	.cover-empty .t { font-size: 13px; line-height: 1.6; font-weight: 600; color: var(--text-muted); text-align: center; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+
+	/* 分类 chip(封面左上) */
+	.cat-chip { position: absolute; top: 8px; left: 8px; z-index: 2; font-size: 11px; line-height: 1; padding: 4px 8px; border-radius: 999px; color: #fff; background: rgba(20,20,20,.55); backdrop-filter: blur(4px); }
+
+	/* 卡片骨架(共享排版,变体差异在 .card-A / .card-B) */
+	.card { display: flex; flex-direction: column; cursor: pointer; position: relative; background: var(--background-secondary); }
+	.card .cover { aspect-ratio: 0.7; position: relative; overflow: hidden; flex: none; }
+	.card .info { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 5px; }
+	.card .title { font-size: 16px; font-weight: 500; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 43.2px; }
+	.card .author { font-size: 12px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+	.card .author.empty { color: var(--interactive-accent); text-decoration: underline dotted; text-underline-offset: 3px; cursor: text; }
+	.card .author-input { font-size: 12px; border: 1px solid var(--interactive-accent); border-radius: 4px; padding: 2px 6px; background: var(--background-primary); color: var(--text-normal); outline: none; width: 100%; }
+	.card .meta { font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 5px; white-space: nowrap; overflow: hidden; }
+	.card .meta svg { flex: none; opacity: .75; }
+	.card .meta .dot { opacity: .5; }
+	.card .progress-row { margin-top: 3px; display: flex; align-items: center; gap: 8px; }
+	.card .progress { flex: 1; height: 3px; border-radius: 2px; background: var(--background-modifier-border); overflow: hidden; }
+	.card .progress i { display: block; height: 100%; background: var(--interactive-accent); border-radius: 2px; }
+	.card .pct { font-size: 12px; color: var(--text-muted); font-variant-numeric: tabular-nums; flex: none; }
+	.card:hover .cover-art .cover-title { text-decoration: underline; }
+
+	/* 变体 A:完整采纳(PDF Flow 样式特点) */
+	.variant-a .card { border-radius: 10px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,.05), 0 5px 14px rgba(0,0,0,.09); transition: box-shadow .18s ease-out, transform .18s ease-out; }
+	.variant-a .card:hover { transform: translateY(-2px); box-shadow: 0 2px 4px rgba(0,0,0,.06), 0 10px 24px rgba(0,0,0,.13); }
+	.variant-a .card.selected { outline: 2px solid var(--interactive-accent); outline-offset: 2px; }
+
+	/* 变体 B:保守版(同排版,直角+1px 边线,无投影) */
+	.variant-b .card { border: 1px solid var(--background-modifier-border); }
+	.variant-b .card:hover { border-color: var(--interactive-accent); }
+	.variant-b .card.selected { border-color: var(--interactive-accent); background: var(--nav-item-background-active); }
+
+	/* 继续阅读轨(两变体同构,差异随卡) */
+	.rail { margin-top: 26px; }
+	.rail h3 { font-size: 20px; font-weight: 600; margin-bottom: 10px; }
+	.rail-list { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; }
+	.rail-card { flex: 0 0 168px; cursor: pointer; position: relative; background: var(--background-secondary); }
+	.rail-card .cover { aspect-ratio: 0.7; max-height: 160px; position: relative; overflow: hidden; }
+	.rail-card .rtitle { font-size: 13px; line-height: 1.4; padding: 8px 10px 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 36.4px; }
+	.rail-card .progress-row { padding: 0 10px 10px; margin-top: 5px; }
+	.variant-a .rail-card { border-radius: 8px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,.05), 0 4px 10px rgba(0,0,0,.08); }
+	.variant-b .rail-card { border: 1px solid var(--background-modifier-border); }
+
+	/* 暗色段 */
+	.dark-strip { max-width: 1680px; margin: 28px auto 0; border-radius: 10px; overflow: hidden; border: 1px solid #3a3a3a; }
+	.dark-strip h2 { font-size: 15px; padding: 12px 18px; background: #111; color: #ddd; }
+
+	.legend { max-width: 1080px; margin: 24px auto 0; font-size: 12px; color: #777; line-height: 1.8; }
+</style>
+</head>
+<body>
+
+<div class="notes">
+	<h1>书架样式对齐 PDF Flow · 双变体设计稿 v1</h1>
+	<p>同一批「极端样例」在两个变体下的呈现:变体 A 完整采纳 PDF Flow 样式特点(圆角+柔影+封面满贴信息面板);变体 B 保守版(相同排版与截断规则,保持现有直角+1px 边线体系)。浅色为主,底部附暗色段。封面为排印示意,实机为 PDF 首页/EPUB 封面真实渲染。</p>
+	<ul>
+		<li class="settled">已定:书名两行 clamp(固定槽保证等高,完整名走 title 提示/表格视图);作者行点击就地编辑(缺失态显示可操作措辞);分类移到封面左上 chip + 右键菜单编辑;继续阅读轨保留并瘦身;本轮只改卡片视图。</li>
+		<li class="open">待你看稿定夺:变体 A / B 取舍;圆角与投影的具体刻度(A 为 10px + 双层柔影);无封面占位形态(纸面排印书名,见「量子场论」卡);进度百分比是否常显。</li>
+	</ul>
+</div>
+
+<div class="variants">
+	<!-- ============ 变体 A ============ -->
+	<section class="theme-scope variant-a">
+	<div class="variant-frame">
+		<h2>变体 A · 完整采纳 <small>圆角 10px + 双层柔影 + hover 上浮</small></h2>
+		<div class="shelf">
+			<div class="shelf-toolbar"><div class="search">搜索书名、作者、标签…</div></div>
+			<div class="grid">
+
+				<article class="card" title="原子结构与化学键核心问题详解（Atomic Structure and Chemical Bonding）">
+					<div class="cover"><span class="cat-chip">化学</span>
+						<div class="cover-art" style="background: linear-gradient(160deg, #274690, #1b2f5e);">
+							<div><div class="cover-title">原子结构与化学键核心问题详解</div><div class="cover-author">Atomic Structure and Chemical Bonding</div></div>
+						</div>
+					</div>
+					<div class="info">
+						<div class="title">原子结构与化学键核心问题详解（Atomic Structure and Chemical Bonding）</div>
+						<div class="author">作者: 未提供</div>
+						<div class="meta"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>9 页<span class="dot">·</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>2.29 MB</div>
+						<div class="progress-row"><div class="progress"><i style="width:33%"></i></div><span class="pct">33%</span></div>
+					</div>
+				</article>
+
+				<article class="card" title="Beamer 制作的课件合集">
+					<div class="cover">
+						<div class="cover-art" style="background: linear-gradient(160deg, #6b4f8a, #46325c);">
+							<div><div class="cover-title">Beamer 课件合集</div><div class="cover-author">Slides 2019–2024</div></div>
+						</div>
+					</div>
+					<div class="info">
+						<div class="title">Beamer 课件合集</div>
+						<div class="author">作者: LaTeX with Beamer PGF/TikZ (pdfTeX 1.40.25)</div>
+						<div class="meta"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>142 页<span class="dot">·</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>8.41 MB</div>
+						<div class="progress-row"><div class="progress"><i style="width:3%"></i></div><span class="pct">3%</span></div>
+					</div>
+				</article>
+
+				<article class="card" title="量子场论讲义">
+					<div class="cover"><span class="cat-chip">物理</span>
+						<div class="cover-empty"><div class="t">量子场论讲义<br><span style="font-weight:400;font-size:11px">无封面 · 排印占位</span></div></div>
+					</div>
+					<div class="info">
+						<div class="title">量子场论讲义</div>
+						<div class="author empty">点击添加作者信息</div>
+						<div class="meta"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>312 页<span class="dot">·</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>11.2 MB</div>
+						<div class="progress-row"><div class="progress"><i style="width:97%"></i></div><span class="pct">97%</span></div>
+					</div>
+				</article>
+
+				<article class="card selected" title="红高粱家族(编辑态示意:作者行就地输入)">
+					<div class="cover"><span class="cat-chip">文学</span>
+						<div class="cover-art" style="background: linear-gradient(160deg, #8c3b2e, #5e2419);">
+							<div><div class="cover-title">红高粱家族</div><div class="cover-author">莫言</div></div>
+						</div>
+					</div>
+					<div class="info">
+						<div class="title">红高粱家族</div>
+						<input class="author-input" value="莫言" aria-label="编辑作者">
+						<div class="meta"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>361 页<span class="dot">·</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>5.06 MB</div>
+						<div class="progress-row"><div class="progress"><i style="width:65%"></i></div><span class="pct">65%</span></div>
+					</div>
+				</article>
+
+			</div>
+
+			<div class="rail">
+				<h3>继续阅读</h3>
+				<div class="rail-list">
+					<div class="rail-card"><div class="cover"><div class="cover-art" style="background: linear-gradient(160deg, #274690, #1b2f5e);"><div class="cover-title" style="font-size:12px">原子结构与化学键核心问题详解</div></div></div>
+						<div class="rtitle">原子结构与化学键核心问题详解</div><div class="progress-row"><div class="progress"><i style="width:33%"></i></div><span class="pct">33%</span></div></div>
+					<div class="rail-card"><div class="cover"><div class="cover-empty"><div class="t" style="font-size:12px">量子场论讲义</div></div></div>
+						<div class="rtitle">量子场论讲义</div><div class="progress-row"><div class="progress"><i style="width:97%"></i></div><span class="pct">97%</span></div></div>
+					<div class="rail-card"><div class="cover"><div class="cover-art" style="background: linear-gradient(160deg, #8c3b2e, #5e2419);"><div class="cover-title" style="font-size:12px">红高粱家族</div></div></div>
+						<div class="rtitle">红高粱家族</div><div class="progress-row"><div class="progress"><i style="width:65%"></i></div><span class="pct">65%</span></div></div>
+				</div>
+			</div>
+		</div>
+	</div>
+	</section>
+
+	<!-- ============ 变体 B ============ -->
+	<section class="theme-scope variant-b">
+	<div class="variant-frame">
+		<h2>变体 B · 保守版 <small>相同排版与截断;直角 + 1px 边线,无投影</small></h2>
+		<div class="shelf">
+			<div class="shelf-toolbar"><div class="search">搜索书名、作者、标签…</div></div>
+			<div class="grid">
+
+				<article class="card" title="原子结构与化学键核心问题详解（Atomic Structure and Chemical Bonding）">
+					<div class="cover"><span class="cat-chip">化学</span>
+						<div class="cover-art" style="background: linear-gradient(160deg, #274690, #1b2f5e);">
+							<div><div class="cover-title">原子结构与化学键核心问题详解</div><div class="cover-author">Atomic Structure and Chemical Bonding</div></div>
+						</div>
+					</div>
+					<div class="info">
+						<div class="title">原子结构与化学键核心问题详解（Atomic Structure and Chemical Bonding）</div>
+						<div class="author">作者: 未提供</div>
+						<div class="meta"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>9 页<span class="dot">·</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>2.29 MB</div>
+						<div class="progress-row"><div class="progress"><i style="width:33%"></i></div><span class="pct">33%</span></div>
+					</div>
+				</article>
+
+				<article class="card" title="Beamer 制作的课件合集">
+					<div class="cover">
+						<div class="cover-art" style="background: linear-gradient(160deg, #6b4f8a, #46325c);">
+							<div><div class="cover-title">Beamer 课件合集</div><div class="cover-author">Slides 2019–2024</div></div>
+						</div>
+					</div>
+					<div class="info">
+						<div class="title">Beamer 课件合集</div>
+						<div class="author">作者: LaTeX with Beamer PGF/TikZ (pdfTeX 1.40.25)</div>
+						<div class="meta"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>142 页<span class="dot">·</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>8.41 MB</div>
+						<div class="progress-row"><div class="progress"><i style="width:3%"></i></div><span class="pct">3%</span></div>
+					</div>
+				</article>
+
+				<article class="card" title="量子场论讲义">
+					<div class="cover"><span class="cat-chip">物理</span>
+						<div class="cover-empty"><div class="t">量子场论讲义<br><span style="font-weight:400;font-size:11px">无封面 · 排印占位</span></div></div>
+					</div>
+					<div class="info">
+						<div class="title">量子场论讲义</div>
+						<div class="author empty">点击添加作者信息</div>
+						<div class="meta"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>312 页<span class="dot">·</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>11.2 MB</div>
+						<div class="progress-row"><div class="progress"><i style="width:97%"></i></div><span class="pct">97%</span></div>
+					</div>
+				</article>
+
+				<article class="card selected" title="红高粱家族(编辑态示意)">
+					<div class="cover"><span class="cat-chip">文学</span>
+						<div class="cover-art" style="background: linear-gradient(160deg, #8c3b2e, #5e2419);">
+							<div><div class="cover-title">红高粱家族</div><div class="cover-author">莫言</div></div>
+						</div>
+					</div>
+					<div class="info">
+						<div class="title">红高粱家族</div>
+						<input class="author-input" value="莫言" aria-label="编辑作者">
+						<div class="meta"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>361 页<span class="dot">·</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>5.06 MB</div>
+						<div class="progress-row"><div class="progress"><i style="width:65%"></i></div><span class="pct">65%</span></div>
+					</div>
+				</article>
+
+			</div>
+
+			<div class="rail">
+				<h3>继续阅读</h3>
+				<div class="rail-list">
+					<div class="rail-card"><div class="cover"><div class="cover-art" style="background: linear-gradient(160deg, #274690, #1b2f5e);"><div class="cover-title" style="font-size:12px">原子结构与化学键核心问题详解</div></div></div>
+						<div class="rtitle">原子结构与化学键核心问题详解</div><div class="progress-row"><div class="progress"><i style="width:33%"></i></div><span class="pct">33%</span></div></div>
+					<div class="rail-card"><div class="cover"><div class="cover-empty"><div class="t" style="font-size:12px">量子场论讲义</div></div></div>
+						<div class="rtitle">量子场论讲义</div><div class="progress-row"><div class="progress"><i style="width:97%"></i></div><span class="pct">97%</span></div></div>
+					<div class="rail-card"><div class="cover"><div class="cover-art" style="background: linear-gradient(160deg, #8c3b2e, #5e2419);"><div class="cover-title" style="font-size:12px">红高粱家族</div></div></div>
+						<div class="rtitle">红高粱家族</div><div class="progress-row"><div class="progress"><i style="width:65%"></i></div><span class="pct">65%</span></div></div>
+				</div>
+			</div>
+		</div>
+	</div>
+	</section>
+</div>
+
+<!-- 暗色段:两变体并排 -->
+<div class="dark-strip">
+	<h2>暗色主题对照 · 左 A 右 B</h2>
+	<div class="variants" style="margin-top:0;">
+		<section class="theme-scope dark variant-a">
+			<div class="variant-frame" style="border-color:#3a3a3a;">
+				<div class="shelf">
+					<div class="grid">
+						<article class="card" title="原子结构与化学键核心问题详解（Atomic Structure and Chemical Bonding）">
+							<div class="cover"><span class="cat-chip">化学</span>
+								<div class="cover-art" style="background: linear-gradient(160deg, #274690, #1b2f5e);"><div><div class="cover-title">原子结构与化学键核心问题详解</div><div class="cover-author">Atomic Structure and Chemical Bonding</div></div></div>
+							</div>
+							<div class="info">
+								<div class="title">原子结构与化学键核心问题详解（Atomic Structure and Chemical Bonding）</div>
+								<div class="author">作者: 未提供</div>
+								<div class="meta"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>9 页<span class="dot">·</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>2.29 MB</div>
+								<div class="progress-row"><div class="progress"><i style="width:33%"></i></div><span class="pct">33%</span></div>
+							</div>
+						</article>
+						<article class="card">
+							<div class="cover"><span class="cat-chip">物理</span>
+								<div class="cover-empty"><div class="t">量子场论讲义</div></div>
+							</div>
+							<div class="info">
+								<div class="title">量子场论讲义</div>
+								<div class="author empty">点击添加作者信息</div>
+								<div class="meta"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>312 页<span class="dot">·</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>11.2 MB</div>
+								<div class="progress-row"><div class="progress"><i style="width:97%"></i></div><span class="pct">97%</span></div>
+							</div>
+						</article>
+					</div>
+				</div>
+			</div>
+		</section>
+		<section class="theme-scope dark variant-b">
+			<div class="variant-frame" style="border-color:#3a3a3a;">
+				<div class="shelf">
+					<div class="grid">
+						<article class="card" title="原子结构与化学键核心问题详解（Atomic Structure and Chemical Bonding）">
+							<div class="cover"><span class="cat-chip">化学</span>
+								<div class="cover-art" style="background: linear-gradient(160deg, #274690, #1b2f5e);"><div><div class="cover-title">原子结构与化学键核心问题详解</div><div class="cover-author">Atomic Structure and Chemical Bonding</div></div></div>
+							</div>
+							<div class="info">
+								<div class="title">原子结构与化学键核心问题详解（Atomic Structure and Chemical Bonding）</div>
+								<div class="author">作者: 未提供</div>
+								<div class="meta"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>9 页<span class="dot">·</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>2.29 MB</div>
+								<div class="progress-row"><div class="progress"><i style="width:33%"></i></div><span class="pct">33%</span></div>
+							</div>
+						</article>
+						<article class="card">
+							<div class="cover"><span class="cat-chip">物理</span>
+								<div class="cover-empty"><div class="t">量子场论讲义</div></div>
+							</div>
+							<div class="info">
+								<div class="title">量子场论讲义</div>
+								<div class="author empty">点击添加作者信息</div>
+								<div class="meta"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>312 页<span class="dot">·</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>11.2 MB</div>
+								<div class="progress-row"><div class="progress"><i style="width:97%"></i></div><span class="pct">97%</span></div>
+							</div>
+						</article>
+					</div>
+				</div>
+			</div>
+		</section>
+	</div>
+</div>
+
+<p class="legend">说明:卡片 hover 时变体 A 上浮 2px 且阴影加深、变体 B 边线转 accent;「红高粱家族」为选中态+作者行编辑中示意;所有卡严格等高(封面 aspect 0.7 + 标题固定两行槽 + 作者/元数据/进度各一行)。实机字号遵循 DESIGN.md 刻度:书名 16(Card)、其余 12(Meta);示意封面为排印稿,实机渲染 PDF 首页。</p>
+
+</body>
+</html>

@@ -23,11 +23,7 @@ const requiredDocs = [
 	{
 		file: 'CLAUDE.md',
 		needles: [
-			'npm run verify',
-			'npm run check:project-docs',
-			'npm run check:owner-guard',
-			'Single-Responsibility Rule',
-			'Documentation Gate'
+			'@AGENTS.md'
 		]
 	}
 ];
