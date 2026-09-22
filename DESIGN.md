@@ -169,7 +169,7 @@ Shelf 和 Reader 的外层各保留 `24px` 工作区 padding。Reader 的 sticky
 
 Shelf 的主书库采用 `repeat(auto-fill, minmax(184px, 1fr))`，卡片不是营销式的固定等高网格：封面容器保持 `0.7` aspect ratio，继续阅读轨单卡限定为 `clamp(152px, 22vw, 196px)` / 最大 `196px`，其余高度由真实元数据、标题与进度决定。表格是数据密集布局，不套用正文行宽规则。
 
-Reader leaf 始终只承载 PDF 工作面，真实 PDF 导航作为独立原生 Obsidian 左侧栏 leaf 呈现，不随 Reader 变窄而挤占中间阅读空间。导航 leaf 在真实页面缩略图与 PDF outline 层级之间切换，并跟随最近激活的 Reader；目录含当前章节、页码、加载、空和错误态。缩略图与目录复刻宿主原生 PDF 侧栏的视觉契约：纸面 `148px` 宽、宿主 `--pdf-thumbnail-shadow`、`8px` 透明光晕边框在 hover/当前页转为 `--background-modifier-hover`，页码以 `data-page-label` 徽章叠在右下角，未渲染纸面用 1px 虚线占位；导航按钮必须在 host 作用域下显式清除主题 button 底色/边框，否则光晕会透出主题按钮色。目录按范围匹配持续标出当前所在章节（宿主 `--nav-item-*-active` 配色）并随翻页保持可见，而不是只在章节起始页亮起。Reader 工具栏保留“PDF 导航”入口，用户折叠宿主左侧栏时导航按宿主行为隐藏，重新打开后仍保留两种页签。PDF 工作面保持 `min-width: 0` 与自身 overflow，不依赖全窗口宽度。
+Reader leaf 始终只承载 PDF 工作面，真实 PDF 导航作为独立原生 Obsidian 左侧栏 leaf 呈现，不随 Reader 变窄而挤占中间阅读空间。导航 leaf 在真实页面缩略图与 PDF outline 层级之间切换，并跟随最近激活的 Reader；目录含当前章节、页码、加载、空和错误态，并提供「级联树 / 子弹线」两种目录样式，设置变更即时作用于已打开的导航。缩略图与目录复刻宿主原生 PDF 侧栏的视觉契约：纸面 `148px` 宽、宿主 `--pdf-thumbnail-shadow`、`8px` 透明光晕边框在 hover/当前页转为 `--background-modifier-hover`，页码以 `data-page-label` 徽章叠在右下角，未渲染纸面用 1px 虚线占位；导航按钮必须在 host 作用域下显式清除主题 button 底色/边框，否则光晕会透出主题按钮色。目录按范围匹配持续标出当前所在章节（宿主 `--nav-item-*-active` 配色）并随翻页保持可见，而不是只在章节起始页亮起。Reader 工具栏保留“PDF 导航”入口，用户折叠宿主左侧栏时导航按宿主行为隐藏，重新打开后仍保留两种页签。PDF 工作面保持 `min-width: 0` 与自身 overflow，不依赖全窗口宽度。
 
 真实 Canvas、Excalidraw 与 Markdown 由宿主相邻 leaf 呈现。创建 Canvas 摘录后 Reader 立即调用宿主打开相邻 Canvas 并聚焦新 node；Reader 内“摘录管理”只是按需打开的辅助 overlay，不占第三列、不模拟 Canvas。高亮抽屉和评论浮层同样是有边界的 overlay。工具栏在窄 leaf 中换行，overlay 偏移读取工具栏实测高度。PDF 页宿主保留自身 `overflow: auto`，避免过宽页面溅出 Reader。
 
@@ -181,7 +181,7 @@ Reader leaf 始终只承载 PDF 工作面，真实 PDF 导航作为独立原生 
 
 ## Shapes
 
-组件使用克制的方正轮廓：常规 input、select 和按钮是 `5px` 圆角；PDF 高亮是 `2px`，避免在正文上形成胶囊；色盘和高亮末端评论入口是圆形；标签为 `999px` pill。Shelf 卡、目标面板、抽屉与评论容器保持直角容器和 1px 边线。设置页采用 shadcn 视觉变体：设置卡容器 `8px`（card），卡内输入与下拉 `6px`（control-lg），是刻意登记的系统延伸，不回灌到阅读器与书架表面。导航缩略图是第三类登记延伸：光晕框 `4px`（宿主 `--radius-s`）、页码徽章 `3px`（宿主原生 thumbnail badge），仅用于复刻宿主 PDF 侧栏的这一组构件，不外溢到其他控件。
+组件使用克制的方正轮廓：常规 input、select 和按钮是 `5px` 圆角；PDF 高亮是 `2px`，避免在正文上形成胶囊；色盘和高亮末端评论入口是圆形；标签为 `999px` pill。Shelf 卡、目标面板、抽屉与评论容器保持直角容器和 1px 边线。设置页采用 shadcn 视觉变体：设置卡容器 `8px`（card），卡内输入与下拉 `6px`（control-lg），是刻意登记的系统延伸，不回灌到阅读器与书架表面。导航缩略图是第三类登记延伸：光晕框 `4px`（宿主 `--radius-s`）、页码徽章 `3px`（宿主原生 thumbnail badge），仅用于复刻宿主 PDF 侧栏的这一组构件，不外溢到其他控件。目录行是第四类登记延伸：固定 `30px` 行高、`24px` 图标/标记列、每级 `16px` 逻辑缩进，子弹线的 `5px` 圆点（`10px` 内缩）与 `1px` 连接线共享同一中心线；这些是连接线对齐几何，不是新的间距刻度。
 
 **The Native-Tool Rule.** 形状优先服从 Obsidian 控件和真实 PDF/Canvas 工作面；不使用侧色条、渐变文字、装饰玻璃或大数字指标模板。
 
@@ -198,6 +198,12 @@ Reader leaf 始终只承载 PDF 工作面，真实 PDF 导航作为独立原生 
 ### Reader Toolbar and Target Panel
 
 **同一个工具词汇连接 PDF 与真实目标。** toolbar 固定在 Reader 顶部，按“目标与摘录 / 标注 / 显示适配 / 页码 / 颜色”组成单行轻量图标；图标继承宿主 ink，没有逐按钮方框或竖向分隔线，分组仅用克制的组间空白表达，组内保持紧凑。语义名称通过中文 tooltip 与 `aria-label` 保留。页码、侧栏入口、适合宽度、适合高度与颜色入口属于核心控制；空间不足时，次级操作进入最右侧原生“更多工具”菜单，不能压缩命中区或换成多行。手动放大/缩小退出 fit mode，Reader 容器重排则保持当前 fit mode。`rd-target-panel` 是按需打开的辅助管理 overlay，含目标类型/路径、摘录卡和明确的原生目标入口；它不占常驻第三列，也不替代或伪装 Canvas/Excalidraw leaf。实际目标由宿主打开、聚焦与保存。
+
+### Reader Outline Tree
+
+**目录是可键盘操作的树，不是装饰性列表。** 目录行不是卡片：方正无边框行，hover/current 只用宿主 `--nav-item-*` 背景与字色，当前项另加字重，状态不只靠颜色。「级联树」吸收 shadcn SidebarMenuSub 的细导轨与 Primer TreeView 的紧凑 chevron、深层级原则：每级 `padding-inline-start: 16px`，子树用来自 `line` token 的 1px 左导轨，chevron 视觉 15px、命中区 24×24px；初始全部展开、可折叠，当前章节的祖先路径自动展开并保持当前项可见；标题行点击跳页，chevron 只负责展开，不吞掉跳页。「子弹线」是始终展开的阅读型大纲：小圆点与细竖线严格对齐同一中心线，连接线在分支最后一个节点的圆点处结束，不显示折叠控件；当前节点圆点用 accent，同时行背景与字重标明位置。两种样式共享标题省略（完整文本保留在可访问名称与 title）、尾部页码、hover/focus、跳页与当前章节语义，并按 WAI-ARIA TreeView 提供 `tree`/`treeitem`/`group`、仅父节点 `aria-expanded`、roving tabindex、方向键/Home/End/Enter/Space 与 typeahead；折叠后的节点退出键盘顺序，`prefers-reduced-motion` 下取消 chevron 动画。
+
+**The Display-Only Rule.** `ReaderOutlineModel` 只为目录展示塑形：PDF 原生多级 `path[]` 原样保留、不重复推断；只有整份 outline 都是单级 path 时才保守推断编号（`1`/`1.1`/`1.1.1`，要求精确父编号已存在）或明确中文结构（`第…篇/章` 之后紧随的 `第…节`），缺失父编号、无编号与无信号标题一律保持顶层。推断只影响目录展示树、视觉深度与当前项定位；PDF outline、摘录章节归属、Canvas 章节同步与 TargetService 数据不变，也不新增任何持久化的目录修正。
 
 ### Highlights, Palette and Comments
 

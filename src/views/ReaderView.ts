@@ -35,6 +35,7 @@ import { ReaderDisplayOptions } from '../reader/ReaderDisplayOptions';
 import { ReaderHistory } from '../reader/ReaderHistory';
 import { ReaderToolsController } from '../reader/ReaderToolsController';
 import { selectionRects, writeReaderExcerpt } from '../reader/ReaderExcerptWriter';
+import { chapterPathForPage } from '../reader/ReaderOutlineModel';
 
 export const READER_VIEW_TYPE = 'reading-desk-reader';
 export interface ReaderHost {
@@ -418,7 +419,7 @@ export class ReaderView extends ItemView {
 		this.readerNavigation = new ReaderNavigation(this.pdf, this.pages, () => this.page, page => this.goTo(page, { jump: true }), this.navigationMode, mode => {
 			this.navigationMode = mode;
 			try { window.localStorage.setItem('reading-desk-nav-mode', mode); } catch { /* Storage can be unavailable in private windows. */ }
-		});
+		}, this.host.viewerSettings().outlineStyle);
 		this.readerNavigation.setOutline(this.outline, this.outlineState, this.outlineError);
 		this.readerNavigation.render(container);
 		this.readerNavigation.revealPage(this.page);
@@ -434,6 +435,8 @@ export class ReaderView extends ItemView {
 		this.navigationMode = mode;
 		if (this.navigationContainer) this.attachNavigation(this.navigationContainer);
 	}
+	/** Applies an outline-style change to the open navigation without reopening the PDF. */
+	applyOutlineStyle(style: ViewerSettings['outlineStyle']): void { this.readerNavigation?.setOutlineStyle(style); }
 	async copyCurrentPageLink(): Promise<void> {
 		const path = this.activePath();
 		if (!path || this.pages === 0) throw new Error('当前没有可复制的 PDF 页面。');
@@ -642,8 +645,5 @@ export class ReaderView extends ItemView {
 		await this.refreshAnnotations();
 	}
 
-	private chapterForPage(page: number): string[] {
-		const candidates = this.outline.filter(entry => entry.page <= page).sort((left, right) => right.page - left.page || right.path.length - left.path.length);
-		return candidates[0]?.path ?? [];
-	}
+	private chapterForPage(page: number): string[] { return chapterPathForPage(this.outline, page); }
 }

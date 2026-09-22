@@ -167,7 +167,14 @@ export class ReadingDeskSettingTab extends PluginSettingTab {
 
 	private renderReaderSection(panel: HTMLElement): void {
 		const viewer = this.readingDesk.repository.readSettings().viewer;
-		const content = this.createCard(panel, '阅读偏好', '对新打开的阅读器生效；已打开的阅读器可在其工具栏「显示选项」中即时调整。');
+		const content = this.createCard(panel, '阅读偏好', '目录样式即时作用于已打开的 PDF 导航；滚动模式与夜间纸面反相对新打开的阅读器生效，已打开的阅读器可在其工具栏「显示选项」中即时调整。');
+		new Setting(content).setName('目录样式').setDesc('控制 PDF 导航中的章节层级呈现，不改变 PDF 或摘录数据。')
+			.addDropdown(dropdown => {
+				dropdown.selectEl.setAttribute('aria-label', '目录样式');
+				return dropdown.addOption('tree', '级联树').addOption('bullet', '子弹线')
+					.setValue(viewer.outlineStyle)
+					.onChange(async outlineStyle => this.readingDesk.updateViewerSettings({ outlineStyle: outlineStyle as 'tree' | 'bullet' }));
+			});
 		new Setting(content).setName('滚动模式').setDesc('连续滚动把整本书排成一条虚拟长卷；单页一次只显示一页。')
 			.addDropdown(dropdown => {
 				dropdown.selectEl.setAttribute('aria-label', '滚动模式');

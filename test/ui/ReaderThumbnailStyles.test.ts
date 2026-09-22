@@ -48,19 +48,21 @@ describe('Reader thumbnail layout styles', () => {
 	it('neutralizes theme button chrome on host navigation buttons', () => {
 		const thumb = styles.match(/\.reading-desk-pdf-navigation-host \.rd-reader-thumbnail\s*\{([^}]*)\}/)?.[1] ?? '';
 		const tab = styles.match(/\.reading-desk-pdf-navigation-host \.rd-reader-navigation__tab:not\(\[aria-selected='true'\]\)\s*\{([^}]*)\}/)?.[1] ?? '';
-		const outline = styles.match(/\.reading-desk-pdf-navigation-host \.rd-reader-outline__item\s*\{([^}]*)\}/)?.[1] ?? '';
+		const outline = styles.match(/\.reading-desk-pdf-navigation-host \.rd-outline-row\s*\{([^}]*)\}/)?.[1] ?? '';
 		expect(thumb).toContain('background: transparent');
 		expect(thumb).toContain('border-color: transparent');
 		expect(thumb).toContain('box-shadow: none');
 		expect(tab).toContain('background: transparent');
 		expect(tab).toContain('border-color: transparent');
+		expect(outline).toContain('background: transparent');
 		expect(outline).toContain('box-shadow: none');
 	});
 
 	it('marks the current outline section with the host nav-item active tokens', () => {
-		const rule = styles.match(/\.reading-desk-pdf-navigation-host \.rd-reader-outline__item\[aria-current='location'\]\s*\{([^}]*)\}/)?.[1] ?? '';
+		const rule = styles.match(/\.reading-desk-pdf-navigation-host \.rd-outline-node\[aria-current='location'\] > \.rd-outline-row\s*\{([^}]*)\}/)?.[1] ?? '';
 		expect(rule).toContain('color: var(--nav-item-color-active');
 		expect(rule).toContain('background: var(--nav-item-background-active');
+		expect(rule).toContain('font-weight: 600');
 		const page = styles.match(/\[aria-current='location'\] \.rd-reader-outline__page\s*\{([^}]*)\}/)?.[1] ?? '';
 		expect(page).toContain('color: inherit');
 	});

@@ -97,6 +97,8 @@ export interface ViewerSettings {
 	scrollMode: 'continuous' | 'single';
 	/** 'auto' inverts the PDF paper only while the host runs a dark theme. */
 	invertPdf: 'auto' | 'on' | 'off';
+	/** Reader outline presentation ('tree' | 'bullet'); display only, never PDF or excerpt data. */
+	outlineStyle: 'tree' | 'bullet';
 }
 
 export interface ReadingDeskSettings {

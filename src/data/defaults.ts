@@ -15,7 +15,8 @@ export const DEFAULT_SETTINGS: ReadingDeskSettings = {
 	},
 	viewer: {
 		scrollMode: 'continuous',
-		invertPdf: 'auto'
+		invertPdf: 'auto',
+		outlineStyle: 'tree'
 	},
 	importedBookshelf: false
 };

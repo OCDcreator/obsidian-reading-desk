@@ -34,4 +34,21 @@ describe('ReadingDeskRepository persistence queue', () => {
 		await repository.commit(() => { repository.readExcerptCards().excerpt = { title: '可编辑标题', folded: true }; });
 		expect((saved as { excerptCards: Record<string, unknown> }).excerptCards.excerpt).toEqual({ title: '可编辑标题', folded: true });
 	});
+
+	it('migrates legacy viewer settings without losing scroll or invert choices', async () => {
+		const legacy = new ReadingDeskRepository({
+			load: async () => ({ books: {}, categories: [], highlights: {}, comments: {}, settings: { viewer: { scrollMode: 'single', invertPdf: 'on' } } }),
+			save: async () => undefined
+		});
+		await legacy.initialize();
+		expect(legacy.readSettings().viewer).toEqual({ scrollMode: 'single', invertPdf: 'on', outlineStyle: 'tree' });
+
+		const empty = new ReadingDeskRepository({ load: async () => ({ settings: {} }), save: async () => undefined });
+		await empty.initialize();
+		expect(empty.readSettings().viewer).toEqual({ scrollMode: 'continuous', invertPdf: 'auto', outlineStyle: 'tree' });
+
+		const partial = new ReadingDeskRepository({ load: async () => ({ settings: { viewer: { outlineStyle: 'bullet' } } }), save: async () => undefined });
+		await partial.initialize();
+		expect(partial.readSettings().viewer).toEqual({ scrollMode: 'continuous', invertPdf: 'auto', outlineStyle: 'bullet' });
+	});
 });

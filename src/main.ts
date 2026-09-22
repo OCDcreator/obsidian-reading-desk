@@ -156,6 +156,7 @@ export default class ReadingDeskPlugin extends Plugin {
 
 	async updateViewerSettings(patch: Partial<ViewerSettings>): Promise<void> {
 		await this.repository.updateSettings({ viewer: { ...this.repository.readSettings().viewer, ...patch } });
+		if (patch.outlineStyle) for (const leaf of this.app.workspace.getLeavesOfType(READER_VIEW_TYPE)) if (leaf.view instanceof ReaderView) leaf.view.applyOutlineStyle(patch.outlineStyle);
 	}
 
 	async updateStorageSettings(patch: Partial<ObjectStorageSettings>): Promise<void> {

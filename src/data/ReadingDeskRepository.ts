@@ -65,7 +65,8 @@ function mergeData(loaded: Partial<ReadingDeskData>): ReadingDeskData {
 		settings: {
 			...defaults.settings,
 			...loaded.settings,
-			storage: { ...defaults.settings.storage, ...loaded.settings?.storage }
+			storage: { ...defaults.settings.storage, ...loaded.settings?.storage },
+			viewer: { ...defaults.settings.viewer, ...loaded.settings?.viewer }
 		}
 	};
 }

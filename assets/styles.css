@@ -37,7 +37,7 @@
 
 /* Author display values below would otherwise beat the UA [hidden] rule, and
  * the inline delete confirmations and crop controls rely on the hidden property. */
-.reading-desk-shell [hidden], .rd-reader [hidden], .rd-shelf [hidden], .rd-settings-portability [hidden] { display: none !important; }
+.reading-desk-shell [hidden], .rd-reader [hidden], .rd-shelf [hidden], .reading-desk-pdf-navigation-host [hidden], .rd-settings-portability [hidden] { display: none !important; }
 
 /* Heading roots that Obsidian already renders in the leaf header are kept for
  * assistive tech without repeating the title on screen. */
@@ -147,7 +147,7 @@
 .reading-desk-pdf-navigation-host > div { height: 100%; }
 .reading-desk-pdf-navigation-host .rd-reader-navigation { height: 100%; max-height: none; border: 0; }
 .rd-reader-navigation__tabs { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--rd-line); background: var(--rd-surface-raised); padding: 8px; gap: 8px; }
-.rd-reader-navigation__tab, .rd-reader-outline__item {
+.rd-reader-navigation__tab {
 	border: 1px solid transparent; border-radius: 5px; background: transparent; color: var(--rd-ink); font: inherit;
 }
 .rd-reader-thumbnail {
@@ -157,7 +157,7 @@
 .rd-reader-navigation__tab { min-height: 30px; padding: 4px 8px; }
 .rd-reader-navigation__tab[aria-selected='true'] { border-color: var(--rd-accent); background: color-mix(in oklch, var(--rd-surface) 90%, var(--rd-accent)); }
 .rd-reader-navigation__panel { min-height: 0; overflow: auto; padding: 8px; }
-.rd-reader-thumbnails, .rd-reader-outline { list-style: none; margin: 0; padding: 0; }
+.rd-reader-thumbnails, .rd-reader-outline, .rd-outline-group { list-style: none; margin: 0; padding: 0; }
 .reading-desk-pdf-navigation-host .rd-reader-navigation__tab:not([aria-selected='true']) { background: transparent; border-color: transparent; box-shadow: none; }
 .reading-desk-pdf-navigation-host .rd-reader-thumbnail { width: auto; height: auto; min-height: 0; overflow: visible; background: transparent; border-color: transparent; box-shadow: none; }
 /* Mirrors the host PDF sidebar: wrapped centered papers; li shrink-wraps so rows flow. */
@@ -172,14 +172,14 @@
 	background: var(--background-secondary, var(--rd-surface-raised)); color: var(--text-muted, var(--rd-ink-muted));
 	font-size: var(--font-ui-smaller, 11px); font-variant-numeric: tabular-nums;
 }
-.reading-desk-pdf-navigation-host .rd-reader-outline__item { background: transparent; border-color: transparent; box-shadow: none; }
-.reading-desk-pdf-navigation-host .rd-reader-outline__item:hover { background: var(--nav-item-background-hover, transparent); box-shadow: none; }
-.reading-desk-pdf-navigation-host .rd-reader-outline__item[aria-current='location'] {
-	border-color: transparent;
+.reading-desk-pdf-navigation-host .rd-outline-row { background: transparent; box-shadow: none; }
+.reading-desk-pdf-navigation-host .rd-outline-row:hover { background: var(--nav-item-background-hover, transparent); box-shadow: none; }
+.reading-desk-pdf-navigation-host .rd-outline-node[aria-current='location'] > .rd-outline-row {
 	color: var(--nav-item-color-active, var(--rd-ink));
 	background: var(--nav-item-background-active, transparent);
+	font-weight: 600;
 }
-.reading-desk-pdf-navigation-host .rd-reader-outline__item[aria-current='location'] .rd-reader-outline__page { color: inherit; }
+.reading-desk-pdf-navigation-host .rd-outline-node[aria-current='location'] .rd-reader-outline__page { color: inherit; }
 .reading-desk-pdf-navigation-host .rd-reader-thumbnail canvas {
 	display: block; width: 148px; max-width: 100%; height: auto; flex: none;
 	background: var(--rd-surface-document); box-shadow: var(--pdf-thumbnail-shadow);
@@ -188,10 +188,60 @@
 	box-shadow: none; border: 1px dashed var(--rd-line); margin: -1px;
 }
 .rd-reader-thumbnail span, .rd-reader-outline__page { color: var(--rd-ink-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
-.rd-reader-outline .rd-reader-outline { padding-left: 20px; }
-.rd-reader-outline__item { width: 100%; min-width: 0; min-height: 30px; padding: 4px 8px; display: flex; align-items: center; justify-content: space-between; gap: 8px; text-align: left; cursor: pointer; }
-.rd-reader-outline__item > :first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.rd-reader-navigation__tab:focus-visible, .rd-reader-thumbnail:focus-visible, .rd-reader-outline__item:focus-visible { outline: 2px solid var(--rd-accent); outline-offset: 2px; }
+/* Outline tree rows. One fixed 30px row keeps the bullet dot (5px at a 10px inset),
+ * the 1px connector segments and the 24px chevron gutter on a shared 12.5px center
+ * line at every depth; per-level indent is padding-inline-start: 16px on role=group. */
+.rd-outline-node { position: relative; }
+.rd-outline-group { position: relative; padding-inline-start: 16px; }
+.rd-outline-row {
+	display: flex; align-items: center; gap: 8px;
+	width: 100%; min-width: 0; height: 30px;
+	padding-inline-end: 8px; border-radius: 5px;
+	cursor: pointer; position: relative;
+}
+.rd-reader-outline__page { flex: none; }
+.rd-outline-gutter {
+	flex: none; width: 24px; height: 24px;
+	display: inline-flex; align-items: center; justify-content: center;
+	color: var(--rd-ink-muted);
+}
+.rd-outline-gutter svg { width: 15px; height: 15px; transition: transform 120ms ease; }
+.rd-outline-node[aria-expanded] .rd-outline-gutter { cursor: pointer; }
+.rd-outline-node[aria-expanded='true'] .rd-outline-gutter svg { transform: rotate(90deg); }
+.rd-outline-title { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rd-reader-outline--bullet .rd-outline-gutter { justify-content: flex-start; padding-inline-start: 10px; }
+.rd-reader-outline--bullet .rd-outline-gutter::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--rd-ink-muted); pointer-events: none; }
+.rd-reader-outline--bullet .rd-outline-node[aria-current='location'] .rd-outline-gutter::before { background: var(--rd-accent); }
+/* Branch connectors: a parent's rail leaves its own dot and always ends at the final
+ * child's dot, so a line can never run on into the next branch. */
+.rd-outline-group::before {
+	content: ''; position: absolute;
+	inset-inline-start: 12px; top: -15px; height: 15px;
+	border-inline-start: 1px solid var(--rd-line);
+	pointer-events: none;
+}
+.rd-reader-outline--tree .rd-outline-group > .rd-outline-node::before,
+.rd-reader-outline--bullet .rd-outline-group > .rd-outline-node::before {
+	content: ''; position: absolute;
+	inset-inline-start: -4px; top: 0; bottom: 0;
+	border-inline-start: 1px solid var(--rd-line);
+	pointer-events: none;
+}
+.rd-reader-outline--tree .rd-outline-group > .rd-outline-node:last-child::before,
+.rd-reader-outline--bullet .rd-outline-group > .rd-outline-node:last-child::before {
+	bottom: auto; height: 15px;
+	pointer-events: none;
+}
+.rd-reader-outline--bullet .rd-outline-group > .rd-outline-node > .rd-outline-row::after {
+	content: ''; position: absolute;
+	inset-inline-start: -4px; top: 15px; width: 14px;
+	border-block-start: 1px solid var(--rd-line);
+	pointer-events: none;
+}
+.rd-reader-navigation__tab:focus-visible, .rd-reader-thumbnail:focus-visible, .rd-outline-node:focus-visible > .rd-outline-row { outline: 2px solid var(--rd-accent); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+	.rd-outline-gutter svg { transition: none; }
+}
 /* The host keeps its own overflow so an over-wide page stays contained instead of
  * spilling across the Reader; the Reader remains the primary scroll container. */
 .rd-pdf-page-host { position: relative; background: var(--rd-surface-document); box-shadow: 0 8px 22px var(--rd-elevation); max-width: 100%; overflow: auto; }
