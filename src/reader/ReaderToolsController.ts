@@ -1,15 +1,17 @@
 import { Menu, Notice } from 'obsidian';
 import type { PdfHighlight, TargetType } from '../types/contracts';
 import { ReaderSearchPanel } from '../ui/search/ReaderSearchPanel';
-import { clearSearchMarks, markSearchHits, ReaderSearchService, type SearchHit } from './ReaderSearchService';
+import { clearSearchMarks, markSearchHits, ReaderSearchService, scrollToSearchHit, type PageTextSource, type SearchHit } from './ReaderSearchService';
+import { throwIfReaderAborted } from './ReaderCancellation';
 import { targetTypeLabel } from '../ui/targets/TargetUiTypes';
 
 export interface ReaderToolsDeps {
 	/** Live PDF renderer; switches when the document changes. */
-	pdf(): { pageText(page: number): Promise<string> };
+	pdf(): PageTextSource;
 	pageCount(): number;
 	/** Jumps to a page, e.g. a search hit. */
-	goToPage(page: number): Promise<void>;
+	goToPage(page: number, signal?: AbortSignal): Promise<void>;
+	ensurePageRendered?(page: number, signal?: AbortSignal): Promise<HTMLElement | null>;
 	/** The rendered host for a page, when present. */
 	hostForPage(page: number): HTMLElement | null;
 	currentPage(): number;
@@ -35,13 +37,21 @@ export class ReaderToolsController {
 
 	constructor(private readonly deps: ReaderToolsDeps) {
 		this.searchPanel = new ReaderSearchPanel({
-			run: async (query): Promise<SearchHit[]> => this.searchService.search(this.deps.pdf(), this.deps.pageCount(), query),
-			goTo: async hit => { await this.deps.goToPage(hit.page); this.applySearchMarks(); }
+			run: async (query, signal): Promise<SearchHit[]> => this.searchService.search(this.deps.pdf(), this.deps.pageCount(), query, undefined, signal),
+			cancel: () => this.searchService.cancel(), changed: () => this.applySearchMarks(),
+			goTo: async (hit, signal) => {
+				throwIfReaderAborted(signal);
+				await this.deps.goToPage(hit.page, signal);
+				const host = this.deps.ensurePageRendered ? await this.deps.ensurePageRendered(hit.page, signal) : this.deps.hostForPage(hit.page);
+				throwIfReaderAborted(signal);
+				this.applySearchMarks(); if (host) scrollToSearchHit(host, hit);
+			}
 		});
 	}
 
 	/** Invalidates caches when another document opens. */
 	resetForDocument(): void {
+		this.searchPanel.reset();
 		this.searchService.reset();
 	}
 
@@ -58,7 +68,7 @@ export class ReaderToolsController {
 			if (host) clearSearchMarks(host);
 		}
 		const current = this.deps.hostForPage(this.deps.currentPage());
-		if (current && query) markSearchHits(current, query);
+		if (current && query) markSearchHits(current, query, this.searchPanel.currentHit());
 	}
 
 	canCopySelection(): boolean {

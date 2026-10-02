@@ -2,6 +2,7 @@ import { PluginSettingTab, setIcon, Setting } from 'obsidian';
 import { hostThemeDark, marginAnchorIconId, observeHostTheme } from '../ui/icons/ReadingDeskIcons';
 import type ReadingDeskPlugin from '../main';
 import { ObjectStorageConfigurationError, ObjectStorageRequestError } from '../storage/ObjectStorageService';
+import { SettingSaveFeedback } from './SettingSaveFeedback';
 import { ImportExportPanel } from '../ui/portability/ImportExportPanel';
 
 const CONNECTION_HINTS: Record<string, string> = {
@@ -37,6 +38,7 @@ export class ReadingDeskSettingTab extends PluginSettingTab {
 	private panel?: HTMLElement;
 	private tabButtons = new Map<string, HTMLButtonElement>();
 	private headingIcon?: HTMLElement;
+	private readonly saves = new WeakMap<HTMLElement, SettingSaveFeedback>();
 	private stopHeadingIconSync: (() => void) | null = null;
 
 	constructor(private readonly readingDesk: ReadingDeskPlugin) {
@@ -159,9 +161,7 @@ export class ReadingDeskSettingTab extends PluginSettingTab {
 			.setDesc('用英文逗号分隔；修改后从书架「扫描书库」或命令面板重新扫描。')
 			.addText(text => {
 				text.inputEl.setAttribute('aria-label', '书库文件夹');
-				return text.setValue(this.readingDesk.repository.readSettings().libraryFolders.join(', ')).onChange(async value => {
-					await this.readingDesk.repository.updateSettings({ libraryFolders: value.split(',').map(item => item.trim()).filter(Boolean) });
-				});
+				return text.setValue(this.readingDesk.repository.readSettings().libraryFolders.join(', ')).onChange(value => this.save(text.inputEl, () => this.readingDesk.repository.updateSettings({ libraryFolders: value.split(',').map(item => item.trim()).filter(Boolean) })));
 			});
 	}
 
@@ -173,21 +173,21 @@ export class ReadingDeskSettingTab extends PluginSettingTab {
 				dropdown.selectEl.setAttribute('aria-label', '目录样式');
 				return dropdown.addOption('tree', '级联树').addOption('bullet', '子弹线')
 					.setValue(viewer.outlineStyle)
-					.onChange(async outlineStyle => this.readingDesk.updateViewerSettings({ outlineStyle: outlineStyle as 'tree' | 'bullet' }));
+					.onChange(outlineStyle => this.save(dropdown.selectEl, () => this.readingDesk.updateViewerSettings({ outlineStyle: outlineStyle as 'tree' | 'bullet' })));
 			});
 		new Setting(content).setName('滚动模式').setDesc('连续滚动把整本书排成一条虚拟长卷；单页一次只显示一页。')
 			.addDropdown(dropdown => {
 				dropdown.selectEl.setAttribute('aria-label', '滚动模式');
 				return dropdown.addOption('continuous', '连续滚动').addOption('single', '单页')
 					.setValue(viewer.scrollMode)
-					.onChange(async scrollMode => this.readingDesk.updateViewerSettings({ scrollMode: scrollMode as 'continuous' | 'single' }));
+					.onChange(scrollMode => this.save(dropdown.selectEl, () => this.readingDesk.updateViewerSettings({ scrollMode: scrollMode as 'continuous' | 'single' })));
 			});
 		new Setting(content).setName('夜间纸面反相').setDesc('在深色主题下把 PDF 纸面反相为夜间阅读底色，界面本身不受影响。')
 			.addDropdown(dropdown => {
 				dropdown.selectEl.setAttribute('aria-label', '夜间纸面反相');
 				return dropdown.addOption('auto', '跟随主题').addOption('on', '始终开启').addOption('off', '始终关闭')
 					.setValue(viewer.invertPdf)
-					.onChange(async invertPdf => this.readingDesk.updateViewerSettings({ invertPdf: invertPdf as 'auto' | 'on' | 'off' }));
+					.onChange(invertPdf => this.save(dropdown.selectEl, () => this.readingDesk.updateViewerSettings({ invertPdf: invertPdf as 'auto' | 'on' | 'off' })));
 			});
 	}
 
@@ -197,19 +197,19 @@ export class ReadingDeskSettingTab extends PluginSettingTab {
 		new Setting(imageHost).setName('启用对象存储').setDesc('裁剪图片与图床上传的总开关；凭据保存在本地插件数据中。')
 			.addToggle(toggle => {
 				toggle.toggleEl.setAttribute('aria-label', '启用对象存储');
-				return toggle.setValue(storage.enabled).onChange(async enabled => this.readingDesk.updateStorageSettings({ enabled }));
+				return toggle.setValue(storage.enabled).onChange(enabled => this.save(toggle.toggleEl, async () => { await this.readingDesk.updateStorageSettings({ enabled }); this.refreshStorageAvailability(panel, enabled); }));
 			});
 		new Setting(imageHost).setName('接管 Markdown 粘贴').setDesc(storage.enabled ? '粘贴图片时上传并插入外链。' : '需先启用对象存储。')
 			.addToggle(toggle => {
 				toggle.toggleEl.setAttribute('aria-label', '启用 Markdown 图床');
-				return toggle.setValue(storage.imageHostEnabled).setDisabled(!storage.enabled).onChange(async imageHostEnabled => this.readingDesk.updateStorageSettings({ imageHostEnabled }));
+				return toggle.setValue(storage.imageHostEnabled).setDisabled(!storage.enabled).onChange(imageHostEnabled => this.save(toggle.toggleEl, () => this.readingDesk.updateStorageSettings({ imageHostEnabled })));
 			});
 		const credentials = this.createCard(panel, '对象存储凭据', '填写 OSS 或 COS 的访问信息，可先用只读请求测试连通。');
 		const regionRow = new Setting(credentials).setName('Region').setDesc('仅腾讯云 COS 需要。')
 			.addText(text => {
 				text.inputEl.setAttribute('aria-label', 'Region');
 				text.inputEl.placeholder = 'ap-guangzhou';
-				return text.setValue(storage.region).onChange(async value => this.readingDesk.updateStorageSettings({ region: value }));
+				return text.setValue(storage.region).onChange(value => this.save(text.inputEl, () => this.readingDesk.updateStorageSettings({ region: value })));
 			});
 		regionRow.settingEl.hidden = storage.provider !== 'cos';
 		new Setting(credentials).setName('提供商')
@@ -217,10 +217,10 @@ export class ReadingDeskSettingTab extends PluginSettingTab {
 				dropdown.selectEl.setAttribute('aria-label', '对象存储提供商');
 				return dropdown.addOption('oss', '阿里云 OSS').addOption('cos', '腾讯云 COS')
 					.setValue(storage.provider).setDisabled(!storage.enabled)
-					.onChange(async provider => {
-						regionRow.settingEl.hidden = provider !== 'cos';
+					.onChange(provider => this.save(dropdown.selectEl, async () => {
 						await this.readingDesk.updateStorageSettings({ provider: provider as 'oss' | 'cos' });
-					});
+						regionRow.settingEl.hidden = provider !== 'cos';
+					}));
 			});
 		this.addStorageText(credentials, 'Endpoint', 'endpoint', false, 'https://oss-cn-hangzhou.aliyuncs.com');
 		this.addStorageText(credentials, 'Bucket', 'bucket', false, 'reading-desk');
@@ -229,7 +229,7 @@ export class ReadingDeskSettingTab extends PluginSettingTab {
 		this.addStorageText(credentials, 'Secret Key', 'secretAccessKey', true);
 		const testSetting = new Setting(credentials).setName('测试连接').setDesc(storage.enabled ? '发送已签名的只读请求；不会上传文件。' : '先启用对象存储并填写凭据后才可测试。');
 		testSetting
-			.addButton(button => button.setButtonText('测试连接').setDisabled(!storage.enabled).onClick(async () => {
+			.addButton(button => { button.buttonEl.setAttribute('aria-label', '测试连接'); return button.setButtonText('测试连接').setDisabled(!storage.enabled).onClick(async () => {
 				button.setDisabled(true).setButtonText('测试中…');
 				testSetting.descEl.className = 'rd-setting-desc';
 				try {
@@ -242,7 +242,7 @@ export class ReadingDeskSettingTab extends PluginSettingTab {
 				} finally {
 					button.setDisabled(false).setButtonText('测试连接');
 				}
-			}));
+			}); });
 	}
 
 	private renderAiSection(panel: HTMLElement): void {
@@ -256,13 +256,29 @@ export class ReadingDeskSettingTab extends PluginSettingTab {
 	private renderDataSection(panel: HTMLElement): void {
 		const content = this.createCard(panel, '导入与导出', '导入只读取旧数据并新建文件，不会覆盖仓库内容。');
 		const portability = content.createDiv({ cls: 'rd-settings-portability' });
-		this.portabilityPanel = new ImportExportPanel({
-			importLegacy: () => this.readingDesk.importLegacyBookshelf(),
-			exportMarkdown: () => this.readingDesk.exportMarkdown(),
-			exportJson: () => this.readingDesk.exportJson(),
-			status: () => this.readingDesk.portabilityStatus()
-		});
+		this.portabilityPanel = new ImportExportPanel(this.readingDesk.dataPanelHost());
 		this.portabilityPanel.render(portability);
+	}
+
+	private save(control: HTMLElement, operation: () => Promise<unknown>): Promise<void> {
+		const row = control.closest<HTMLElement>('.setting-item') ?? control.parentElement ?? control;
+		let feedback = this.saves.get(row);
+		if (!feedback) { feedback = new SettingSaveFeedback(row); this.saves.set(row, feedback); }
+		return feedback.save(operation);
+	}
+
+	/** Enable dependent controls in place after the switch was persisted. */
+	private refreshStorageAvailability(panel: HTMLElement, enabled: boolean): void {
+		for (const label of ['启用 Markdown 图床', '对象存储提供商', '测试连接']) {
+			const control = panel.querySelector<HTMLElement>('[aria-label="' + label + '"]');
+			if (!control) continue;
+			control.setAttribute('aria-disabled', String(!enabled));
+			if (control instanceof HTMLSelectElement || control instanceof HTMLButtonElement) control.disabled = !enabled;
+			else {
+				control.classList.toggle('is-disabled', !enabled);
+				const checkbox = control.querySelector<HTMLInputElement>('input'); if (checkbox) checkbox.disabled = !enabled;
+			}
+		}
 	}
 
 	private addStorageText(panel: HTMLElement, label: string, key: 'endpoint' | 'region' | 'bucket' | 'prefix' | 'accessKeyId' | 'secretAccessKey', secret = false, placeholder = ''): void {
@@ -271,7 +287,7 @@ export class ReadingDeskSettingTab extends PluginSettingTab {
 			if (placeholder) text.inputEl.placeholder = placeholder;
 			text.setValue(this.readingDesk.repository.readSettings().storage[key]);
 			if (secret) text.inputEl.type = 'password';
-			text.onChange(async value => this.readingDesk.updateStorageSettings({ [key]: value }));
+			text.onChange(value => this.save(text.inputEl, () => this.readingDesk.updateStorageSettings({ [key]: value })));
 		});
 	}
 }

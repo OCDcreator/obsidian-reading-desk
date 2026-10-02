@@ -46,7 +46,7 @@ describe('ImportExportPanelState', () => {
 		expect(exportFilename('markdown', date)).toBe('reading-desk-书架导出-2026-09-18.md');
 		expect(exportFilename('json', date)).toBe('reading-desk-书架导出-2026-09-18.json');
 		expect(exportSuccessMessage('markdown')).toBe('Markdown 导出已开始下载。');
-		expect(exportSuccessMessage('json')).toBe('JSON 备份已开始下载。');
+		expect(exportSuccessMessage('json')).toBe('书架 JSON 导出已开始下载。标注与评论请使用完整备份。');
 		expect(errorMessage(new Error('存储不可用'), '失败')).toBe('存储不可用');
 		expect(errorMessage('unknown', '失败')).toBe('失败');
 	});

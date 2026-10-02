@@ -405,7 +405,7 @@
 .rd-crop-drag-handle img, .rd-crop-drag-preview { display: block; max-width: 112px; max-height: 72px; }
 
 /* Shelf */
-.rd-shelf { padding: 24px; }
+.rd-shelf { position: relative; padding: 20px; container-type: inline-size; min-width: 0; }
 .rd-shelf-header, .rd-shelf-toolbar, .rd-shelf-actions, .rd-category-chips, .rd-category-manager, .rd-continue-reading-list { display: flex; gap: 8px; align-items: center; }
 .rd-shelf-header { justify-content: space-between; margin-bottom: 16px; }
 .rd-shelf-heading { font-size: 25px; font-weight: 600; }
@@ -413,18 +413,16 @@
 .rd-shelf-search { min-width: min(360px, 60vw); }
 .rd-shelf-mode-host, .rd-view-switch, .rd-shelf-results { display: flex; min-width: 0; }
 .rd-view-switch { gap: 8px; align-items: center; }
-.rd-shelf-content { display: grid; gap: 24px; padding-top: 20px; min-width: 0; }
+.rd-shelf-content { display: grid; gap: 12px; padding-top: 12px; min-width: 0; width: 100%; }
 .rd-section-title { font-size: 20px; margin: 0 0 12px; }
 .rd-continue-reading { min-width: 0; }
 .rd-continue-reading-list { overflow: auto; padding-bottom: 4px; align-items: stretch; }
-/* The rail is a resume affordance, not a second shelf. Carrying the full card's
- * category editor and cover height made a one-book rail 483px tall, pushing the
- * library grid entirely below the fold of a 792px pane. */
-.rd-continue-reading-list .rd-shelf-card { flex: 0 0 clamp(152px, 22vw, 196px); max-width: 196px; }
-.rd-continue-reading-list .rd-book-cover { max-height: 160px; }
-.rd-continue-reading-list .rd-book-category,
-.rd-continue-reading-list .rd-book-author,
-.rd-continue-reading-list .rd-book-meta { display: none; }
+.rd-continue-reading-list .rd-shelf-card--continue { display: grid; grid-template-columns: 48px minmax(0, 1fr); flex: 0 0 260px; max-width: 300px; padding: 8px; gap: 10px; }
+.rd-continue-reading-list .rd-book-cover { width: 48px; height: 68px; aspect-ratio: auto; }
+.rd-shelf-card--continue .rd-book-details { display: grid; align-content: center; gap: 8px; }
+.rd-shelf-card--continue .rd-book-title { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 14px; }
+.rd-shelf-card--continue .rd-book-cover-title { font-size: 9px; }
+.rd-shelf-card--continue .rd-book-cover-format, .rd-shelf-card--continue .rd-book-cover-unavailable { display: none; }
 /* Figures, page counts and timestamps stay column-aligned instead of jittering. */
 .rd-page-count, .rd-book-meta, .rd-progress-label, .rd-library-table td,
 .rd-comment-popover__comment time, .rd-crop-status { font-variant-numeric: tabular-nums; }
@@ -519,7 +517,7 @@
 	.rd-target-panel { position: static; }
 	.rd-pdf-page-host { justify-self: stretch; }
 }
-@container (max-width: 680px) {
+@container (max-width: 980px) {
 	.rd-reader .rd-reader-toolbar [data-rd-overflow='secondary'] { display: none; }
 	.rd-reader .rd-reader-toolbar .rd-reader-toolbar__more { display: inline-grid; }
 }
@@ -615,3 +613,71 @@
 .rd-setting-result.is-success { color: var(--text-success, var(--rd-ink)); }
 .rd-setting-result.is-error { color: var(--text-error, var(--rd-ink)); }
 .reading-desk-settings .rd-card-content input[type="text"] { width: 100%; max-width: 480px; }
+
+/* Shelf controls use host tokens in narrow leaves as well as narrow windows. */
+.rd-shelf-results { display: block; width: 100%; }
+.rd-shelf-toolbar, .rd-view-switch, .rd-shelf-filters, .rd-shelf-selection-bar, .rd-shelf-summary, .rd-shelf-pagination { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; min-width: 0; }
+.rd-shelf-filters { align-items: end; }
+.rd-shelf-field { display: grid; gap: 4px; font-size: 12px; min-width: 0; }
+.rd-shelf-field select, .rd-shelf-field input { max-width: 100%; min-width: 0; }
+.rd-shelf-pagination { justify-content: center; color: var(--rd-ink-muted); font-size: 12px; padding: 8px 0; }
+.rd-shelf-search { flex: 1 1 220px; min-width: 0; max-width: 100%; }
+.rd-book-cover-type { display: grid; align-content: space-between; gap: 8px; padding: 14px; width: 100%; height: 100%; box-sizing: border-box; text-align: left; }
+.rd-book-cover-format { font-size: 11px; letter-spacing: .08em; }
+.rd-book-cover-title { color: var(--rd-ink); font-family: var(--font-text); font-size: 22px; line-height: 1.4; font-weight: 600; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.rd-book-cover-unavailable { font-size: 10px; padding: 0; text-align: left; }
+.rd-book-badges { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0; }
+.rd-book-badge { border: 1px solid var(--rd-line); border-radius: 4px; color: var(--rd-ink-muted); font-size: 11px; padding: 1px 5px; max-width: 100%; overflow-wrap: anywhere; }
+.rd-book-badge.is-error { color: var(--text-error); }
+.rd-book-selection { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+.rd-library-table-wrap { overflow: auto; max-width: 100%; }
+.rd-library-table { min-width: 760px; }
+.rd-metadata-editor { display: grid; gap: 4px; min-width: 100px; }
+.rd-metadata-source { color: var(--rd-ink-muted); font-size: 11px; }
+.rd-shelf-dialog { position: absolute; z-index: 20; inset: 12px; max-height: calc(100% - 24px); padding: 16px; overflow: auto; background: var(--rd-surface-raised); color: var(--rd-ink); border: 1px solid var(--rd-line); border-radius: 8px; box-shadow: var(--shadow-l); }
+.rd-shelf-dialog__header { display: flex; gap: 12px; justify-content: space-between; align-items: start; }
+.rd-shelf-dialog__body { display: grid; gap: 12px; }
+.rd-shelf-dialog .rd-section-title { font-size: 18px; }
+.rd-batch-field { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.rd-batch-preview, .rd-relink-path { overflow-wrap: anywhere; color: var(--rd-ink-muted); }
+.rd-shelf-annotation-search { padding-top: 12px; display: grid; gap: 12px; }
+.rd-shelf-annotation-results { display: grid; gap: 8px; }
+.rd-shelf-annotation-hit { border: 1px solid var(--rd-line); padding: 10px; overflow-wrap: anywhere; }
+.rd-shelf-annotation-hit p { margin: 6px 0; white-space: pre-wrap; }
+.rd-shelf-hit-comment { color: var(--rd-ink-muted); }
+.rd-setting-save-feedback { display: flex; flex-wrap: wrap; gap: 8px; flex-basis: 100%; margin-top: 6px; }
+.setting-item:has(.rd-setting-save-feedback) { flex-wrap: wrap; }
+.rd-setting-save-status { color: var(--rd-ink-muted); font-size: 12px; overflow-wrap: anywhere; }
+.rd-setting-save-status.is-success { color: var(--text-success); }
+.rd-setting-save-status.is-error { color: var(--text-error); }
+.rd-setting-save-feedback button[hidden] { display: none; }
+@container (max-width: 500px) {
+	.rd-shelf .rd-shelf-header { flex-wrap: wrap; }
+	.rd-shelf .rd-view-switch { width: 100%; }
+	.rd-shelf .rd-shelf-filters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+	.rd-shelf .rd-shelf-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+	.rd-shelf .rd-shelf-field { width: 100%; }
+	.rd-shelf .rd-shelf-field select { width: 100%; }
+}
+/* Reader search ranges and PDF links share PDF.js page coordinates. */
+.rd-search-hit-overlay, .rd-pdf-link-layer { position: absolute; inset: 0; pointer-events: none; }
+.rd-search-hit { position: absolute; background: color-mix(in srgb, var(--text-highlight-bg) 55%, transparent); outline: 1px solid var(--rd-line); pointer-events: none; }
+.rd-search-hit--current { background: color-mix(in srgb, var(--rd-accent) 35%, transparent); outline: 2px solid var(--rd-accent); }
+.rd-pdf-link { position: absolute; display: block; pointer-events: auto; cursor: pointer; background: transparent; border: 0; padding: 0; min-width: 0; min-height: 0; border-radius: 0; box-shadow: none; }
+.rd-pdf-link:hover, .rd-pdf-link:focus-visible { background: color-mix(in srgb, var(--rd-accent) 12%, transparent); outline: 2px solid var(--rd-accent); }
+.rd-pdf-link-preview { position: absolute; pointer-events: auto; border: 1px solid var(--rd-line); background: var(--rd-surface-raised); color: var(--rd-ink); border-radius: 4px; }
+.rd-pdf-preview { position: absolute; z-index: 30; inset: 12px; display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: 8px; padding: 12px; background: var(--rd-surface-raised); border: 1px solid var(--rd-line); border-radius: 8px; box-shadow: var(--shadow-l); }
+.rd-pdf-preview__body { grid-row: 1; overflow: auto; min-width: 0; min-height: 0; }
+.rd-pdf-preview__body .rd-pdf-page { position: relative; }
+.rd-pdf-preview__body canvas { display: block; margin-inline: auto; }
+.rd-pdf-preview__actions { grid-row: 2; display: flex; flex-wrap: wrap; justify-content: end; gap: 8px; }
+
+/* DOM state mirrors container-query boundaries for host layouts without named containers. */
+.rd-reader[data-rd-toolbar-overflow='secondary'] .rd-reader-toolbar [data-rd-overflow='secondary'],
+.rd-reader[data-rd-toolbar-overflow='tight'] .rd-reader-toolbar [data-rd-overflow='secondary'],
+.rd-reader[data-rd-toolbar-overflow='tight'] .rd-reader-toolbar [data-rd-overflow='tight'],
+.rd-reader[data-rd-toolbar-overflow='tight'] .rd-reader-toolbar__group[data-rd-toolbar-group='annotation'],
+.rd-reader[data-rd-toolbar-overflow='tight'] .rd-toolbar-palette { display: none; }
+.rd-reader[data-rd-toolbar-overflow='secondary'] .rd-reader-toolbar .rd-reader-toolbar__more,
+.rd-reader[data-rd-toolbar-overflow='tight'] .rd-reader-toolbar .rd-reader-toolbar__more,
+.rd-reader[data-rd-toolbar-overflow='tight'] .rd-reader-toolbar .rd-toolbar-palette__more { display: inline-grid; }

@@ -1,6 +1,16 @@
 export type BookFormat = 'pdf' | 'epub';
 export type TargetType = 'canvas' | 'excalidraw' | 'markdown';
 export type HighlightColor = 'moss' | 'amber' | 'brick' | 'indigo' | 'plum';
+export type ReadingStatus = 'unread' | 'reading' | 'finished' | 'abandoned';
+
+export interface LibraryList { id: string; name: string; }
+export interface BibliographicSource {
+	provider: 'csl' | 'bibtex' | 'zotero';
+	id: string;
+	doi?: string;
+	isbn?: string;
+	citationKey?: string;
+}
 
 export interface SourceFingerprint {
 	mtime: number;
@@ -27,6 +37,14 @@ export interface LibraryBook {
 	coverRetryable?: boolean;
 	/** Recoverable PDF cover-render failure retained for diagnostics without rejecting metadata. */
 	coverError?: string;
+	/** Manual values, including an explicitly empty author, survive extraction/import. */
+	metadataOverrides?: { title?: string; author?: string };
+	autoMetadata?: { title: string; author: string };
+	source?: BibliographicSource;
+	listIds?: string[];
+	readingStatus?: ReadingStatus;
+	/** Missing sources remain indexed so users can reconnect them without losing identity. */
+	missing?: boolean;
 }
 
 export interface LibraryCategory {
@@ -106,6 +124,8 @@ export interface ReadingDeskSettings {
 	storage: ObjectStorageSettings;
 	viewer: ViewerSettings;
 	importedBookshelf: boolean;
+	/** Fixed placeholders only; empty uses the built-in excerpt template. */
+	excerptTemplate?: string;
 }
 
 export interface ExcerptCardState {
@@ -113,7 +133,20 @@ export interface ExcerptCardState {
 	folded?: boolean;
 }
 
+export interface DeletedAnnotation {
+	highlight: PdfHighlight;
+	comments: PdfComment[];
+	excerptCard?: ExcerptCardState;
+	deletedAt: number;
+	reason: 'target-deleted' | 'user-deleted';
+}
+
 export interface ReadingDeskData {
+	schemaVersion?: number;
+	lists?: LibraryList[];
+	deletedAnnotations?: Record<string, DeletedAnnotation>;
+	/** Durable target-write intents; cleared only after the target and annotation agree. */
+	pendingTargetWrites?: Record<string, PdfHighlight>;
 	books: Record<string, LibraryBook>;
 	categories: LibraryCategory[];
 	highlights: Record<string, PdfHighlight>;

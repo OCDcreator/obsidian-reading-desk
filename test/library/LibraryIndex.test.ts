@@ -3,7 +3,7 @@ import { LibraryIndex } from '../../src/library/LibraryIndex';
 import type { LibraryBook, LibraryCategory } from '../../src/types/contracts';
 
 describe('LibraryIndex', () => {
-	it('reuses unchanged records and removes a disappeared scoped file', async () => {
+	it('reuses unchanged records and marks a disappeared scoped file missing', async () => {
 		const books: Record<string, LibraryBook> = {};
 		const categories: LibraryCategory[] = [];
 		let calls = 0;
@@ -12,7 +12,8 @@ describe('LibraryIndex', () => {
 		await index.scan([{ path: '书/one.pdf', extension: 'pdf', stat: { mtime: 1, size: 4 } }], ['书']);
 		expect(calls).toBe(1);
 		await index.scan([], ['书']);
-		expect(index.list()).toHaveLength(0);
+		expect(index.list()).toHaveLength(1);
+		expect(index.getByPath('书/one.pdf')?.missing).toBe(true);
 	});
 
 	it('retries an unchanged PDF only while a cover failure is explicitly recoverable', async () => {

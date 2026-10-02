@@ -4,6 +4,8 @@ import { createHighlightLink } from '../reader/ReadingDeskLinks';
 export interface TargetCardOptions {
 	/** A user-facing card heading. */
 	title?: string;
+	/** Fixed-placeholder template; no script evaluation. */
+	template?: string;
 	/** Initial folded/collapsed state for target formats that support it. */
 	folded?: boolean;
 	/** Overrides the default Reading Desk source URI when a caller has a richer URI. */
@@ -17,6 +19,8 @@ export interface TargetWriteResult {
 	objectId: string;
 	title: string;
 	sourceLink: string;
+	/** Actual target state, including preserved native user edits. */
+	folded?: boolean;
 }
 
 export interface TargetBacklink {
@@ -36,6 +40,8 @@ export interface TargetCardMetadata {
 	folded: boolean;
 	color: PdfHighlight['color'];
 	chapterPath?: string[];
+	/** Last generated text; user edits are retained around this baseline. */
+	managedText?: string;
 }
 
 export function createSourceLink(highlight: PdfHighlight, supplied?: string): string {

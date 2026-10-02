@@ -8,13 +8,19 @@ import {
 	type PortabilityStatus
 } from './ImportExportPanelState';
 
-type Awaitable<T> = T | Promise<T>;
+import { BackupRestorePanel } from './BackupRestorePanel';
+import { BibliographicImportPanel } from './BibliographicImportPanel';
+import { RepositoryRecoveryPanel } from './RepositoryRecoveryPanel';
+import { ExcerptTemplatePanel } from './ExcerptTemplatePanel';
+import type { Awaitable, DataPanelHost, ExportContent } from './DataPanelHost';
+import type { PanelSection } from './PanelSection';
+export type { ExportContent, DataPanelHost, BackupPanelPreview, BackupPanelOptions, RecoveryPanelStatus } from './DataPanelHost';
+
 type ExportFormat = 'markdown' | 'json';
-export type ExportContent = Blob | string;
 
 const CONFIRM_MESSAGE = '导入只能执行一次。请再次点击“确认导入”完成操作，或点击“取消”返回。';
 
-export interface ImportExportPanelHost {
+export interface ImportExportPanelHost extends DataPanelHost {
 	importLegacy(): Awaitable<LegacyImportResult>;
 	exportMarkdown(): Awaitable<ExportContent>;
 	exportJson(): Awaitable<ExportContent>;
@@ -47,10 +53,13 @@ export class ImportExportPanel {
 	private retryButton: HTMLButtonElement | null = null;
 	private state: ImportExportPanelState = initialPanelState();
 	private confirmPending = false;
+	private sections: PanelSection[] = [];
+	private generation = 0;
 
 	constructor(private readonly host: ImportExportPanelHost) { }
 
 	render(container: HTMLElement): void {
+		this.destroy();
 		this.container = container;
 		this.confirmPending = false;
 		this.state = { ...initialPanelState(), operation: 'loading-import', message: '正在读取导入状态…' };
@@ -59,6 +68,9 @@ export class ImportExportPanel {
 	}
 
 	destroy(): void {
+		this.generation++;
+		for (const section of this.sections) section.destroy();
+		this.sections = [];
 		if (this.container) this.container.replaceChildren();
 		this.container = null;
 		this.root = null;
@@ -76,9 +88,20 @@ export class ImportExportPanel {
 		root.className = 'rd-import-export-panel';
 		root.setAttribute('aria-label', '导入与导出');
 		root.append(this.createImportSection(), this.createExportSection(), this.createStatusWrap());
+		this.buildDataSections(root);
 		this.root = root;
 		this.container.replaceChildren(root);
 		this.updateView();
+	}
+
+	private buildDataSections(root: HTMLElement): void {
+		if (this.host.repositoryStatus || this.host.recoveryStatus) this.sections.push(new RepositoryRecoveryPanel(this.host));
+		if (this.host.exportBackup || this.host.previewBackup) this.sections.push(new BackupRestorePanel(this.host, (content, filename) => {
+			downloadBlob(toBlob(content, 'application/json;charset=utf-8'), filename);
+		}));
+		if (this.host.prepareBibliographicImport) this.sections.push(new BibliographicImportPanel(this.host));
+		if (this.host.excerptTemplate && this.host.previewExcerptTemplate) this.sections.push(new ExcerptTemplatePanel(this.host));
+		for (const section of this.sections) root.append(section.root);
 	}
 
 	private createImportSection(): HTMLElement {
@@ -102,7 +125,7 @@ export class ImportExportPanel {
 		section.className = 'rd-import-export-panel__export';
 		section.setAttribute('aria-label', '导出当前书架');
 		const description = document.createElement('p');
-		description.textContent = '下载当前书架的可阅读 Markdown 清单或完整 JSON 备份。';
+		description.textContent = '下载当前书架的 Markdown 或 JSON 清单。书架导出仅包含书目与分类；标注、评论与摘录状态请使用完整备份。';
 		const actions = document.createElement('div');
 		actions.className = 'rd-import-export-panel__actions';
 		this.markdownButton = this.createButton('导出 Markdown', '导出书架 Markdown', () => void this.export('markdown'));
@@ -197,8 +220,10 @@ export class ImportExportPanel {
 	}
 
 	private async loadStatus(): Promise<void> {
+		const generation = this.generation;
 		try {
 			const status = await this.host.status();
+			if (generation !== this.generation) return;
 			this.state = {
 				status,
 				statusReady: true,
@@ -208,6 +233,7 @@ export class ImportExportPanel {
 					: initialPanelState().message
 			};
 		} catch (error) {
+			if (generation !== this.generation) return;
 			this.state = {
 				...initialPanelState(),
 				operation: 'error',
@@ -236,7 +262,7 @@ export class ImportExportPanel {
 
 	private async export(format: ExportFormat): Promise<void> {
 		if (this.isLoading()) return;
-		const label = format === 'markdown' ? '正在准备 Markdown 导出…' : '正在准备 JSON 备份…';
+		const label = format === 'markdown' ? '正在准备 Markdown 导出…' : '正在准备书架 JSON 导出…';
 		this.setLoading(format === 'markdown' ? 'loading-markdown' : 'loading-json', label);
 		try {
 			const content = format === 'markdown' ? await this.host.exportMarkdown() : await this.host.exportJson();

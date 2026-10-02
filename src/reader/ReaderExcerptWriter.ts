@@ -5,15 +5,22 @@ import type { AnnotationStore } from '../annotations/AnnotationStore';
 import type { TargetService } from '../targets';
 import type { PageSurface } from './PageSurface';
 import { normalizeClientRect } from './PdfSelectionGeometry';
-import { Notice } from 'obsidian';
 
+export interface FrozenExcerptSelection {
+	pdfPath: string;
+	/** One-based surface page. */
+	page: number;
+	rotation: number;
+	rects: PdfHighlight['rects'];
+	text: string;
+}
 export interface ExcerptWriteInput {
 	text: string;
 	type: TargetType;
 	color: PdfHighlight['color'];
+	frozenSelection?: FrozenExcerptSelection;
 	frozenRects?: PdfHighlight['rects'];
 	surface: PageSurface;
-	/** Page used when the selection cannot be anchored to a rendered host. */
 	fallbackPage: number;
 	pdfPath: string;
 	viewportFallback: PageViewport | null;
@@ -25,52 +32,66 @@ export interface ExcerptWriteInput {
 	annotations: AnnotationStore;
 	chapterPathFor(page: number): string[];
 	syncOutline(targetPath: string): Promise<void>;
-	/** Remembers the chosen target path when the type matches the toolbar selection. */
 	onTargetResolved(type: TargetType, path: string): void;
 }
+export interface WrittenExcerpt { highlight: PdfHighlight; }
+export class ReaderSelectionError extends Error { }
 
-export interface WrittenExcerpt {
-	highlight: PdfHighlight;
+function rangeHost(node: Node): HTMLElement | null {
+	const element = node.nodeType === 1 ? node as Element : node.parentElement;
+	return element?.closest<HTMLElement>('.rd-pdf-page-host') ?? null;
 }
-
-/** Resolves the page host and viewport that own the current selection. */
-export function selectionAnchor(surface: PageSurface, fallbackPage: number): { host: HTMLElement; page: number; viewport: PageViewport | null } | null {
-	const host = surface.hostForPage(fallbackPage) ?? null;
-	if (!host) return null;
-	return { host, page: Number(host.dataset.page ?? fallbackPage), viewport: surface.viewportForPage(Number(host.dataset.page ?? fallbackPage)) };
+/** Range ownership, never the most visible page or last renderer viewport. */
+export function selectionAnchor(surface: PageSurface, _fallbackPage: number, range: Range | null = null): { host: HTMLElement; page: number; viewport: PageViewport | null } | null {
+	if (!range || range.collapsed) return null;
+	const host = rangeHost(range.startContainer);
+	const end = rangeHost(range.endContainer);
+	if (!host || !end || host !== end) throw new ReaderSelectionError('暂不支持跨页摘录，请仅选择一页内的原文。');
+	const page = Number(host.dataset.page);
+	if (!Number.isInteger(page) || surface.hostForPage(page) !== host) throw new ReaderSelectionError('选区不属于当前 PDF。请重新选择原文。');
+	return { host, page, viewport: surface.viewportForPage(page) };
 }
-
-/** Normalizes live selection rects into PDF space, clipped to the anchor page. */
-export function selectionRects(range: Range | null, host: HTMLElement, viewport: PageViewport | null, warnCrossPage: boolean): PdfHighlight['rects'] {
-	if (!viewport) return [];
+/** Reject every overflow edge so full text is never paired with partial geometry. */
+export function selectionRects(range: Range | null, host: HTMLElement, viewport: PageViewport | null, _warnCrossPage = true): PdfHighlight['rects'] {
+	if (!viewport || !range) return [];
+	if (rangeHost(range.startContainer) !== host || rangeHost(range.endContainer) !== host) throw new ReaderSelectionError('暂不支持跨页摘录，请仅选择一页内的原文。');
 	const bounds = host.getBoundingClientRect();
-	const clientRects = Array.from(range?.getClientRects() ?? []);
-	const own = clientRects.filter(rect => rect.left >= bounds.left - 2 && rect.right <= bounds.right + 2);
-	if (warnCrossPage && own.length && clientRects.some(rect => rect.right > bounds.right + 2)) {
-		new Notice('选区跨越多个页面时，仅摘录起始页内容。');
+	if (bounds.width <= 0 || bounds.height <= 0) return [];
+	const rects = Array.from(range.getClientRects()).filter(rect => rect.width > 0 && rect.height > 0);
+	if (rects.some(rect => rect.left < bounds.left - 2 || rect.right > bounds.right + 2 || rect.top < bounds.top - 2 || rect.bottom > bounds.bottom + 2)) {
+		throw new ReaderSelectionError('选区超出当前页边界，请重新选择单页原文。');
 	}
-	return own.map(rect => normalizeClientRect(rect, bounds, viewport));
+	const scaleX = viewport.width / bounds.width;
+	const scaleY = viewport.height / bounds.height;
+	return rects.map(rect => normalizeClientRect({
+		left: Math.max(0, rect.left - bounds.left) * scaleX,
+		top: Math.max(0, rect.top - bounds.top) * scaleY,
+		right: Math.min(bounds.width, rect.right - bounds.left) * scaleX,
+		bottom: Math.min(bounds.height, rect.bottom - bounds.top) * scaleY
+	} as DOMRect, { left: 0, top: 0 } as DOMRect, viewport)).filter(rect => rect.width > 0 && rect.height > 0);
 }
-
-/** Builds and persists one excerpt highlight plus its target card. */
-export async function writeReaderExcerpt(input: ExcerptWriteInput, range: Range | null): Promise<WrittenExcerpt | null> {
-	const anchor = selectionAnchor(input.surface, input.fallbackPage);
-	if (!anchor) return null;
-	const viewport = anchor.viewport ?? input.viewportFallback;
-	if (!viewport) return null;
-	const rects = input.frozenRects ?? selectionRects(range, anchor.host, viewport, input.continuous);
+export function freezeExcerptSelection(surface: PageSurface, range: Range | null, pdfPath: string): FrozenExcerptSelection | null {
+	const anchor = selectionAnchor(surface, 0, range);
+	if (!anchor?.viewport || !range) return null;
+	const rects = selectionRects(range, anchor.host, anchor.viewport);
 	if (!rects.length) return null;
+	return { pdfPath, page: anchor.page, rotation: anchor.viewport.rotation, rects, text: range.toString().trim() };
+}
+/** Validates before any target mutation and delegates persistence to its workflow. */
+export async function writeReaderExcerpt(input: ExcerptWriteInput, range: Range | null): Promise<WrittenExcerpt | null> {
+	const frozen = input.frozenSelection ?? freezeExcerptSelection(input.surface, range, input.pdfPath);
+	if (!frozen || !frozen.text || !frozen.rects.length) return null;
+	if (frozen.pdfPath !== input.pdfPath) throw new ReaderSelectionError('选区来自另一份 PDF，请重新选择。');
 	const highlight: PdfHighlight = {
-		id: createId('highlight'), pdfPath: input.pdfPath, page: anchor.page - 1, rotation: viewport.rotation, rects, text: input.text,
-		color: input.color, chapterPath: input.chapterPathFor(anchor.page - 1), tags: [], createdAt: Date.now(), updatedAt: Date.now()
+		id: createId('highlight'), pdfPath: input.pdfPath, page: frozen.page - 1, rotation: frozen.rotation,
+		rects: frozen.rects.map(rect => ({ ...rect })), text: frozen.text,
+		color: input.color, chapterPath: input.chapterPathFor(frozen.page - 1), tags: [], createdAt: Date.now(), updatedAt: Date.now()
 	};
 	const target = input.selectedTargetPath && input.type === input.selectedTarget
-		? { type: input.type, path: input.selectedTargetPath }
-		: await input.createTarget(input.type);
+		? { type: input.type, path: input.selectedTargetPath } : await input.createTarget(input.type);
 	if (target.type === 'canvas') await input.syncOutline(target.path);
-	const written = await input.targets.writeExcerpt(target, highlight);
+	const written = await input.targets.writeAndSaveExcerpt(target, highlight, input.annotations);
 	highlight.target = written.target;
 	input.onTargetResolved(input.type, target.path);
-	await input.annotations.save(highlight);
 	return { highlight };
 }

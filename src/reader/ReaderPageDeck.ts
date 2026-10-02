@@ -1,3 +1,4 @@
+import { abortableReaderTask, isReaderAbort, readerAbortError, throwIfReaderAborted } from './ReaderCancellation';
 import type { PageViewport } from 'pdfjs-dist';
 import type { PageSurface, PageSurfaceIO, GoToOptions } from './PageSurface';
 
@@ -30,6 +31,8 @@ export class ContinuousPageSurface implements PageSurface {
 	private scrollFrame: number | null = null;
 	private readonly pending = new Set<number>();
 	private active = 0;
+	private readonly inFlight = new Map<number, AbortController>();
+	private readonly waiters = new Map<number, Set<{ resolve(host: HTMLElement | null): void; reject(error: unknown): void }>>();
 	private destroyed = false;
 	private structureReady = false;
 
@@ -46,6 +49,7 @@ export class ContinuousPageSurface implements PageSurface {
 	async render(): Promise<void> {
 		if (this.destroyed) return;
 		await this.measureFirstPage();
+		if (this.destroyed) return;
 		this.ensureStructure();
 		this.relayoutPending();
 		this.observe();
@@ -53,20 +57,34 @@ export class ContinuousPageSurface implements PageSurface {
 		this.stage.scrollTop = this.pageTops[this.currentPage - 1] ?? 0;
 		this.requestRender(this.currentPage);
 		// Fit math runs right after render(); the anchor page must have a viewport.
-		await this.waitForRendered(this.currentPage);
+		await this.ensurePageRendered(this.currentPage);
 		this.io.callbacks.onPageChange(this.currentPage);
 	}
 
-	/** Resolves once the page holds a rendered viewport, or after a bounded wait. */
-	private async waitForRendered(page: number): Promise<void> {
-		const view = this.stage.ownerDocument.defaultView;
-		const deadline = Date.now() + 3000;
-		while (!this.rendered.has(page) && !this.destroyed && Date.now() < deadline) {
-			await new Promise<void>(resolve => (view ? view.requestAnimationFrame(() => resolve()) : setTimeout(resolve, 32)));
+	async ensurePageRendered(page: number, signal?: AbortSignal): Promise<HTMLElement | null> {
+		throwIfReaderAborted(signal);
+		if (this.destroyed || !this.hosts.has(page)) return null;
+		if (this.rendered.has(page)) return this.hosts.get(page) ?? null;
+		let waiter: { resolve(host: HTMLElement | null): void; reject(error: unknown): void } | undefined;
+		const task = new Promise<HTMLElement | null>((resolve, reject) => {
+			waiter = { resolve, reject };
+			const list = this.waiters.get(page) ?? new Set(); list.add(waiter); this.waiters.set(page, list);
+		});
+		this.requestRender(page);
+		try { return await abortableReaderTask(task, signal); }
+		finally {
+			const list = this.waiters.get(page); if (waiter) list?.delete(waiter);
+			if (!list?.size) this.waiters.delete(page);
+			this.evictOutsideWindow();
 		}
+	}
+	private finishWaiters(page: number, host: HTMLElement | null, error?: unknown): void {
+		const waiters = this.waiters.get(page); this.waiters.delete(page);
+		for (const waiter of waiters ?? []) error ? waiter.reject(error) : waiter.resolve(host);
 	}
 
 	async goToPage(page: number, options?: GoToOptions): Promise<void> {
+		throwIfReaderAborted(options?.signal);
 		const next = this.clampPage(page);
 		if (!this.structureReady) {
 			this.currentPage = next;
@@ -76,12 +94,15 @@ export class ContinuousPageSurface implements PageSurface {
 		const view = this.stage.ownerDocument.defaultView;
 		this.stage.scrollTo({ top, behavior: options?.smooth && view ? 'smooth' : 'auto' });
 		this.currentPage = next;
+		this.evictOutsideWindow();
 		this.requestRender(next);
 		this.io.callbacks.onPageChange(next);
+		await this.ensurePageRendered(next, options?.signal);
 	}
 
 	setPage(page: number): void {
 		this.currentPage = this.clampPage(page);
+		this.evictOutsideWindow();
 		this.requestRender(this.currentPage);
 	}
 
@@ -115,6 +136,10 @@ export class ContinuousPageSurface implements PageSurface {
 	relayoutPending(): void {
 		if (!this.structureReady) return;
 		this.renderEpoch += 1;
+		for (const task of this.inFlight.values()) task.abort();
+		this.pending.clear();
+		for (const page of this.waiters.keys()) this.finishWaiters(page, null, readerAbortError());
+		for (const host of this.hosts.values()) { this.io.pdf.releaseTarget(host); host.replaceChildren(); host.classList.add('rd-pdf-page-host--placeholder'); }
 		this.rendered.clear();
 		this.viewports.clear();
 		this.syncPlaceholderSizes();
@@ -125,6 +150,9 @@ export class ContinuousPageSurface implements PageSurface {
 
 	destroy(): void {
 		this.destroyed = true;
+		this.renderEpoch += 1;
+		for (const task of this.inFlight.values()) task.abort();
+		for (const page of this.waiters.keys()) this.finishWaiters(page, null, readerAbortError());
 		this.intersection?.disconnect();
 		this.intersection = null;
 		if (this.scrollFrame !== null) {
@@ -132,7 +160,7 @@ export class ContinuousPageSurface implements PageSurface {
 			this.scrollFrame = null;
 		}
 		this.pending.clear();
-		for (const host of this.hosts.values()) host.remove();
+		for (const host of this.hosts.values()) { this.io.pdf.releaseTarget(host); host.remove(); }
 		this.hosts.clear();
 		this.rendered.clear();
 		this.viewports.clear();
@@ -145,8 +173,7 @@ export class ContinuousPageSurface implements PageSurface {
 
 	/** Measures once at scale 1 so placeholder math stays correct across zoom changes. */
 	private async measureFirstPage(): Promise<void> {
-		if (this.naturalWidth > 0) return;
-		try {
+				try {
 			const viewport = await this.io.pdf.pageViewport(1);
 			this.pageRatio = viewport.height / Math.max(1, viewport.width);
 			this.naturalWidth = viewport.width / Math.max(this.io.pdf.getScale(), 0.0001);
@@ -210,6 +237,7 @@ export class ContinuousPageSurface implements PageSurface {
 			const page = this.nearestPageToCenter();
 			if (page && page !== this.currentPage) {
 				this.currentPage = page;
+				this.evictOutsideWindow();
 				this.requestRender(page);
 				this.io.callbacks.onPageChange(page);
 			}
@@ -237,7 +265,7 @@ export class ContinuousPageSurface implements PageSurface {
 				if (!page) continue;
 				if (entry.isIntersecting) {
 					this.visiblePages.add(page);
-					this.requestRender(page);
+					if (this.keepsPage(page)) this.requestRender(page);
 				} else {
 					this.visiblePages.delete(page);
 					this.maybeRelease(page);
@@ -248,7 +276,7 @@ export class ContinuousPageSurface implements PageSurface {
 	}
 
 	private requestRender(page: number): void {
-		if (this.destroyed || this.rendered.has(page) || this.pending.has(page)) return;
+		if (this.destroyed || this.rendered.has(page) || this.pending.has(page) || this.inFlight.has(page)) return;
 		if (page < 1 || page > this.io.pageCount) return;
 		this.pending.add(page);
 		void this.pump();
@@ -270,34 +298,50 @@ export class ContinuousPageSurface implements PageSurface {
 
 	private async renderHost(page: number): Promise<void> {
 		const host = this.hosts.get(page);
-		if (!host || this.destroyed) return;
+		if (!host || this.destroyed || !this.keepsPage(page)) { this.finishWaiters(page, null); return; }
+		const epoch = this.renderEpoch;
+		const request = new AbortController(); this.inFlight.set(page, request);
+		const staging = host.ownerDocument.createElement('div');
 		host.classList.add('is-rendering');
-		const result = await this.io.pdf.renderPage(page, host, this.io.callbacks.getHighlights());
-		host.classList.remove('is-rendering');
-		if (!result || this.destroyed) return;
-		const previous = host.offsetHeight;
-		this.rendered.add(page);
-		this.viewports.set(page, result.viewport);
-		host.classList.remove('rd-pdf-page-host--placeholder');
-		this.shiftSubsequentTops(page, result.viewport.height - previous);
-		this.io.callbacks.onTextSignal(page, result.textSelectable);
+		try {
+			const result = await this.io.pdf.renderPage(page, staging, this.io.callbacks.getHighlights(), { signal: request.signal });
+			if (!result || this.destroyed || epoch !== this.renderEpoch || request.signal.aborted || !this.keepsPage(page)) {
+				if (epoch === this.renderEpoch) this.finishWaiters(page, null, readerAbortError()); return;
+			}
+			const previous = host.offsetHeight;
+			this.io.pdf.releaseTarget(host); host.style.cssText = staging.style.cssText;
+			host.replaceChildren(...Array.from(staging.childNodes));
+			this.io.pdf.adoptTarget(host);
+			this.rendered.add(page); this.viewports.set(page, result.viewport);
+			host.classList.add('rd-pdf-page'); host.classList.remove('rd-pdf-page-host--placeholder');
+			this.shiftSubsequentTops(page, result.viewport.height - previous);
+			this.io.callbacks.onTextSignal(page, result.textSelectable);
+			this.io.callbacks.onPageRendered?.(page, host); this.finishWaiters(page, host);
+		} catch (error) {
+			if (epoch === this.renderEpoch) this.finishWaiters(page, null, error);
+			if (!isReaderAbort(error)) console.error('[Reading Desk] PDF 页面渲染失败', error);
+		} finally {
+			this.io.pdf.releaseTarget(staging); host.classList.remove('is-rendering');
+			if (this.inFlight.get(page) === request) this.inFlight.delete(page);
+			if (!this.destroyed && epoch !== this.renderEpoch && this.keepsPage(page)) this.requestRender(page);
+		}
 	}
-
+	private keepsPage(page: number): boolean { return Math.abs(page - this.currentPage) <= KEEP_AROUND || this.waiters.has(page); }
+	private evictOutsideWindow(): void {
+		for (const page of this.pending) if (!this.keepsPage(page)) { this.pending.delete(page); this.finishWaiters(page, null); }
+		for (const [page, task] of this.inFlight) if (!this.keepsPage(page)) task.abort();
+		for (const page of this.rendered) this.maybeRelease(page);
+	}
 	private maybeRelease(page: number): void {
+		if (this.keepsPage(page)) return;
+		this.pending.delete(page); this.inFlight.get(page)?.abort();
 		if (!this.rendered.has(page)) return;
-		if (Math.abs(page - this.currentPage) <= KEEP_AROUND) return;
-		const host = this.hosts.get(page);
-		if (!host) return;
-		this.rendered.delete(page);
-		this.viewports.delete(page);
-		const width = this.targetPageWidth();
-		const estimatedHeight = Math.round(width * this.pageRatio);
-		const previous = host.offsetHeight;
-		host.replaceChildren();
-		host.classList.add('rd-pdf-page-host--placeholder');
-		host.style.width = `${width}px`;
-		host.style.height = `${estimatedHeight}px`;
-		this.shiftSubsequentTops(page, estimatedHeight - previous);
+		const host = this.hosts.get(page); if (!host) return;
+		this.rendered.delete(page); this.viewports.delete(page);
+		const width = this.targetPageWidth(); const height = Math.round(width * this.pageRatio); const previous = host.offsetHeight;
+		this.io.pdf.releaseTarget(host); host.replaceChildren(); host.classList.add('rd-pdf-page-host--placeholder');
+		host.style.width = `${width}px`; host.style.height = `${height}px`;
+		this.shiftSubsequentTops(page, height - previous);
 	}
 
 	private shiftSubsequentTops(page: number, delta: number): void {

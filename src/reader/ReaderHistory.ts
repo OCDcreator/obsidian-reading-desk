@@ -1,5 +1,8 @@
 export interface ReaderLocation {
 	page: number;
+	/** Normalized displayed page offsets, independent of scale. */
+	x?: number;
+	y?: number;
 }
 
 /**
@@ -21,18 +24,18 @@ export class ReaderHistory {
 
 	/** Records the position before a jump; truncates the forward branch. */
 	push(location: ReaderLocation): void {
-		if (this.current && this.current.page === location.page) return;
+		if (this.current && this.current.page === location.page && (this.current.x ?? 0) === (location.x ?? 0) && (this.current.y ?? 0) === (location.y ?? 0)) return;
 		if (this.current) {
 			this.backStack.push(this.current);
 			if (this.backStack.length > this.capacity) this.backStack.shift();
 		}
 		this.forwardStack.length = 0;
-		this.current = { page: location.page };
+		this.current = { ...location };
 	}
 
 	/** Marks a new current location without pushing history (page turns, scroll). */
 	replace(location: ReaderLocation): void {
-		this.current = { page: location.page };
+		this.current = { ...location };
 	}
 
 	back(): ReaderLocation | null {
@@ -40,7 +43,7 @@ export class ReaderHistory {
 		if (!previous) return null;
 		if (this.current) this.forwardStack.push(this.current);
 		this.current = previous;
-		return previous;
+		return { ...previous };
 	}
 
 	forward(): ReaderLocation | null {
@@ -48,7 +51,7 @@ export class ReaderHistory {
 		if (!next) return null;
 		if (this.current) this.backStack.push(this.current);
 		this.current = next;
-		return next;
+		return { ...next };
 	}
 
 	reset(): void {

@@ -35,7 +35,7 @@ export function importResultMessage(result: LegacyImportResult): string {
 }
 
 export function exportSuccessMessage(format: 'markdown' | 'json'): string {
-	return format === 'markdown' ? 'Markdown 导出已开始下载。' : 'JSON 备份已开始下载。';
+	return format === 'markdown' ? 'Markdown 导出已开始下载。' : '书架 JSON 导出已开始下载。标注与评论请使用完整备份。';
 }
 
 export function exportFilename(format: 'markdown' | 'json', date = new Date()): string {

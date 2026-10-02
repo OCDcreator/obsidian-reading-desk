@@ -4,6 +4,8 @@
  * write implementation (normally `Vault.process`).
  */
 export interface FileGateway {
+	/** A read-only probe. Undefined means temporarily missing; never create a file. */
+	read?(path: string): Promise<string | undefined>;
 	/**
 	 * Runs the transform against the latest vault contents and persists its
 	 * result as one atomic operation. In Obsidian this maps to Vault.process.

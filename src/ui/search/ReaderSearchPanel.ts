@@ -1,17 +1,14 @@
 import { createReaderButton } from '../../reader/ReaderPageControl';
 import type { SearchHit } from '../../reader/ReaderSearchService';
+import { isReaderAbort } from '../../reader/ReaderCancellation';
 
 export interface ReaderSearchPanelHost {
-	/** Runs the full-document search; called on Enter or input debounce. */
-	run(query: string): Promise<SearchHit[]>;
-	/** Navigates to one hit. */
-	goTo(hit: SearchHit): Promise<void>;
+	run(query: string, signal?: AbortSignal): Promise<SearchHit[]>;
+	goTo(hit: SearchHit, signal?: AbortSignal): Promise<void>;
+	cancel?(): void;
+	changed?(): void;
 }
-
-/**
- * Docked search bar: query input, prev/next hit navigation, live position and a
- * capped results list. Lives under the toolbar so it never covers the page.
- */
+/** Latest request owns results and navigation, including repeated identical queries. */
 export class ReaderSearchPanel {
 	private container: HTMLElement | null = null;
 	private input: HTMLInputElement | null = null;
@@ -20,112 +17,124 @@ export class ReaderSearchPanel {
 	private hits: SearchHit[] = [];
 	private cursor = -1;
 	private open = false;
-	private running: Promise<void> = Promise.resolve();
-
+	private generation = 0;
+	private request: AbortController | null = null;
+	private debounce: ReturnType<typeof setTimeout> | null = null;
+	private completedQuery = '';
 	constructor(private readonly host: ReaderSearchPanelHost) { }
-
 	mount(parent: HTMLElement): void {
-		// The reader rebuilds its root between renders; a detached container must be recreated.
 		if (this.container?.isConnected) return;
+		const query = this.input?.value ?? '';
+		this.invalidate();
 		const container = parent.createDiv({ cls: 'rd-search-panel', attr: { 'aria-label': 'PDF 全文搜索' } });
 		this.container = container;
 		const bar = container.createDiv({ cls: 'rd-search-panel__bar' });
 		const input = bar.createEl('input', { type: 'search', cls: 'rd-input', attr: { placeholder: '搜索本书全文…', 'aria-label': '搜索关键词' } });
 		this.input = input;
+		input.value = query;
 		input.addEventListener('keydown', event => {
-			if (event.key === 'Enter') {
-				event.preventDefault();
-				void this.step(event.shiftKey ? -1 : 1);
-			}
+			if (event.key === 'Enter') { event.preventDefault(); void this.step(event.shiftKey ? -1 : 1); }
+			if (event.key === 'Escape') { event.preventDefault(); this.close(); }
 		});
-		let debounce: ReturnType<typeof setTimeout> | null = null;
 		input.addEventListener('input', () => {
-			if (debounce !== null) clearTimeout(debounce);
-			debounce = setTimeout(() => void this.refresh(), 220);
+			this.invalidate();
+			this.hits = []; this.cursor = -1; this.completedQuery = '';
+			this.renderList(); this.renderStatus(); this.host.changed?.();
+			this.debounce = setTimeout(() => { this.debounce = null; void this.refresh(); }, 220);
 		});
 		createReaderButton(bar, '上一个结果', () => void this.step(-1), 'chevron-up');
 		createReaderButton(bar, '下一个结果', () => void this.step(1), 'chevron-down');
-		this.status = bar.createSpan({ cls: 'rd-search-panel__status', attr: { role: 'status' }, text: '' });
+		this.status = bar.createSpan({ cls: 'rd-search-panel__status', attr: { role: 'status' } });
 		createReaderButton(bar, '关闭搜索', () => this.close(), 'x');
 		this.list = container.createDiv({ cls: 'rd-search-panel__list' });
 		container.classList.toggle('is-hidden', !this.open);
+		this.renderList(); this.renderStatus();
+		if (this.open && query) void this.refresh();
 	}
-
-	toggle(): void {
-		this.open ? this.close() : this.show();
-	}
-
+	toggle(): void { this.open ? this.close() : this.show(); }
 	isOpen(): boolean { return this.open; }
-
-	/** Current query, used to re-mark hits after page re-renders. */
 	currentQuery(): string { return this.input?.value.trim() ?? ''; }
-
+	currentHit(): SearchHit | null { return this.open ? this.hits[this.cursor] ?? null : null; }
 	show(): void {
 		this.open = true;
 		this.container?.classList.remove('is-hidden');
 		this.input?.focus();
+		if (this.currentQuery()) void this.refresh();
 	}
-
 	close(): void {
 		this.open = false;
+		this.invalidate();
 		this.container?.classList.add('is-hidden');
+		this.container?.setAttribute('aria-busy', 'false');
+		this.host.changed?.();
 	}
-
-	/** Re-highlights the current query on a freshly rendered page host. */
-	markActiveOnHost(apply: (hit: SearchHit | null) => void): void {
-		apply(this.cursor >= 0 && this.cursor < this.hits.length ? this.hits[this.cursor] : null);
+	reset(): void {
+		this.close();
+		this.hits = []; this.cursor = -1; this.completedQuery = '';
+		if (this.input) this.input.value = '';
+		this.renderList(); this.renderStatus();
 	}
-
-	private async refresh(): Promise<void> {
-		const query = this.input?.value.trim() ?? '';
-		this.running = this.running.then(async () => {
-			const hits = query ? await this.host.run(query) : [];
-			if ((this.input?.value.trim() ?? '') !== query) return;
-			this.hits = hits;
-			this.cursor = hits.length ? 0 : -1;
-			this.renderList();
-			this.renderStatus();
-			if (hits.length) await this.host.goTo(hits[0]);
-		});
-		await this.running;
+	markActiveOnHost(apply: (hit: SearchHit | null) => void): void { apply(this.currentHit()); }
+	private invalidate(): void {
+		this.generation += 1;
+		this.request?.abort(); this.request = null;
+		if (this.debounce !== null) clearTimeout(this.debounce);
+		this.debounce = null;
+		this.host.cancel?.();
 	}
-
-	private async step(delta: number): Promise<void> {
-		if (!this.hits.length) return void this.refresh();
-		this.cursor = (this.cursor + delta + this.hits.length) % this.hits.length;
-		this.renderStatus();
-		this.renderList();
-		await this.host.goTo(this.hits[this.cursor]);
+	async refresh(): Promise<void> {
+		if (!this.open) return;
+		this.invalidate();
+		const generation = this.generation;
+		const request = new AbortController();
+		this.request = request;
+		const query = this.currentQuery();
+		const current = (): boolean => this.open && this.generation === generation && !request.signal.aborted;
+		if (this.status) this.status.textContent = query ? '正在搜索…' : '';
+		this.container?.setAttribute('aria-busy', String(!!query));
+		try {
+			const hits = query ? await this.host.run(query, request.signal) : [];
+			if (!current()) return;
+			this.hits = hits; this.cursor = hits.length ? 0 : -1; this.completedQuery = query;
+			this.renderList(); this.renderStatus(); this.host.changed?.();
+			if (hits.length && current()) await this.host.goTo(hits[0], request.signal);
+		} catch (error) {
+			if (!current() || isReaderAbort(error)) return;
+			this.hits = []; this.cursor = -1; this.completedQuery = '';
+			this.renderList(); this.host.changed?.();
+			if (this.status) this.status.textContent = '搜索失败，请重试。';
+		} finally {
+			if (current()) this.container?.setAttribute('aria-busy', 'false');
+		}
 	}
-
+	async step(delta: number): Promise<void> {
+		if (!this.open) return;
+		if (!this.hits.length || this.completedQuery !== this.currentQuery()) return this.refresh();
+		await this.select((this.cursor + delta + this.hits.length) % this.hits.length);
+	}
+	private async select(index: number): Promise<void> {
+		if (!this.open || !this.hits[index]) return;
+		this.invalidate();
+		const generation = this.generation;
+		const request = new AbortController(); this.request = request;
+		this.cursor = index;
+		this.renderStatus(); this.renderList(); this.host.changed?.();
+		try { await this.host.goTo(this.hits[index], request.signal); }
+		catch (error) { if (this.open && generation === this.generation && !isReaderAbort(error) && this.status) this.status.textContent = '定位失败，请重试。'; }
+	}
 	private renderStatus(): void {
-		if (!this.status) return;
-		this.status.textContent = this.hits.length
-			? `${this.cursor + 1} / ${this.hits.length} 处`
-			: (this.input?.value.trim() ? '没有匹配结果' : '');
+		if (this.status) this.status.textContent = this.hits.length ? `${this.cursor + 1} / ${this.hits.length} 处` : (this.currentQuery() ? '没有匹配结果' : '');
 	}
-
 	private renderList(): void {
 		if (!this.list) return;
 		this.list.replaceChildren();
-		const capped = this.hits.slice(0, 60);
-		for (const hit of capped) {
-			const row = this.list.createEl('button', {
-				cls: `rd-search-panel__hit${this.hits.indexOf(hit) === this.cursor ? ' is-active' : ''}`,
-				type: 'button',
-				attr: { 'aria-label': `第 ${hit.page} 页：${hit.snippet}` }
-			});
+		const start = Math.max(0, Math.min(this.cursor - 30, this.hits.length - 60));
+		for (let index = start; index < Math.min(start + 60, this.hits.length); index += 1) {
+			const hit = this.hits[index];
+			const row = this.list.createEl('button', { cls: `rd-search-panel__hit${index === this.cursor ? ' is-active' : ''}`, type: 'button', attr: { 'aria-label': `第 ${hit.page} 页：${hit.snippet}`, 'aria-current': String(index === this.cursor) } });
 			row.createSpan({ cls: 'rd-search-panel__hit-page', text: `第 ${hit.page} 页` });
 			row.createSpan({ cls: 'rd-search-panel__hit-snippet', text: hit.snippet });
-			row.addEventListener('click', () => {
-				this.cursor = this.hits.indexOf(hit);
-				this.renderStatus();
-				this.renderList();
-				void this.host.goTo(hit);
-			});
-		}
-		if (this.hits.length > capped.length) {
-			this.list.createSpan({ cls: 'rd-search-panel__more', text: `其余 ${this.hits.length - capped.length} 处结果未列出，可用上/下一个继续跳转。` });
+			row.addEventListener('click', () => void this.select(index));
 		}
 	}
 }

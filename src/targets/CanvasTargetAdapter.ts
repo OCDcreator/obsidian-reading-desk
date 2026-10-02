@@ -3,6 +3,8 @@ import { READING_DESK_PALETTE } from '../shared/ReadingDeskPalette';
 import type { PdfHighlight } from '../types/contracts';
 import type { TargetCardMetadata, TargetCardOptions, TargetWriteResult } from './TargetTypes';
 import { createCardTitle, createSourceLink, excerptMetadata } from './TargetTypes';
+import { requireExcerptIdentity, TargetRepairError, updateManagedText } from './TargetRepair';
+import { excerptTemplateValues, renderExcerptTemplate } from './ExcerptTemplate';
 
 interface CanvasNode {
 	id: string;
@@ -59,9 +61,18 @@ function parseCanvas(content: string): CanvasDocument {
 	if (!isRecord(parsed) || !Array.isArray(parsed.nodes) || !Array.isArray(parsed.edges)) {
 		throw new Error('不支持的 Canvas 文件：缺少 nodes 或 edges 数组。');
 	}
-	if (!parsed.nodes.every(node => isRecord(node) && typeof node.id === 'string')
-		|| !parsed.edges.every(edge => isRecord(edge) && typeof edge.id === 'string')) {
+	if (!parsed.nodes.every(node => isRecord(node) && typeof node.id === 'string' && typeof node.type === 'string')
+		|| !parsed.edges.every(edge => isRecord(edge) && typeof edge.id === 'string' && typeof edge.fromNode === 'string' && typeof edge.toNode === 'string')) {
 		throw new Error('不支持的 Canvas 文件：nodes/edges 不是 Obsidian Canvas 对象。');
+	}
+	const ids = new Set<string>();
+	const excerpts = new Set<string>();
+	for (const node of parsed.nodes) {
+		if (ids.has(node.id)) throw new TargetRepairError('ambiguous-card', 'Canvas 存在重复节点 ID。');
+		ids.add(node.id);
+		const id = requireExcerptIdentity(node.readingDesk);
+		if (id && excerpts.has(id)) throw new TargetRepairError('ambiguous-card', 'Canvas 存在重复摘录 ID。');
+		if (id) excerpts.add(id);
 	}
 	return parsed as CanvasDocument;
 }
@@ -202,10 +213,6 @@ const CANVAS_COLORS = Object.fromEntries(
 	Object.entries(READING_DESK_PALETTE).map(([color, value]) => [color, value.canvasCode])
 ) as Record<PdfHighlight['color'], string>;
 
-function excerptText(highlight: PdfHighlight, title: string, sourceLink: string): string {
-	return `# ${title}\n\n${highlight.text}\n\n[原文第 ${highlight.page + 1} 页](${sourceLink})`;
-}
-
 function textHeight(text: string, width: number): number {
 	const charactersPerLine = Math.max(16, Math.floor(width / 8));
 	const lineCount = text.split('\n').reduce((count, line) => count + Math.max(1, Math.ceil(line.length / charactersPerLine)), 0);
@@ -292,18 +299,29 @@ export function writeCanvasExcerpt(
 	options: TargetCardOptions = {}
 ): { content: string; result: TargetWriteResult } {
 	const document = parseCanvas(content);
-	const title = createCardTitle(highlight, options.title);
-	const sourceLink = createSourceLink(highlight, options.sourceLink);
-	const folded = options.folded ?? false;
 	const existing = document.nodes.find(node => excerptNode(node) && node.readingDesk?.highlightId === highlight.id);
+	const referenced = document.nodes.find(node => node.id === highlight.target?.objectId);
+	if (referenced && referenced !== existing) throw new TargetRepairError('metadata-missing', 'Canvas 目标节点元数据缺失或变化，请先修复。');
+	const heading = existing?.text && /^# ([^\r\n]*)/.exec(existing.text);
+	const title = createCardTitle(highlight, options.title ?? (heading ? heading[1] : existing?.readingDesk?.title));
+	const sourceLink = createSourceLink(highlight, options.sourceLink);
+	const folded = options.folded ?? (existing ? existing.height === 72 : false);
+	const body = options.template
+		? renderExcerptTemplate(options.template, excerptTemplateValues(highlight, title, sourceLink))
+		: `${highlight.text}\n\n[原文第 ${highlight.page + 1} 页](${sourceLink})`;
+	const metadata = excerptMetadata(highlight, title, sourceLink, folded, options.chapterPath ?? highlight.chapterPath);
+	metadata.managedText = body;
 	if (existing) {
-		existing.text = excerptText(highlight, title, sourceLink);
+		const old = existing.readingDesk;
+		const current = (existing.text ?? '').replace(/^# [^\r\n]*\r?\n\r?\n?/, '');
+		const previous = old?.managedText ?? `${highlight.text}\n\n[原文第 ${(old?.page ?? highlight.page) + 1} 页](${old?.sourceLink ?? sourceLink})`;
+		existing.text = `# ${title}\n\n${updateManagedText(current, previous, body)}`;
 		existing.height = excerptHeight(existing.text, existing.width ?? 400, folded);
 		existing.color = CANVAS_COLORS[highlight.color];
-		existing.readingDesk = excerptMetadata(highlight, title, sourceLink, folded, options.chapterPath ?? highlight.chapterPath);
+		existing.readingDesk = { ...existing.readingDesk, ...metadata };
 		return {
 			content: JSON.stringify(document, null, 2),
-			result: { target: { type: 'canvas', path: targetPath, objectId: existing.id }, objectId: existing.id, title, sourceLink }
+			result: { target: { type: 'canvas', path: targetPath, objectId: existing.id }, objectId: existing.id, title, sourceLink, folded }
 		};
 	}
 
@@ -311,13 +329,13 @@ export function writeCanvasExcerpt(
 	const node: CanvasNode = {
 		id: createId('rd-excerpt'),
 		type: 'text',
-		text: excerptText(highlight, title, sourceLink),
+		text: `# ${title}\n\n${body}`,
 		x: parent ? (parent.x ?? 0) + 420 : 0,
 		y: nextY(document.nodes),
 		width: 400,
 		height: 0,
 		color: CANVAS_COLORS[highlight.color],
-		readingDesk: excerptMetadata(highlight, title, sourceLink, folded, options.chapterPath ?? highlight.chapterPath)
+		readingDesk: metadata
 	};
 	node.height = excerptHeight(node.text ?? '', node.width ?? 400, folded);
 	document.nodes.push(node);
@@ -333,14 +351,14 @@ export function writeCanvasExcerpt(
 	}
 	return {
 		content: JSON.stringify(document, null, 2),
-		result: { target: { type: 'canvas', path: targetPath, objectId: node.id }, objectId: node.id, title, sourceLink }
+		result: { target: { type: 'canvas', path: targetPath, objectId: node.id }, objectId: node.id, title, sourceLink, folded }
 	};
 }
 
 export function deleteCanvasExcerpt(content: string, highlightId: string, objectId?: string): string {
 	const document = parseCanvas(content);
 	const removedIds = new Set(document.nodes
-		.filter(node => excerptNode(node) && (node.id === objectId || node.readingDesk?.highlightId === highlightId))
+		.filter(node => excerptNode(node) && node.readingDesk?.highlightId === highlightId && (!objectId || node.id === objectId))
 		.map(node => node.id));
 	if (removedIds.size === 0) return content;
 	document.nodes = document.nodes.filter(node => !removedIds.has(node.id));
@@ -354,4 +372,9 @@ export function canvasExcerptIds(content: string): Set<string> {
 		.filter(excerptNode)
 		.map(node => node.readingDesk?.highlightId)
 		.filter((id): id is string => typeof id === 'string'));
+}
+
+/** Includes user nodes so known object references survive metadata damage. */
+export function canvasObjectIds(content: string): Set<string> {
+	return new Set(parseCanvas(content).nodes.map(node => node.id));
 }

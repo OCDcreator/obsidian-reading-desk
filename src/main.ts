@@ -6,8 +6,17 @@ import { MetadataExtractor } from './library/MetadataExtractor';
 import { PdfRenderer } from './reader/PdfRenderer';
 import { AiIntegrationService, type AiBridge } from './ai/AiIntegrationService';
 import { exportBookshelf, importLegacyBookshelf, type BookshelfImportResult } from './portability/BookshelfPortabilityService';
-import { ClipboardImageError, MarkdownImagePasteService } from './storage/MarkdownImagePasteService';
-import { ObjectStorageConfigurationError, ObjectStorageRequestError, ObjectStorageService } from './storage/ObjectStorageService';
+import { MarkdownImagePasteService } from './storage/MarkdownImagePasteService';
+import { readLegacyBookshelfSource } from './portability/LegacyBookshelfSourceReader';
+import { createExcalidrawDocument, describeImageUploadFailure, isAlreadyExistingFolderError, prefersReducedMotion, readingDeskHighlightId, targetMatches } from './host/HostUtilities';
+import { VaultChangeBatch } from './host/VaultChangeBatch';
+import { remapAnnotationPaths } from './host/SourcePathRemap';
+import { presentBackupPreview } from './host/DataPanelPresentation';
+import { ReadingDeskDataManagement } from './portability/ReadingDeskDataManagement';
+import type { BackupRestorePreview } from './portability/ReadingDeskBackupService';
+import type { ImportExportPanelHost } from './ui/portability/ImportExportPanel';
+import { AnnotationSearchService } from './annotations/AnnotationSearchService';
+import { ObjectStorageService } from './storage/ObjectStorageService';
 import { ReadingDeskSettingTab } from './settings/ReadingDeskSettingTab';
 import { TargetService } from './targets';
 import type { ObjectStorageSettings, PdfHighlight, TargetType, ViewerSettings } from './types/contracts';
@@ -21,8 +30,6 @@ import { canCopyReaderPage, executeCopyReaderPage } from './reader/ReaderCopyCom
 import { routeReadingDeskLink } from './reader/ReadingDeskLinkRouter';
 import { hostThemeDark, marginAnchorIconId, READING_DESK_MARGIN_ANCHOR_DAY, READING_DESK_MARGIN_ANCHOR_NIGHT } from './ui/icons/ReadingDeskIcons';
 
-const LEGACY_DATA_PATHS = ['.obsidian/plugins/obsidian-bookshelf/data.json', '.obsidian/plugins/obsidian-bookshelf/metadata.json'];
-const LEGACY_METADATA_FOLDER = '.obsidian/plugins/bookshelf/metadata';
 const AI_CONTEXT_FOLDER = 'Reading Desk/AI Context';
 
 type PluginRegistry = { enabledPlugins: Set<string>; getPlugin(id: string): unknown; };
@@ -35,9 +42,15 @@ export default class ReadingDeskPlugin extends Plugin {
 	private crops!: CropImageService;
 	private progressFlusher!: ProgressFlusher;
 	private settingsTabHint: string | null = null;
+	private vaultChanges!: VaultChangeBatch;
+	private recoverySequence = 0;
+	private dataManagement!: ReadingDeskDataManagement;
+	private annotationSearch!: AnnotationSearchService;
 
 	async onload(): Promise<void> {
-		this.repository = new ReadingDeskRepository({ load: () => this.loadData(), save: data => this.saveData(data) });
+		this.repository = new ReadingDeskRepository({ load: () => this.loadData(), save: data => this.saveData(data) }, {
+			beforeOverwrite: (value, context) => this.preserveDataSnapshot(value, context.reason)
+		});
 		await this.repository.initialize();
 		this.annotations = new AnnotationStore(this.repository);
 		this.library = new LibraryIndex(this.repository, new MetadataExtractor({
@@ -45,8 +58,17 @@ export default class ReadingDeskPlugin extends Plugin {
 			writeBinary: (path, value) => this.writeBinary(path, value)
 		}, { load: data => this.loadPdfMetadata(data) }));
 		this.targets = new TargetService({
-			atomicTransform: (path, transform) => this.atomicTransform(path, transform)
+			atomicTransform: (path, transform) => this.atomicTransform(path, transform),
+			read: path => this.app.vault.getAbstractFileByPath(path) instanceof TFile ? this.app.vault.adapter.read(path) : Promise.resolve(undefined)
+		}, { template: () => this.repository.readSettings().excerptTemplate });
+		this.annotationSearch = new AnnotationSearchService(this.annotations, this.library);
+		this.dataManagement = new ReadingDeskDataManagement(this.repository, this.library, this.annotations, this.targets, {
+			availableFiles: () => this.app.vault.getFiles().filter(file => isLibraryPath(file.path)).map(file => ({ path: file.path, stat: { mtime: file.stat.mtime, size: file.stat.size } })),
+			allPaths: () => this.app.vault.getFiles().map(file => file.path), backupBeforeRestore: backup => this.preserveDataSnapshot(backup, 'before-restore'),
+			refresh: async () => { await this.refreshShelves(); await this.refreshReaderAnnotations(); }
 		});
+		this.vaultChanges = new VaultChangeBatch(paths => this.applyVaultChanges(paths), error => this.notice(`书库更新失败：${error instanceof Error ? error.message : String(error)}`));
+		this.register(() => this.vaultChanges.dispose());
 		this.crops = new CropImageService({ app: this.app, ensureFile: (path, content) => this.ensureFile(path, content), atomicTransform: (path, transform) => this.atomicTransform(path, transform), writeBinary: (path, value) => this.writeBinary(path, value) }, () => this.repository.readSettings().storage);
 		this.progressFlusher = new ProgressFlusher({ write: async ({ path, progress }) => {
 			const book = this.library.getByPath(path);
@@ -89,9 +111,15 @@ export default class ReadingDeskPlugin extends Plugin {
 			open: path => this.openReader(path),
 			scan: () => this.scanLibrary(),
 			resourceUrl: path => this.app.vault.adapter.getResourcePath(path),
-			openSettings: () => this.openPluginSettings('library')
+			openSettings: () => this.openPluginSettings('library'),
+			searchAnnotations: query => this.annotationSearch.search(query), openHighlight: (path, id) => this.openLinkedReader(path, id),
+			listSourcePaths: () => this.app.vault.getFiles().filter(file => isLibraryPath(file.path)).map(file => file.path),
+			candidateFiles: () => this.app.vault.getFiles().filter(file => isLibraryPath(file.path)).map(toLibraryFile), relinkBook: (id, path) => this.relinkBook(id, path)
 		}));
-		this.app.workspace.onLayoutReady(() => { if (this.app.workspace.getLeavesOfType(READER_VIEW_TYPE).some(leaf => !!leaf.view.getState().pdfPath)) void this.openPdfNavigation(false); });
+		this.app.workspace.onLayoutReady(() => {
+			if (this.app.workspace.getLeavesOfType(READER_VIEW_TYPE).some(leaf => !!leaf.view.getState().pdfPath)) void this.openPdfNavigation(false);
+			for (const path of new Set(this.annotations.listAll().map(item => item.target?.path).filter((path): path is string => !!path))) this.vaultChanges.add(path);
+		});
 		addIcon('reading-desk-margin-day', READING_DESK_MARGIN_ANCHOR_DAY);
 		addIcon('reading-desk-margin-night', READING_DESK_MARGIN_ANCHOR_NIGHT);
 		const ribbon = this.addRibbonIcon('reading-desk-margin-day', '打开 Reading Desk 书架', () => this.openShelf());
@@ -117,12 +145,15 @@ export default class ReadingDeskPlugin extends Plugin {
 		this.addCommand({ id: 'open-settings', name: '打开 Reading Desk 设置', callback: () => void this.openPluginSettings() });
 		this.addCommand({ id: 'copy-selected-reader-text', name: '复制 Reading Desk 选中文本', checkCallback: checking => this.copyActiveReaderSelection(checking) });
 		this.addCommand({ id: 'undo-last-excerpt', name: '撤销 Reading Desk 上一条摘录', checkCallback: checking => this.undoActiveReaderExcerpt(checking) });
+		this.register(this.repository.subscribe(status => {
+			if (status.phase === 'blocked' || status.phase === 'conflict' || status.phase === 'pending') this.notice(`Reading Desk：${status.error?.message ?? '存在未保存数据'}。请打开设置中的数据恢复。`);
+		}));
 		this.addSettingTab(new ReadingDeskSettingTab(this));
 		this.registerObsidianProtocolHandler('reading-desk-highlight', params => void this.openReaderHighlight(params));
 		this.registerEvent(this.app.vault.on('create', file => void this.onVaultCreateOrModify(file)));
 		this.registerEvent(this.app.vault.on('modify', file => void this.onVaultCreateOrModify(file)));
-		this.registerEvent(this.app.vault.on('rename', (file, oldPath) => void this.onVaultRename(file, oldPath)));
-		this.registerEvent(this.app.vault.on('delete', file => void this.onVaultDelete(file)));
+		this.registerEvent(this.app.vault.on('rename', (file, oldPath) => void this.onVaultRename(file, oldPath).catch(error => this.notice(`重命名同步失败：${String(error)}`))));
+		this.registerEvent(this.app.vault.on('delete', file => void this.onVaultDelete(file).catch(error => this.notice(`文件缺失处理失败：${String(error)}`))));
 		this.registerDomEvent(document, 'paste', event => void this.onMarkdownImagePaste(event));
 		console.info(`[Reading Desk] Margin v${__APP_VERSION__} build ${__BUILD_ID__}`);
 	}
@@ -190,6 +221,20 @@ export default class ReadingDeskPlugin extends Plugin {
 	exportJson(): string { return exportBookshelf(this.repository.snapshot()).json; }
 	portabilityStatus(): { importedBookshelf: boolean } { return { importedBookshelf: this.repository.readSettings().importedBookshelf }; }
 	async askAiWithSelection(text: string, sourcePath: string): Promise<void> { await this.ai.ask(text, sourcePath); }
+
+	dataPanelHost(): ImportExportPanelHost {
+		const service = this.dataManagement;
+		return {
+			importLegacy: () => this.importLegacyBookshelf(), exportMarkdown: () => this.exportMarkdown(), exportJson: () => this.exportJson(), status: () => this.portabilityStatus(),
+			prepareBibliographicImport: (provider, text, paths) => service.prepareBibliographicImport(provider, text, paths), applyBibliographicImport: plan => service.applyBibliographicImport(plan),
+			exportBackup: () => service.exportBackup(), previewBackup: (text, mappings, options) => presentBackupPreview(service.previewBackup(text, mappings, options), mappings),
+			restoreBackup: preview => service.restoreBackup(preview.plan as BackupRestorePreview),
+			repositoryStatus: () => this.repository.status(), retryRepository: () => service.retryRepository(), reloadRepository: () => service.reloadRepository(),
+			recoveryStatus: () => ({ pendingTargets: this.annotations.listPendingTargetWrites().map(item => ({ id: item.id, label: item.text.slice(0, 80), detail: item.target?.path })), deletedAnnotations: this.annotations.listDeleted().map(item => ({ id: item.highlight.id, label: item.highlight.text.slice(0, 80), detail: item.reason })), repairs: this.targets.listPendingRepairs().map(item => ({ id: item.target.path, label: item.target.path, detail: item.message })) }),
+			retryTargetWrite: id => service.retryTargetWrite(id), restoreDeletedAnnotation: id => service.restoreDeletedAnnotation(id), recheckTarget: path => this.syncTargetDeletion(path),
+			excerptTemplate: () => service.excerptTemplate(), previewExcerptTemplate: template => service.previewExcerptTemplate(template), saveExcerptTemplate: template => service.saveExcerptTemplate(template)
+		};
+	}
 
 	private async openShelf(): Promise<void> {
 		await this.scanLibrary(false);
@@ -314,8 +359,7 @@ export default class ReadingDeskPlugin extends Plugin {
 		const highlight = this.annotations.get(highlightId);
 		if (!highlight?.target) throw new Error('该高亮还没有可更新的摘录卡片。');
 		const next = { ...this.repository.readExcerptCards()[highlightId], ...patch };
-		await this.targets.writeExcerpt(highlight.target, highlight, next);
-		await this.repository.commit(() => { this.repository.readExcerptCards()[highlightId] = next; });
+		await this.targets.writeAndSaveExcerpt(highlight.target, highlight, this.annotations, next);
 	}
 
 	private async showTarget(path: string, objectId?: string): Promise<void> {
@@ -387,60 +431,75 @@ export default class ReadingDeskPlugin extends Plugin {
 		return { type, path };
 	}
 
+	private async preserveDataSnapshot(value: unknown, reason: string): Promise<void> {
+		if (value === null || value === undefined) return;
+		const adapter = this.app.vault.adapter;
+		const folder = `${this.manifest.dir}/recovery`;
+		if (!await adapter.exists(folder)) await adapter.mkdir(folder);
+		const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+		await adapter.write(`${folder}/${stamp}-${++this.recoverySequence}-${reason}.json`, `${JSON.stringify(value, null, '\t')}\n`);
+	}
+
+	private async applyVaultChanges(paths: string[]): Promise<void> {
+		const files = paths.filter(isLibraryPath).map(path => this.app.vault.getAbstractFileByPath(path)).filter((file): file is TFile => file instanceof TFile);
+		if (files.length) {
+			await this.library.scanFiles(files.map(toLibraryFile), this.repository.readSettings().libraryFolders);
+			await this.refreshShelves();
+		}
+		for (const path of paths.filter(isTargetPath)) await this.syncTargetDeletion(path);
+	}
+
 	private async onVaultCreateOrModify(file: TAbstractFile): Promise<void> {
 		if (!(file instanceof TFile)) return;
-		if (isLibraryPath(file.path)) await this.scanLibrary(false);
-		if (isTargetPath(file.path)) await this.syncTargetDeletion(file.path);
+		if (isLibraryPath(file.path) || isTargetPath(file.path)) this.vaultChanges.add(file.path);
+	}
+
+	private remapAnnotations(oldPath: string, newPath: string): string[] {
+		const pending = this.repository.readPendingTargetWrites();
+		const ids = remapAnnotationPaths({ highlights: this.repository.readHighlights(), pendingTargetWrites: pending, deletedAnnotations: this.repository.readDeletedAnnotations() }, oldPath, newPath);
+		for (const id of ids) { const highlight = this.annotations.get(id); if (highlight?.target) pending[id] = structuredClone(highlight); }
+		return ids;
+	}
+
+	private async relinkBook(id: string, path: string): Promise<void> {
+		const file = this.app.vault.getAbstractFileByPath(path);
+		if (!(file instanceof TFile) || !isLibraryPath(path)) throw new Error('请确认当前库内的 PDF 或 EPUB 文件。');
+		const result = await this.library.relink(id, toLibraryFile(file), { confirmed: true, mutateRelated: (oldPath, newPath) => { this.remapAnnotations(oldPath, newPath); } });
+		await this.refreshReaderSourceRename(result.oldPath, result.newPath);
+		await this.targets.retryPendingTargetWrites(this.annotations);
+		await this.refreshShelves(); await this.refreshReaderAnnotations();
 	}
 
 	private async onVaultRename(file: TAbstractFile, oldPath: string): Promise<void> {
-		if (!(file instanceof TFile)) return;
-		const renamedHighlights = this.annotations.listAll().filter(highlight => highlight.pdfPath === oldPath && !!highlight.target);
-		await this.repository.commit(() => {
-			const book = this.library.getByPath(oldPath);
-			if (book && isLibraryPath(file.path)) book.path = file.path;
-			for (const highlight of this.annotations.listAll()) {
-				if (highlight.pdfPath === oldPath) highlight.pdfPath = file.path;
-				if (highlight.target?.path === oldPath) highlight.target.path = file.path;
-			}
-		});
-		for (const beforeRename of renamedHighlights) {
-			const current = this.annotations.get(beforeRename.id);
-			if (current?.target) await this.targets.writeExcerpt(current.target, current);
-		}
-		if (isLibraryPath(file.path) || isLibraryPath(oldPath)) await this.refreshReaderSourceRename(oldPath, file.path);
-		if (isLibraryPath(file.path) || isLibraryPath(oldPath)) await this.scanLibrary(false);
-		if (isTargetPath(file.path) || isTargetPath(oldPath)) await this.syncTargetDeletion(file.path);
+		const affected = this.app.workspace.getLeavesOfType(READER_VIEW_TYPE).filter(leaf => leaf.view instanceof ReaderView).map(leaf => leaf.view as ReaderView).map(reader => reader.getState().pdfPath).filter((path): path is string => typeof path === 'string' && (path === oldPath || path.startsWith(`${oldPath}/`)));
+		await this.library.renamePaths(oldPath, file.path, (before, after) => { this.remapAnnotations(before, after); });
+		for (const path of affected) await this.refreshReaderSourceRename(path, file.path + path.slice(oldPath.length));
+		await this.targets.retryPendingTargetWrites(this.annotations);
+		if (file instanceof TFile && isLibraryPath(file.path)) this.vaultChanges.add(file.path);
+		if (file instanceof TFile && isTargetPath(file.path)) await this.syncTargetDeletion(file.path);
 		await this.refreshShelves();
 	}
 
 	private async onVaultDelete(file: TAbstractFile): Promise<void> {
 		const path = file.path;
-		if (!isLibraryPath(path) && !isTargetPath(path)) return;
-		const removedBooks = Object.values(this.repository.readBooks()).filter(book => book.path === path).length;
-		const removedHighlights = this.annotations.listAll().filter(highlight => highlight.pdfPath === path || highlight.target?.path === path).length;
-		await this.repository.commit(() => {
-			for (const [id, book] of Object.entries(this.repository.readBooks())) if (book.path === path) delete this.repository.readBooks()[id];
-			for (const highlight of this.annotations.listAll()) {
-				if (highlight.pdfPath === path || highlight.target?.path === path) {
-					delete this.repository.readHighlights()[highlight.id];
-					delete this.repository.readComments()[highlight.id];
-					delete this.repository.readExcerptCards()[highlight.id];
-				}
-			}
-		});
-		if (isLibraryPath(path)) await this.refreshReaderSourceDelete(path);
+		const affected = this.library.list().filter(book => book.path === path || book.path.startsWith(`${path}/`));
+		const targets = this.annotations.listAll().filter(item => item.target && (item.target.path === path || item.target.path.startsWith(`${path}/`)));
+		if (!affected.length && !targets.length) return;
+		await this.library.markMissing(path);
+		for (const targetPath of new Set(targets.map(item => item.target.path))) this.targets.reportMissingTarget(targetPath, targets);
+		for (const book of affected) await this.refreshReaderSourceDelete(book.path);
 		await this.refreshShelves();
-		if (removedBooks > 0 || removedHighlights > 0) {
-			this.notice(`文件 ${path} 已删除，Reading Desk 已同步清理 ${removedBooks} 本书目与 ${removedHighlights} 条高亮及其评论、摘录卡片。`);
-		}
+		this.notice(`文件 ${path} 暂时缺失，书目、标注与评论已保留，可重新关联源文件或恢复目标文件。`);
 	}
 
 	private async syncTargetDeletion(path: string): Promise<void> {
+		if (!(this.app.vault.getAbstractFileByPath(path) instanceof TFile)) { this.targets.reportMissingTarget(path, this.annotations.listAll()); return; }
 		let changed = false;
 		for (const type of ['canvas', 'excalidraw', 'markdown'] as TargetType[]) {
 			try {
-				const removed = await this.targets.removeMissingTargetHighlights({ type, path }, this.annotations.listAll().filter(highlight => highlight.target?.path === path), this.annotations);
+				const candidates = this.annotations.listAll().filter(highlight => highlight.target?.path === path && highlight.target.type === type);
+				if (!candidates.length) continue;
+				const removed = await this.targets.removeMissingTargetHighlights({ type, path }, candidates, this.annotations);
 				changed ||= removed.length > 0;
 			} catch { /* User file may not be a supported target format. */ }
 		}
@@ -500,43 +559,14 @@ export default class ReadingDeskPlugin extends Plugin {
 		this.notice(`书架已导出为 ${label}，已写入新文件 ${path}；导出只新建文件，不会覆盖已有内容。`);
 	}
 
-	private async readLegacyBookshelfData(): Promise<unknown | null> {
-		const records = await this.readLegacyMetadataRecords();
-		const settings = await this.readLegacySettings();
-		if (records.length > 0) return { books: records, settings };
-		for (const path of LEGACY_DATA_PATHS) {
-			if (!await this.app.vault.adapter.exists(path)) continue;
-			try { return JSON.parse(await this.app.vault.adapter.read(path)); } catch { throw new Error(`旧 Bookshelf 数据无法解析：${path}`); }
-		}
-		return null;
-	}
-
-	private async readLegacyMetadataRecords(): Promise<unknown[]> {
-		if (!await this.app.vault.adapter.exists(LEGACY_METADATA_FOLDER)) return [];
-		const listing = await this.app.vault.adapter.list(LEGACY_METADATA_FOLDER);
-		const records: unknown[] = [];
-		for (const path of listing.files) {
-			if (!path.endsWith('.json') || path.includes('/covers/')) continue;
-			try { records.push(JSON.parse(await this.app.vault.adapter.read(path))); } catch { this.notice(`跳过无法解析的旧元数据：${path}`); }
-		}
-		return records;
-	}
-
-	private async readLegacySettings(): Promise<unknown> {
-		const path = '.obsidian/plugins/obsidian-bookshelf/data.json';
-		if (!await this.app.vault.adapter.exists(path)) return {};
-		try { return JSON.parse(await this.app.vault.adapter.read(path)); } catch { return {}; }
+	private readLegacyBookshelfData(): Promise<unknown | null> {
+		const adapter = this.app.vault.adapter;
+		return readLegacyBookshelfSource({ exists: path => adapter.exists(path), read: path => adapter.read(path), list: path => adapter.list(path), notice: message => this.notice(message) });
 	}
 
 	private async replaceRepositoryData(next: ReturnType<ReadingDeskRepository['snapshot']>): Promise<void> {
-		await this.repository.commit(() => {
-			Object.assign(this.repository.readBooks(), next.books);
-			this.repository.readCategories().splice(0, this.repository.readCategories().length, ...next.categories);
-			Object.assign(this.repository.readHighlights(), next.highlights);
-			Object.assign(this.repository.readComments(), next.comments);
-			Object.assign(this.repository.readExcerptCards(), next.excerptCards);
-			Object.assign(this.repository.readSettings(), next.settings);
-		});
+		await this.repository.replaceData(next);
+		this.library.rebuildPathMap();
 	}
 
 	private async refreshShelves(): Promise<void> {
@@ -608,42 +638,5 @@ function toLibraryFile(file: TFile): LibraryFile {
 	return { path: file.path, extension: file.extension, stat: { mtime: file.stat.mtime, size: file.stat.size } };
 }
 
-function prefersReducedMotion(): boolean {
-	return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-}
-
-function describeImageUploadFailure(error: unknown): string {
-	if (error instanceof ObjectStorageConfigurationError) {
-		return '图片上传失败：对象存储配置不完整。请到 Reading Desk 设置的“对象存储与图床”中补全 Endpoint、Bucket 与密钥。';
-	}
-	if (error instanceof ObjectStorageRequestError) {
-		if (error.status === 401 || error.status === 403) return `图片上传失败：图床返回 HTTP ${error.status}，通常是 Access Key 或 Secret Key 不正确。请核对密钥后重试。`;
-		return `图片上传失败：图床返回 HTTP ${error.status}。请检查 Endpoint 与 Bucket 设置后重试，图片仍保留在剪贴板中。`;
-	}
-	if (error instanceof ClipboardImageError) {
-		return '图片上传失败：剪贴板中没有可上传的图片。';
-	}
-	return '图片上传失败：无法连接图床。请检查网络与对象存储设置后重试，图片仍保留在剪贴板中。';
-}
-
 function isLibraryPath(path: string): boolean { return /\.(pdf|epub)$/i.test(path); }
 function isTargetPath(path: string): boolean { return /\.canvas$/i.test(path) || /\.excalidraw\.md$/i.test(path) || /\.md$/i.test(path); }
-function targetMatches(file: TFile, type: TargetType): boolean {
-	return type === 'canvas' ? file.extension === 'canvas' : type === 'excalidraw' ? file.path.endsWith('.excalidraw.md') : file.extension === 'md' && !file.path.endsWith('.excalidraw.md');
-}
-
-function isAlreadyExistingFolderError(error: unknown): boolean {
-	return error instanceof Error && /folder already exists|already exists/i.test(error.message);
-}
-
-function readingDeskHighlightId(element: { customData?: Record<string, unknown> }): string | undefined {
-	const readingDesk = element.customData?.readingDesk;
-	if (typeof readingDesk !== 'object' || readingDesk === null) return undefined;
-	const highlightId = (readingDesk as { highlightId?: unknown }).highlightId;
-	return typeof highlightId === 'string' ? highlightId : undefined;
-}
-
-function createExcalidrawDocument(): string {
-	const scene = { type: 'excalidraw', version: 2, source: 'https://excalidraw.com', elements: [] as unknown[], appState: {}, files: {} };
-	return `---\nexcalidraw-plugin: parsed\ntags: [excalidraw]\n---\n# Excalidraw Data\n\n## Text Elements\n%%\n## Drawing\n\`\`\`json\n${JSON.stringify(scene, null, 2)}\n\`\`\`\n%%\n`;
-}

@@ -1,3 +1,4 @@
+import { abortableReaderTask, readerAbortError, throwIfReaderAborted } from './ReaderCancellation';
 import type { PageViewport } from 'pdfjs-dist';
 import type { PdfHighlight } from '../types/contracts';
 import type { PdfRenderer } from './PdfRenderer';
@@ -9,10 +10,12 @@ export interface PageSurfaceCallbacks {
 	onPageChange(page: number): void;
 	/** A finished page render; selectable=false flags a scanned (text-less) page. */
 	onTextSignal(page: number, selectable: boolean): void;
+	onPageRendered?(page: number, host: HTMLElement): void;
 }
 
 export interface GoToOptions {
 	smooth?: boolean;
+	signal?: AbortSignal;
 }
 
 export interface PageSurface {
@@ -23,6 +26,7 @@ export interface PageSurface {
 	/** Navigates so that the given page is the visible anchor. */
 	goToPage(page: number, options?: GoToOptions): Promise<void>;
 	/** Tracks an external current-page change (e.g. link jump) without forcing scroll. */
+	ensurePageRendered(page: number, signal?: AbortSignal): Promise<HTMLElement | null>;
 	setPage(page: number): void;
 	getPage(): number;
 	viewportForPage(page: number): PageViewport | null;
@@ -54,6 +58,9 @@ export class SinglePageSurface implements PageSurface {
 	private readonly io: PageSurfaceIO;
 	private page: number;
 	private viewport: PageViewport | null = null;
+	private epoch = 0;
+	private destroyed = false;
+	private pending: { page: number; task: Promise<void>; request: AbortController } | null = null;
 	private readonly scrollMemory = new Map<number, { top: number; left: number }>();
 
 	constructor(io: PageSurfaceIO) {
@@ -69,24 +76,44 @@ export class SinglePageSurface implements PageSurface {
 	}
 
 	async render(): Promise<void> {
-		this.rememberScroll();
-		this.host.dataset.page = String(this.page);
-		this.host.setAttribute('aria-label', `PDF 第 ${this.page} 页`);
-		const result = await this.io.pdf.renderPage(this.page, this.host, this.io.callbacks.getHighlights());
-		if (!result) return;
-		this.viewport = result.viewport;
-		this.io.callbacks.onTextSignal(this.page, result.textSelectable);
-		this.restoreScroll();
-		this.io.callbacks.onPageChange(this.page);
+		this.rememberScroll(); this.pending?.request.abort(); this.viewport = null;
+		await this.ensurePageRendered(this.page);
 	}
+	async ensurePageRendered(page: number, signal?: AbortSignal): Promise<HTMLElement | null> {
+		throwIfReaderAborted(signal);
+		if (this.destroyed || page !== this.page) return null;
+		if (this.viewport) return this.host;
+		if (!this.pending || this.pending.page !== page || this.pending.request.signal.aborted) {
+			const request = new AbortController(); const epoch = ++this.epoch;
+			const staging = this.host.ownerDocument.createElement('div');
+			const task = this.io.pdf.renderPage(page, staging, this.io.callbacks.getHighlights(), { signal: request.signal }).then(result => {
+				if (!result || this.destroyed || epoch !== this.epoch || page !== this.page) { this.io.pdf.releaseTarget(staging); return; }
+				this.io.pdf.releaseTarget(this.host);
+				this.host.style.cssText = staging.style.cssText;
+				this.host.replaceChildren(...Array.from(staging.childNodes));
 
+				this.io.pdf.adoptTarget(this.host);
+				this.host.classList.add('rd-pdf-page'); this.host.dataset.page = String(page);
+				this.host.setAttribute('aria-label', `PDF 第 ${page} 页`);
+				this.viewport = result.viewport;
+				this.io.callbacks.onTextSignal(page, result.textSelectable);
+				this.io.callbacks.onPageRendered?.(page, this.host);
+				this.restoreScroll(); this.io.callbacks.onPageChange(page);
+			}).finally(() => { if (this.pending?.request === request) this.pending = null; });
+			this.pending = { page, task, request };
+		}
+		await abortableReaderTask(this.pending.task, signal);
+		throwIfReaderAborted(signal);
+		if (this.destroyed) throw readerAbortError();
+		return this.viewport && page === this.page ? this.host : null;
+	}
 	async goToPage(page: number, options?: GoToOptions): Promise<void> {
+		throwIfReaderAborted(options?.signal);
 		const next = Math.max(1, Math.min(Math.max(this.io.pageCount, 1), Math.round(page)));
-		if (next === this.page) return;
-		this.rememberScroll();
-		this.page = next;
-		await this.render();
-		if (options?.smooth === false) return;
+		if (next !== this.page) {
+			this.rememberScroll(); this.pending?.request.abort(); this.page = next; this.viewport = null;
+		}
+		await this.ensurePageRendered(next, options?.signal);
 	}
 
 	setPage(page: number): void {
@@ -115,9 +142,11 @@ export class SinglePageSurface implements PageSurface {
 		return true;
 	}
 
-	relayoutPending(): void { /* The single host resizes itself on render. */ }
+	relayoutPending(): void { this.pending?.request.abort(); this.viewport = null; this.epoch += 1; }
 
 	destroy(): void {
+		this.destroyed = true; this.epoch += 1; this.pending?.request.abort();
+		this.io.pdf.releaseTarget(this.host);
 		this.scrollMemory.clear();
 		this.stage.remove();
 	}

@@ -1,6 +1,11 @@
+import { DISPLAY_PAGE_PIXELS, PdfCanvasBudget } from './PdfCanvasBudget';
+import { indexPdfText, type PdfPageTextIndex } from './PdfTextIndex';
+import { abortableReaderTask, isReaderAbort, throwIfReaderAborted } from './ReaderCancellation';
+import type { PdfCropRequest } from '../crop/ReaderCropController';
+import { paintPdfLinks, resolvePdfDestination, safePdfExternalUrl, type PdfPageLink } from './PdfLinks';
 import { getDocument, GlobalWorkerOptions, TextLayer } from 'pdfjs-dist';
 import type { PDFDocumentProxy, PDFPageProxy, PageViewport, RenderTask } from 'pdfjs-dist';
-import type { NormalizedPdfRect, PdfHighlight } from '../types/contracts';
+import type { PdfHighlight } from '../types/contracts';
 import { denormalizeRect } from './PdfSelectionGeometry';
 
 export interface PdfBinarySource {
@@ -43,7 +48,9 @@ export class PdfRenderer {
 	private renderedViewport: PageViewport | null = null;
 	private renderedPageNumber: number | null = null;
 	private renderGeneration = 0;
-	private readonly activeRenderTasks = new Map<number, RenderTask>();
+	private readonly activeRenderTasks = new Map<HTMLElement, RenderTask>();
+	private readonly targetEpoch = new WeakMap<HTMLElement, number>();
+	private readonly canvasBudget = new PdfCanvasBudget();
 
 	constructor(private readonly source: PdfBinarySource) { }
 
@@ -57,6 +64,7 @@ export class PdfRenderer {
 	}
 
 	setScale(scale: number): void {
+		this.invalidateRendering();
 		this.scale = Math.max(0.5, Math.min(3, scale));
 	}
 
@@ -65,72 +73,84 @@ export class PdfRenderer {
 	getRenderedViewport(): PageViewport | null { return this.renderedViewport; }
 
 	setRotation(rotation: number): void {
+		this.invalidateRendering();
 		this.rotation = ((rotation % 360) + 360) % 360;
 	}
 
-	async renderPage(pageNumber: number, target: HTMLElement, highlights: PdfHighlight[]): Promise<RenderedPage | null> {
-		// The generation only changes when the document closes or is replaced; it must
-		// not bump per call, or concurrent deck page renders would invalidate each other.
+	async renderPage(pageNumber: number, target: HTMLElement, highlights: PdfHighlight[], options: { signal?: AbortSignal; scale?: number; rotation?: number; links?: boolean } = {}): Promise<RenderedPage | null> {
+		throwIfReaderAborted(options.signal);
 		const generation = this.renderGeneration;
+		const epoch = (this.targetEpoch.get(target) ?? 0) + 1; this.targetEpoch.set(target, epoch);
+		this.activeRenderTasks.get(target)?.cancel();
 		const proxy = this.requireDocument();
-		const page = await proxy.getPage(pageNumber);
-		const viewport = page.getViewport({ scale: this.scale, rotation: this.rotation });
-		if (!this.ownsRender(generation, proxy)) return null;
-		this.renderedViewport = viewport;
-		this.renderedPageNumber = pageNumber;
-		target.replaceChildren();
-		target.classList.add('rd-pdf-page');
-		target.style.width = `${viewport.width}px`;
-		target.style.height = `${viewport.height}px`;
-		// pdf.js sizes text-layer spans with calc(var(--scale-factor) * Npx); without the
-		// variable the font-size silently falls back to the inherited value and misaligns selection.
-		target.style.setProperty('--scale-factor', String(viewport.scale));
-		const canvas = document.createElement('canvas');
-		canvas.className = 'rd-pdf-canvas';
-		target.append(canvas);
-		const pixelRatio = canvasPixelRatio(canvas);
-		const cssWidth = Math.ceil(viewport.width);
-		const cssHeight = Math.ceil(viewport.height);
-		canvas.width = Math.ceil(cssWidth * pixelRatio);
-		canvas.height = Math.ceil(cssHeight * pixelRatio);
-		canvas.style.width = `${cssWidth}px`;
-		canvas.style.height = `${cssHeight}px`;
-		const context = canvas.getContext('2d');
-		if (!context) throw new Error('无法创建 PDF canvas 上下文');
-		const task = page.render({ canvasContext: context, viewport, transform: pixelRatio === 1 ? undefined : [pixelRatio, 0, 0, pixelRatio, 0, 0] });
-		// Per-page task tracking: the deck renders several pages concurrently, so a
-		// new render may only cancel the previous task of the SAME page.
-		this.activeRenderTasks.get(pageNumber)?.cancel();
-		this.activeRenderTasks.set(pageNumber, task);
+		const scale = options.scale ?? this.scale; const rotation = options.rotation ?? this.rotation;
+		const owns = (): boolean => this.ownsRender(generation, proxy) && this.targetEpoch.get(target) === epoch && !options.signal?.aborted;
+		const staging = target.ownerDocument.createElement('div');
+		let canvas: HTMLCanvasElement | null = null;
 		try {
-			await task.promise;
-		} catch (error) {
-			if (isCancelledRender(error) || !this.ownsRender(generation, proxy)) return null;
-			throw error;
-		} finally {
-			if (this.activeRenderTasks.get(pageNumber) === task) this.activeRenderTasks.delete(pageNumber);
-		}
-		if (!this.ownsRender(generation, proxy)) return null;
-		const textSelectable = await this.renderTextLayer(page, viewport, target, generation);
-		if (!this.ownsRender(generation, proxy)) return null;
-		this.renderHighlights(target, viewport, highlights.filter(highlight => highlight.page === pageNumber - 1));
-		return { page: pageNumber, viewport, container: target, textSelectable };
+			const page = await abortableReaderTask(proxy.getPage(pageNumber), options.signal);
+			if (!owns()) return null;
+			const viewport = page.getViewport({ scale, rotation });
+			staging.style.width = `${viewport.width}px`; staging.style.height = `${viewport.height}px`;
+			staging.style.setProperty('--scale-factor', String(viewport.scale));
+			canvas = target.ownerDocument.createElement('canvas'); canvas.className = 'rd-pdf-canvas'; staging.append(canvas);
+			const ratio = this.canvasBudget.allocate(canvas, viewport.width, viewport.height, canvasPixelRatio(canvas), DISPLAY_PAGE_PIXELS);
+			canvas.style.width = `${viewport.width}px`; canvas.style.height = `${viewport.height}px`;
+			const context = canvas.getContext('2d'); if (!context) throw new Error('无法创建 PDF canvas 上下文');
+			const task = page.render({ canvasContext: context, viewport, transform: ratio === 1 ? undefined : [ratio, 0, 0, ratio, 0, 0] });
+			this.activeRenderTasks.set(target, task);
+			const abort = (): void => task.cancel(); options.signal?.addEventListener('abort', abort, { once: true });
+			try { await abortableReaderTask(task.promise, options.signal); }
+			finally { options.signal?.removeEventListener('abort', abort); if (this.activeRenderTasks.get(target) === task) this.activeRenderTasks.delete(target); }
+			if (!owns()) return null;
+			const textSelectable = await abortableReaderTask(this.renderTextLayer(page, viewport, staging, generation), options.signal);
+			if (!owns()) return null;
+			this.renderHighlights(staging, viewport, highlights.filter(highlight => highlight.page === pageNumber - 1));
+			if (options.links !== false) {
+				const links = await abortableReaderTask(this.pageLinks(pageNumber).catch(() => []), options.signal);
+				paintPdfLinks(staging, viewport, links);
+			}
+			if (!owns()) return null;
+			this.releaseTarget(target); target.classList.add('rd-pdf-page'); target.style.cssText = staging.style.cssText;
+			target.replaceChildren(...Array.from(staging.childNodes));
+			this.renderedViewport = viewport; this.renderedPageNumber = pageNumber;
+			this.canvasBudget.complete(canvas); canvas = null;
+			return { page: pageNumber, viewport, container: target, textSelectable };
+		} catch (error) { if (isReaderAbort(error) || !owns()) return null; throw error; }
+		finally { if (canvas) this.canvasBudget.release(canvas); this.releaseTarget(staging); }
+	}
+	/** Frees backing stores when a virtual page or temporary preview is evicted. */
+	releaseTarget(target: HTMLElement): void {
+		this.activeRenderTasks.get(target)?.cancel();
+		for (const canvas of Array.from(target.querySelectorAll('canvas'))) this.activeRenderTasks.get(canvas)?.cancel();
+		this.canvasBudget.releaseTarget(target);
+	}
+	adoptTarget(target: HTMLElement): void { for (const canvas of Array.from(target.querySelectorAll('canvas'))) this.canvasBudget.adopt(canvas); }
+	private invalidateRendering(): void {
+		this.renderGeneration += 1;
+		for (const task of this.activeRenderTasks.values()) task.cancel();
+		this.activeRenderTasks.clear();
 	}
 
 	/** Paints a lightweight, real PDF-page preview without changing Reader scale state. */
 	async renderThumbnail(pageNumber: number, canvas: HTMLCanvasElement, maxWidth = 136): Promise<void> {
-		const page = await this.requireDocument().getPage(pageNumber);
-		const natural = page.getViewport({ scale: 1, rotation: this.rotation });
-		const cssScale = maxWidth / natural.width;
-		const viewport = page.getViewport({ scale: cssScale, rotation: this.rotation });
-		const pixelRatio = canvasPixelRatio(canvas);
-		canvas.width = Math.ceil(viewport.width * pixelRatio);
-		canvas.height = Math.ceil(viewport.height * pixelRatio);
-		canvas.style.width = `${Math.ceil(viewport.width)}px`;
-		canvas.style.height = `${Math.ceil(viewport.height)}px`;
-		const context = canvas.getContext('2d');
-		if (!context) throw new Error('无法创建缩略图 canvas 上下文');
-		await page.render({ canvasContext: context, viewport, transform: pixelRatio === 1 ? undefined : [pixelRatio, 0, 0, pixelRatio, 0, 0] }).promise;
+		const proxy = this.requireDocument(); const generation = this.renderGeneration; const rotation = this.rotation;
+		const page = await proxy.getPage(pageNumber);
+		if (!this.ownsRender(generation, proxy)) return;
+		const natural = page.getViewport({ scale: 1, rotation });
+		const viewport = page.getViewport({ scale: maxWidth / natural.width, rotation });
+		this.activeRenderTasks.get(canvas)?.cancel();
+		const ratio = this.canvasBudget.allocate(canvas, viewport.width, viewport.height, canvasPixelRatio(canvas));
+		canvas.style.width = `${viewport.width}px`; canvas.style.height = `${viewport.height}px`;
+		const context = canvas.getContext('2d'); if (!context) { this.canvasBudget.release(canvas); throw new Error('无法创建缩略图 canvas 上下文'); }
+		const task = page.render({ canvasContext: context, viewport, transform: ratio === 1 ? undefined : [ratio, 0, 0, ratio, 0, 0] });
+		this.activeRenderTasks.set(canvas, task);
+		try {
+			await task.promise;
+			if (!this.ownsRender(generation, proxy)) this.canvasBudget.release(canvas);
+			else this.canvasBudget.complete(canvas);
+		} catch (error) { this.canvasBudget.release(canvas); if (!isReaderAbort(error)) throw error; }
+		finally { if (this.activeRenderTasks.get(canvas) === task) this.activeRenderTasks.delete(canvas); }
 	}
 
 	/** Repaints only the annotation overlay, leaving PDF canvas/text selection intact. */
@@ -159,16 +179,25 @@ export class PdfRenderer {
 	}
 
 	/** Extracts the selectable text of one page, joined with layout line breaks. */
-	async pageText(pageNumber: number): Promise<string> {
+	async pageText(pageNumber: number): Promise<string> { return (await this.pageTextIndex(pageNumber)).text; }
+	async pageTextIndex(pageNumber: number): Promise<PdfPageTextIndex> {
 		const page = await this.requireDocument().getPage(pageNumber);
 		const content = await page.getTextContent();
-		let text = '';
-		for (const item of content.items as Array<{ str?: string; hasEOL?: boolean }>) {
-			if (typeof item.str !== 'string') continue;
-			text += item.str;
-			if (item.hasEOL) text += '\n';
+		return indexPdfText(content.items as Array<{ str?: string; hasEOL?: boolean }>);
+	}
+	async pageLinks(pageNumber: number): Promise<PdfPageLink[]> {
+		const pdf = this.requireDocument(); const page = await pdf.getPage(pageNumber);
+		const annotations = await page.getAnnotations({ intent: 'display' });
+		const links: PdfPageLink[] = [];
+		for (const annotation of annotations) {
+			if (annotation.subtype !== 'Link' || annotation.jsAction || annotation.actions || !Array.isArray(annotation.rect) || annotation.rect.length !== 4 || !annotation.rect.every(Number.isFinite)) continue;
+			const url = safePdfExternalUrl(annotation.url);
+			try {
+				const destination = annotation.dest ? await resolvePdfDestination(pdf, annotation.dest) : null;
+				if (destination || url) links.push({ id: String(annotation.id), rect: annotation.rect, destination: destination ?? undefined, url: url ?? undefined });
+			} catch { /* Broken links do not prevent reading the page. */ }
 		}
-		return text;
+		return links;
 	}
 
 	async getOutline(): Promise<PdfOutlineEntry[]> {
@@ -187,9 +216,8 @@ export class PdfRenderer {
 	}
 
 	async close(): Promise<void> {
-		this.renderGeneration += 1;
-		for (const task of this.activeRenderTasks.values()) task.cancel();
-		this.activeRenderTasks.clear();
+		this.invalidateRendering();
+		this.canvasBudget.clear();
 		if (!this.document) return;
 		const document = this.document;
 		this.document = null;
@@ -198,28 +226,25 @@ export class PdfRenderer {
 		await document.destroy();
 	}
 
-	async renderCrop(rect: NormalizedPdfRect): Promise<Blob> {
-		const pageNumber = this.renderedPageNumber;
-		if (!pageNumber) throw new Error('请先渲染 PDF 页面后再裁剪。');
-		const page = await this.requireDocument().getPage(pageNumber);
-		const viewport = page.getViewport({ scale: Math.max(this.scale, 1.5), rotation: this.rotation });
-		const source = document.createElement('canvas');
-		const ratio = Math.max(1, window.devicePixelRatio ?? 1);
-		source.width = Math.ceil(viewport.width * ratio);
-		source.height = Math.ceil(viewport.height * ratio);
-		const context = source.getContext('2d');
-		if (!context) throw new Error('无法创建裁剪画布。');
-		await page.render({ canvasContext: context, viewport, transform: ratio === 1 ? undefined : [ratio, 0, 0, ratio, 0, 0] }).promise;
-		const crop = denormalizeRect(rect, viewport);
-		const output = document.createElement('canvas');
-		output.width = Math.max(1, Math.round(crop.width * ratio));
-		output.height = Math.max(1, Math.round(crop.height * ratio));
-		const outputContext = output.getContext('2d');
-		if (!outputContext) throw new Error('无法创建裁剪输出画布。');
-		outputContext.drawImage(source, crop.left * ratio, crop.top * ratio, crop.width * ratio, crop.height * ratio, 0, 0, output.width, output.height);
-		const blob = await new Promise<Blob | null>(resolve => output.toBlob(resolve, 'image/png'));
-		if (!blob) throw new Error('裁剪图片编码失败。');
-		return blob;
+	async renderCrop(request: PdfCropRequest): Promise<Blob> {
+		if (!Number.isInteger(request.page) || request.page < 0 || ![0, 90, 180, 270].includes(request.rotation)) throw new Error('裁剪源页或旋转无效。');
+		const pdf = this.requireDocument(); const generation = this.renderGeneration;
+		const page = await pdf.getPage(request.page + 1);
+		const viewport = page.getViewport({ scale: Math.max(request.viewport.scale, 1.5), rotation: request.rotation });
+		const source = document.createElement('canvas'); const output = document.createElement('canvas');
+		try {
+			const ratio = this.canvasBudget.allocate(source, viewport.width, viewport.height, canvasPixelRatio(source));
+			const context = source.getContext('2d'); if (!context) throw new Error('无法创建裁剪画布。');
+			await page.render({ canvasContext: context, viewport, transform: [ratio, 0, 0, ratio, 0, 0] }).promise;
+			if (!this.ownsRender(generation, pdf)) throw new Error('PDF 已切换，请重新裁剪。');
+			const crop = denormalizeRect(request.rect, viewport);
+			this.canvasBudget.allocate(output, crop.width, crop.height, ratio);
+			const outputContext = output.getContext('2d'); if (!outputContext) throw new Error('无法创建裁剪输出画布。');
+			outputContext.drawImage(source, crop.left * ratio, crop.top * ratio, crop.width * ratio, crop.height * ratio, 0, 0, output.width, output.height);
+			const blob = await new Promise<Blob | null>(resolve => output.toBlob(resolve, 'image/png'));
+			if (!blob) throw new Error('裁剪图片编码失败。');
+			return blob;
+		} finally { this.canvasBudget.release(source); this.canvasBudget.release(output); }
 	}
 
 	private ownsRender(generation: number, document: PDFDocumentProxy | null): boolean {
@@ -231,11 +256,15 @@ export class PdfRenderer {
 		textLayer.className = 'rd-pdf-text-layer';
 		textLayer.style.setProperty('--scale-factor', String(viewport.scale));
 		target.append(textLayer);
-		await new TextLayer({
-			textContentSource: page.streamTextContent(),
-			container: textLayer,
-			viewport
-		}).render();
+		const content = await page.getTextContent();
+		const index = indexPdfText(content.items as Array<{ str?: string; hasEOL?: boolean }>);
+		const layer = new TextLayer({ textContentSource: content, container: textLayer, viewport });
+		await layer.render();
+		textLayer.dataset.rdPageText = index.text;
+		layer.textDivs.forEach((span, item) => {
+			const part = index.spans[item]; if (!part) return;
+			span.dataset.rdTextStart = String(part.start); span.dataset.rdTextEnd = String(part.end);
+		});
 		if (generation !== this.renderGeneration) return false;
 		let selectable = false;
 		for (const span of Array.from(textLayer.children)) {
@@ -308,10 +337,6 @@ export class PdfRenderer {
 
 function canvasPixelRatio(canvas: HTMLCanvasElement): number {
 	return Math.max(1, canvas.ownerDocument.defaultView?.devicePixelRatio ?? 1);
-}
-
-function isCancelledRender(error: unknown): boolean {
-	return error instanceof Error && error.name === 'RenderingCancelledException';
 }
 
 /** Builds a unique accessible name from the highlight text, or its page as a fallback. */

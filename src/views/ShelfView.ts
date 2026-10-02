@@ -1,579 +1,201 @@
-import { Notice } from 'obsidian';
-import type { LibraryBook, LibraryCategory } from '../types/contracts';
-import {
-	categoryBookCount,
-	filterBooks,
-	formatFileSize,
-	formatProgress,
-	parseTags,
-	ShelfSearchController,
-	sortCategories,
-	shouldShowContinueReading,
-	type ShelfDisplayMode
-} from './shelf/ShelfViewModel';
+import type { LibraryBook, LibraryCategory, LibraryList } from '../types/contracts';
+import { ShelfSearchController, sortCategories } from './shelf/ShelfViewModel';
+import { button, element, errorMessage, input } from '../ui/shelf/ShelfDom';
+import type { ShelfViewHost } from '../ui/shelf/ShelfHost';
+import { CONTINUE_LIMIT, hasShelfFilters, pageBooks, queryBooks, type ShelfQuery } from '../ui/shelf/ShelfQuery';
+import { createShelfFilters } from '../ui/shelf/ShelfFilters';
+import { createBookCard, createBookTable, type ShelfBookContext } from '../ui/shelf/ShelfBooks';
+import { ShelfDialog } from '../ui/shelf/ShelfDialog';
+import { openBatchEditor } from '../ui/shelf/ShelfBatchEditor';
+import { openRelinkDialog } from '../ui/shelf/ShelfRelink';
+import { ShelfAnnotationSearch } from '../ui/shelf/ShelfAnnotationSearch';
+export type { ShelfViewHost } from '../ui/shelf/ShelfHost';
 
-type Awaitable<T> = T | Promise<T>;
-
-export interface ShelfViewHost {
-	getBooks(): Awaitable<LibraryBook[]>;
-	getCategories(): Awaitable<LibraryCategory[]>;
-	addCategory(name: string): Awaitable<LibraryCategory>;
-	reorderCategories(ids: string[]): Awaitable<void>;
-	updateBook(id: string, patch: Partial<Pick<LibraryBook, 'title' | 'author' | 'tags' | 'rating' | 'categoryId'>>): Awaitable<void>;
-	openBook(book: LibraryBook): Awaitable<void>;
-	scan(): Awaitable<void>;
-	resolveCoverUrl?(coverPath: string): string | null;
-	openSettings?(): Awaitable<void>;
-}
-
-/** A framework-free shelf surface. Its host owns persistence and navigation. */
+/** A framework-free shelf surface. LibraryIndex/AnnotationStore remain the sources. */
 export class ShelfView {
 	private container?: HTMLElement;
 	private books: LibraryBook[] = [];
 	private categories: LibraryCategory[] = [];
-	private query = '';
-	private categoryId?: string;
-	private mode: ShelfDisplayMode = 'cards';
-	private selectedBookId?: string;
+	private lists: LibraryList[] = [];
+	private query: ShelfQuery = { query: '', sort: 'title' };
+	private mode: 'cards' | 'table' | 'annotations' = 'cards';
+	private page = 1;
+	private selected = new Set<string>();
 	private loading = false;
+	private generation = 0;
 	private error?: string;
-	private header?: HTMLElement;
-	private toolbar?: HTMLElement;
-	private modeHost?: HTMLElement;
 	private content?: HTMLElement;
+	private toolbar?: HTMLElement;
 	private search?: HTMLInputElement;
+	private batchCount?: HTMLElement;
+	private batchButton?: HTMLButtonElement;
+	private dialog?: ShelfDialog;
 	private readonly searchController = new ShelfSearchController();
+	private readonly annotationSearch: ShelfAnnotationSearch;
+	constructor(private readonly host: ShelfViewHost) { this.annotationSearch = new ShelfAnnotationSearch(host); }
 
-	constructor(private readonly host: ShelfViewHost) { }
-
-	async render(container: HTMLElement): Promise<void> {
-		this.container = container;
-		await this.reload();
-	}
-
+	async render(container: HTMLElement): Promise<void> { this.container = container; this.ensureShell(); await this.reload(); }
 	destroy(): void {
-		if (this.container) this.container.replaceChildren();
-		this.container = undefined;
-		this.header = undefined;
-		this.toolbar = undefined;
-		this.modeHost = undefined;
-		this.content = undefined;
-		this.search = undefined;
+		this.generation++; this.dialog?.close(false); this.annotationSearch.destroy();
+		this.container?.replaceChildren(); this.container = undefined; this.content = undefined; this.toolbar = undefined;
 	}
-
-	private async reload(): Promise<void> {
-		this.loading = true;
-		this.error = undefined;
-		this.paint();
-		try {
-			const [books, categories] = await Promise.all([this.host.getBooks(), this.host.getCategories()]);
-			this.books = books;
-			this.categories = sortCategories(categories);
-		} catch (error) {
-			this.error = errorMessage(error, '无法加载书架');
-		} finally {
-			this.loading = false;
-			this.paint();
-		}
-	}
-
-	private paint(): void {
-		const container = this.container;
-		if (!container) return;
-		this.ensureShell(container);
-		this.refreshModeSwitch();
-		this.refreshContent();
-	}
-
-	private ensureShell(container: HTMLElement): void {
-		if (this.content && this.content.parentElement === container) return;
-		container.replaceChildren();
-		container.className = 'rd-shelf';
-		this.header = this.createHeader();
-		this.toolbar = this.createToolbar();
-		this.content = element('div', 'rd-shelf-results');
-		container.append(this.header, this.toolbar, this.content);
-	}
-
-	private refreshModeSwitch(): void {
-		if (!this.modeHost) return;
-		this.modeHost.replaceChildren(this.createModeSwitch());
-	}
-
-	private refreshContent(): void {
-		if (!this.content) return;
-		this.content.replaceChildren();
-		if (this.error) this.content.append(this.createErrorState());
-		else if (this.loading) this.content.append(this.createLoadingState());
-		else this.content.append(this.createContent());
-	}
-
-	private createHeader(): HTMLElement {
-		const header = element('header', 'rd-shelf-header');
-		header.append(element('h1', 'rd-shelf-heading', '书架'));
-		const actions = element('div', 'rd-shelf-actions');
-		actions.append(button('扫描书库', '重新扫描书库', () => void this.scan()));
-		if (this.host.openSettings) actions.append(button('设置', '打开 Reading Desk 设置', () => void this.host.openSettings?.()));
-		header.append(actions);
-		return header;
-	}
-
-	private createToolbar(): HTMLElement {
-		const toolbar = element('div', 'rd-shelf-toolbar');
-		toolbar.setAttribute('role', 'search');
-		this.search = documentInput('search', '搜索标题、作者或标签');
-		this.search.className = 'rd-shelf-search';
-		this.search.value = this.query;
-		this.search.setAttribute('aria-label', '搜索书架');
+	private ensureShell(): void {
+		const root = this.container; if (!root || this.content) return;
+		root.replaceChildren(); root.className = 'rd-shelf';
+		const header = element('header', 'rd-shelf-header'); header.append(element('h1', 'rd-shelf-heading', '书架'));
+		const actions = element('div', 'rd-shelf-actions'); actions.append(button('扫描书库', '重新扫描书库', () => void this.scan()));
+		if (this.host.openSettings) actions.append(button('设置', '打开 Reading Desk 设置', () => void this.host.openSettings?.())); header.append(actions);
+		this.search = input('search', '搜索书架'); this.search.placeholder = '搜索标题、作者或标签'; this.search.className = 'rd-shelf-search';
 		this.search.addEventListener('compositionstart', () => this.searchController.beginComposition());
-		this.search.addEventListener('compositionend', () => this.applySearch(this.search?.value ?? '', true));
-		this.search.addEventListener('input', () => this.applySearch(this.search?.value ?? '', false));
-		this.modeHost = element('div', 'rd-shelf-mode-host');
-		toolbar.append(this.search, this.modeHost);
-		return toolbar;
+		this.search.addEventListener('compositionend', () => this.applySearch(true)); this.search.addEventListener('input', () => this.applySearch(false));
+		this.toolbar = element('div', 'rd-shelf-toolbar'); this.toolbar.append(this.search);
+		const modes = element('div', 'rd-view-switch'); modes.setAttribute('role', 'group'); modes.setAttribute('aria-label', '书架视图');
+		for (const [mode, label] of [['cards', '卡片视图'], ['table', '表格视图'], ['annotations', '摘录与评论']] as const) {
+			const control = button(label, label, () => { this.mode = mode; this.annotationSearch.destroy(); this.paint(); });
+			control.dataset.shelfMode = mode; modes.append(control);
+		}
+		this.toolbar.append(modes); this.content = element('div', 'rd-shelf-results'); root.append(header, this.toolbar, this.content);
 	}
-
-	private applySearch(value: string, compositionEnded: boolean): void {
-		const next = compositionEnded ? this.searchController.endComposition(value) : this.searchController.input(value);
-		if (next === null) return;
-		this.query = next;
-		this.refreshContent();
+	private applySearch(completed: boolean): void {
+		const value = this.search?.value ?? '';
+		const next = completed ? this.searchController.endComposition(value) : this.searchController.input(value);
+		if (next !== null) { this.query.query = next; this.page = 1; this.paint(); }
 	}
-
-	private createModeSwitch(): HTMLElement {
-		const group = element('div', 'rd-view-switch');
-		group.setAttribute('role', 'group');
-		group.setAttribute('aria-label', '书架视图');
-		group.append(
-			this.modeButton('cards', '卡片视图'),
-			this.modeButton('table', '表格视图')
-		);
-		return group;
+	private async reload(initial = true): Promise<void> {
+		const generation = ++this.generation;
+		if (initial) { this.loading = true; this.paint(); }
+		try {
+			const [books, categories, lists] = await Promise.all([this.host.getBooks(), this.host.getCategories(), this.host.getLists?.() ?? []]);
+			if (generation !== this.generation || !this.container) return;
+			this.books = books; this.categories = sortCategories(categories); this.lists = lists;
+			const ids = new Set(books.map(book => book.id)); this.selected = new Set([...this.selected].filter(id => ids.has(id))); this.error = undefined;
+		} catch (error) { if (generation === this.generation) this.error = errorMessage(error, '无法加载书架'); }
+		finally { if (generation === this.generation) { this.loading = false; this.paint(); } }
 	}
-
-	private modeButton(mode: ShelfDisplayMode, label: string): HTMLButtonElement {
-		const control = button(label, label, () => {
-			this.mode = mode;
-			this.paint();
-		});
-		control.classList.add('rd-view-switch-button');
-		control.setAttribute('aria-pressed', String(this.mode === mode));
-		if (this.mode === mode) control.classList.add('is-selected');
-		return control;
+	private paint(): void {
+		const root = this.content; if (!root) return;
+		if (this.search) this.search.hidden = this.mode === 'annotations';
+		// Restore the equivalent control after metadata/filter refreshes rather than stealing focus.
+		const active = root.ownerDocument.activeElement as HTMLElement | null;
+		const label = active && root.contains(active) ? active.getAttribute('aria-label') : null;
+		const editor = active && root.contains(active) ? active.dataset.editor : undefined;
+		const selection = active instanceof HTMLInputElement ? [active.selectionStart, active.selectionEnd] : undefined;
+		root.replaceChildren();
+		for (const control of Array.from(this.toolbar?.querySelectorAll<HTMLElement>('[data-shelf-mode]') ?? [])) control.setAttribute('aria-pressed', String(control.dataset.shelfMode === this.mode));
+		if (this.loading) root.append(this.state('正在加载书架…', 'status'));
+		else if (this.error) {
+			const state = this.state(this.error, 'alert'); state.append(button('重试', '重试加载书架', () => void this.reload())); root.append(state);
+		} else if (this.mode === 'annotations') root.append(this.annotationSearch.render(this.books));
+		else root.append(this.createContent());
+		const controls = Array.from(root.querySelectorAll<HTMLElement>('input, select, button, article'));
+		const equivalent = editor ? controls.find(node => node.dataset.editor === editor) : label ? controls.find(node => node.getAttribute('aria-label') === label) : undefined;
+		equivalent?.focus();
+		if (equivalent instanceof HTMLInputElement && selection && equivalent.type === 'text') equivalent.setSelectionRange(selection[0], selection[1]);
 	}
-
 	private createContent(): HTMLElement {
-		const content = element('div', 'rd-shelf-content');
-		const continuing = shouldShowContinueReading({ query: this.query, categoryId: this.categoryId }) ? this.createContinueReading() : undefined;
-		if (continuing) content.append(continuing);
-		content.append(this.createCategoryPanel());
-		const books = filterBooks(this.books, { query: this.query, categoryId: this.categoryId });
-		if (books.length === 0) content.append(this.createEmptyState());
-		else content.append(this.mode === 'cards' ? this.createCardGrid(books) : this.createTable(books));
-		return content;
+		const content = element('div', 'rd-shelf-content'); const context = this.bookContext();
+		if (!hasShelfFilters(this.query)) {
+			const books = this.books.filter(book => !book.missing && book.progress > 0 && book.progress < 1).sort((a, b) => (b.lastReadAt ?? 0) - (a.lastReadAt ?? 0)).slice(0, CONTINUE_LIMIT);
+			if (books.length) {
+				const rail = element('section', 'rd-continue-reading'); rail.setAttribute('aria-label', '继续阅读'); rail.append(element('h2', 'rd-section-title', '继续阅读'));
+				const items = element('div', 'rd-continue-reading-list'); for (const book of books) items.append(createBookCard(book, context, true)); rail.append(items); content.append(rail);
+			}
+		}
+		content.append(this.createCategoryPanel(), createShelfFilters(this.books, this.lists, this.query, patch => { Object.assign(this.query, patch); this.page = 1; this.paint(); }));
+		const books = queryBooks(this.books, this.query); const window = pageBooks(books, this.page); this.page = window.page;
+		const summary = element('div', 'rd-shelf-summary'); summary.append(element('span', '', '显示 ' + window.items.length + ' / ' + window.total + ' 本'));
+		if (hasShelfFilters(this.query)) summary.append(button('清除筛选', '清除所有书架筛选', () => this.clearFilters())); content.append(summary, this.createSelectionBar(window.items, books));
+		if (!books.length) {
+			const empty = this.state(this.books.length ? '没有符合当前筛选的图书。' : '书库尚无图书。设置文件夹后扫描书库。', 'status');
+			if (!this.books.length) empty.append(button('扫描书库', '扫描空书库', () => void this.scan())); content.append(empty);
+		} else if (this.mode === 'table') content.append(createBookTable(window.items, context));
+		else { const grid = element('div', 'rd-shelf-grid'); grid.setAttribute('aria-label', '图书卡片'); for (const book of window.items) grid.append(createBookCard(book, context)); content.append(grid); }
+		content.append(this.createPagination(window.pages)); return content;
 	}
-
-	private createContinueReading(): HTMLElement | undefined {
-		const books = this.books
-			.filter(book => book.progress > 0 && book.progress < 1)
-			.sort((left, right) => (right.lastReadAt ?? 0) - (left.lastReadAt ?? 0));
-		if (books.length === 0) return undefined;
-		const section = element('section', 'rd-continue-reading');
-		section.setAttribute('aria-label', '继续阅读');
-		section.append(element('h2', 'rd-section-title', '继续阅读'));
-		const cards = element('div', 'rd-continue-reading-list');
-		for (const book of books) cards.append(this.createCard(book));
-		section.append(cards);
-		return section;
-	}
-
 	private createCategoryPanel(): HTMLElement {
-		const panel = element('section', 'rd-category-panel');
-		panel.setAttribute('aria-label', '图书分类');
-		const chips = element('div', 'rd-category-chips');
-		chips.append(this.categoryChip(undefined, `全部 ${this.books.length}`));
-		for (const category of this.categories) {
-			chips.append(this.categoryChip(category.id, `${category.name} ${categoryBookCount(this.books, category.id)}`));
+		const panel = element('section', 'rd-category-panel'); panel.setAttribute('aria-label', '图书分类');
+		const category = (id: string | undefined, name: string): void => {
+			const control = button(name, name, () => { this.query.categoryId = id; this.page = 1; this.paint(); });
+			control.classList.add('rd-category-chip'); control.setAttribute('aria-pressed', String(this.query.categoryId === id)); panel.append(control);
+		}; category(undefined, '全部 ' + this.books.length);
+		for (const item of this.categories) category(item.id, item.name + ' ' + this.books.filter(book => book.categoryId === item.id).length);
+		const manage = button('管理分类', '管理分类', () => this.manageCategories(manage)); panel.append(manage); return panel;
+	}
+	private createSelectionBar(visible: LibraryBook[], filtered: LibraryBook[]): HTMLElement {
+		const bar = element('div', 'rd-shelf-selection-bar');
+		this.batchCount = element('span', '', '已选 ' + this.selected.size + ' 本'); this.batchCount.setAttribute('aria-live', 'polite');
+		this.batchButton = button('批量整理', '批量整理已选图书', () => {
+			if (!this.container || !this.batchButton) return;
+			this.dialog?.close(false); this.dialog = openBatchEditor(this.container, this.batchButton, this.books.filter(book => this.selected.has(book.id)), this.categories, this.lists, this.host, () => this.reload(false));
+		}); this.batchButton.disabled = !this.selected.size || !this.host.batchUpdate;
+		const choose = (items: LibraryBook[]): void => { for (const book of items) this.selected.add(book.id); this.syncSelection(); };
+		bar.append(this.batchCount, button('选择本页', '批量选择本页', () => choose(visible)), button('选择筛选结果', '批量选择全部 ' + filtered.length + ' 本筛选结果', () => choose(filtered)), button('取消选择', '取消全部批量选择', () => { this.selected.clear(); this.syncSelection(); }), this.batchButton);
+		if (this.host.createList) {
+			const create = button('新建阅读列表', '新建阅读列表', () => this.createList(create)); bar.append(create);
 		}
-		panel.append(chips, this.createCategoryManager());
-		return panel;
+		return bar;
 	}
-
-	private categoryChip(categoryId: string | undefined, label: string): HTMLButtonElement {
-		const control = button(label, label, () => {
-			this.categoryId = categoryId;
-			this.paint();
-		});
-		control.classList.add('rd-category-chip');
-		control.setAttribute('aria-pressed', String(this.categoryId === categoryId));
-		if (this.categoryId === categoryId) control.classList.add('is-selected');
-		return control;
+	private syncSelection(): void {
+		if (this.batchCount) this.batchCount.textContent = '已选 ' + this.selected.size + ' 本';
+		if (this.batchButton) this.batchButton.disabled = !this.selected.size || !this.host.batchUpdate;
+		for (const node of Array.from(this.content?.querySelectorAll<HTMLElement>('[data-book-id]') ?? [])) node.classList.toggle('is-selected', this.selected.has(node.dataset.bookId ?? ''));
+		for (const node of Array.from(this.content?.querySelectorAll<HTMLInputElement>('[data-select-book]') ?? [])) node.checked = this.selected.has(node.dataset.selectBook ?? '');
 	}
-
-	private createCategoryManager(): HTMLElement {
-		const manager = element('div', 'rd-category-manager');
-		const input = documentInput('text', '新分类名称');
-		input.className = 'rd-category-input';
-		input.setAttribute('aria-label', '新分类名称');
-		const add = async (): Promise<void> => {
-			const name = input.value.trim();
-			if (!name) return;
-			try {
-				await this.host.addCategory(name);
-				input.value = '';
-				await this.reload();
-			} catch (error) {
-				this.error = errorMessage(error, '无法添加分类');
-				this.paint();
-			}
-		};
-		input.addEventListener('keydown', event => {
-			if (event.key === 'Enter') {
-				event.preventDefault();
-				void add();
-			}
-		});
-		manager.append(input, button('新增分类', '新增分类', () => void add()));
-		if (this.categories.length > 0) manager.append(this.createCategoryOrder());
-		return manager;
+	private bookContext(): ShelfBookContext {
+		return { host: this.host, categories: this.categories, lists: this.lists, selected: this.selected,
+			onSelect: (id, checked) => { if (checked) this.selected.add(id); else this.selected.delete(id); this.syncSelection(); },
+			onOpen: book => void this.openBook(book), onRelink: (book, trigger) => this.relink(book, trigger), onChanged: () => void this.reload(false) };
 	}
-
-	private createCategoryOrder(): HTMLElement {
-		const list = element('ol', 'rd-category-order');
-		list.setAttribute('aria-label', '分类排序');
-		this.categories.forEach((category, index) => {
-			const row = element('li', 'rd-category-order-row');
-			row.append(element('span', 'rd-category-name', category.name));
-			const controls = element('span', 'rd-category-order-actions');
-			controls.append(
-				this.reorderButton(category, index, -1, '上移'),
-				this.reorderButton(category, index, 1, '下移')
-			);
-			row.append(controls);
-			list.append(row);
-		});
-		return list;
+	private createPagination(pages: number): HTMLElement {
+		const nav = element('nav', 'rd-shelf-pagination'); nav.setAttribute('aria-label', '书架分页');
+		const go = (page: number): void => { this.page = page; this.paint(); this.content?.querySelector<HTMLElement>('.rd-shelf-card, .rd-library-table button')?.focus(); };
+		const prev = button('上一页', '上一页图书', () => go(this.page - 1)); prev.disabled = this.page <= 1;
+		const next = button('下一页', '下一页图书', () => go(this.page + 1)); next.disabled = this.page >= pages;
+		nav.append(prev, element('span', '', this.page + ' / ' + pages + ' 页 · 每页最多 40 本'), next); return nav;
 	}
-
-	private reorderButton(category: LibraryCategory, index: number, offset: number, label: string): HTMLButtonElement {
-		const control = button(label, `${category.name}${label}`, () => void this.reorderCategory(index, offset));
-		control.disabled = index + offset < 0 || index + offset >= this.categories.length;
-		return control;
-	}
-
-	private async reorderCategory(index: number, offset: number): Promise<void> {
-		const reordered = [...this.categories];
-		const [moved] = reordered.splice(index, 1);
-		reordered.splice(index + offset, 0, moved);
-		try {
-			await this.host.reorderCategories(reordered.map(category => category.id));
-			await this.reload();
-		} catch (error) {
-			this.error = errorMessage(error, '无法调整分类顺序');
-			this.paint();
-		}
-	}
-
-	private createCardGrid(books: LibraryBook[]): HTMLElement {
-		const grid = element('div', 'rd-shelf-grid');
-		grid.setAttribute('aria-label', '图书卡片');
-		for (const book of books) grid.append(this.createCard(book));
-		return grid;
-	}
-
-	private createCard(book: LibraryBook): HTMLElement {
-		const card = element('article', 'rd-shelf-card');
-		card.tabIndex = 0;
-		card.setAttribute('aria-label', `打开 ${book.title}`);
-		card.addEventListener('click', () => void this.openBook(book));
-		card.addEventListener('keydown', event => {
-			if (event.key === 'Enter' || event.key === ' ') {
-				event.preventDefault();
-				void this.openBook(book);
-			}
-		});
-		this.applySelection(card, book.id);
-		const cover = element('div', 'rd-book-cover');
-		const coverUrl = book.coverPath ? this.host.resolveCoverUrl?.(book.coverPath) ?? book.coverPath : null;
-		if (coverUrl) {
-			const image = card.ownerDocument.createElement('img');
-			image.src = coverUrl;
-			image.alt = `${book.title} 封面`;
-			image.loading = 'lazy';
-			image.decoding = 'async';
-			image.addEventListener('error', () => {
-				image.remove();
-				cover.append(element('span', 'rd-book-cover-unavailable', '无可用封面'));
+	private manageCategories(trigger: HTMLElement): void {
+		if (!this.container) return; this.dialog?.close(false); const dialog = new ShelfDialog(this.container, '管理分类', trigger); this.dialog = dialog;
+		const name = input('text', '新分类名称'); const status = this.state('', 'status');
+		const order = element('ol', 'rd-category-order');
+		const drawOrder = (): void => {
+			order.replaceChildren();
+			this.categories.forEach((category, index) => {
+				const row = element('li', 'rd-category-order-row', category.name);
+				for (const [delta, label] of [[-1, '上移'], [1, '下移']] as const) {
+					const move = button(label, category.name + label, async () => {
+						const reordered = [...this.categories]; const [moved] = reordered.splice(index, 1); reordered.splice(index + delta, 0, moved);
+						try { await this.host.reorderCategories(reordered.map(item => item.id)); await this.reload(false); drawOrder(); Array.from(order.querySelectorAll<HTMLButtonElement>('button')).find(control => control.getAttribute('aria-label') === category.name + label)?.focus(); }
+						catch (error) { status.textContent = errorMessage(error); }
+					}); move.disabled = index + delta < 0 || index + delta >= this.categories.length; row.append(move);
+				} order.append(row);
 			});
-			cover.append(image);
-		} else cover.append(element('span', 'rd-book-cover-unavailable', '无可用封面'));
-		const details = element('div', 'rd-book-details');
-		details.append(
-			element('p', 'rd-book-title', book.title),
-			element('p', 'rd-book-author', book.author || '作者未填写'),
-			element('p', 'rd-book-meta', bookMeta(book)),
-			this.createProgress(book),
-			this.createCardCategoryControl(book)
-		);
-		card.append(cover, details);
-		return card;
-	}
-
-	private createProgress(book: LibraryBook): HTMLElement {
-		const group = element('div', 'rd-progress-group');
-		const bar = element('div', 'rd-progress');
-		bar.setAttribute('role', 'progressbar');
-		bar.setAttribute('aria-label', `${book.title} 阅读进度`);
-		bar.setAttribute('aria-valuemin', '0');
-		bar.setAttribute('aria-valuemax', '100');
-		bar.setAttribute('aria-valuenow', String(Math.round(book.progress * 100)));
-		const fill = element('span', 'rd-progress-fill');
-		fill.style.width = formatProgress(book.progress);
-		bar.append(fill);
-		group.append(bar, element('span', 'rd-progress-label', `阅读进度 ${formatProgress(book.progress)}`));
-		return group;
-	}
-
-	private createCardCategoryControl(book: LibraryBook): HTMLElement {
-		const wrapper = element('label', 'rd-book-category');
-		wrapper.append('分类');
-		wrapper.addEventListener('click', event => event.stopPropagation());
-		const select = wrapper.ownerDocument.createElement('select');
-		select.setAttribute('aria-label', `${book.title} 的分类`);
-		select.append(option(select.ownerDocument, '', '未分类'));
-		for (const category of this.categories) select.append(option(select.ownerDocument, category.id, category.name));
-		select.value = book.categoryId ?? '';
-		select.addEventListener('click', event => event.stopPropagation());
-		select.addEventListener('change', () => void this.updateBook(book, { categoryId: select.value || undefined }, message => new Notice(message)));
-		wrapper.append(select);
-		return wrapper;
-	}
-
-	private createTable(books: LibraryBook[]): HTMLElement {
-		const table = element('table', 'rd-library-table') as HTMLTableElement;
-		table.setAttribute('aria-label', '图书表格');
-		const head = table.createTHead().insertRow();
-		for (const label of ['标题', '作者', '标签', '评分', '页数', '大小', '进度']) {
-			const cell = table.ownerDocument.createElement('th');
-			cell.scope = 'col';
-			cell.textContent = label;
-			head.append(cell);
-		}
-		const body = table.createTBody();
-		for (const book of books) body.append(this.createTableRow(table.ownerDocument, book));
-		return table;
-	}
-
-	private createTableRow(document: Document, book: LibraryBook): HTMLTableRowElement {
-		const row = document.createElement('tr');
-		row.tabIndex = 0;
-		row.setAttribute('aria-label', `选择 ${book.title}`);
-		row.addEventListener('click', () => this.selectBook(book.id));
-		row.addEventListener('keydown', event => {
-			if (event.key === 'Enter' || event.key === ' ') {
-				event.preventDefault();
-				this.selectBook(book.id);
-			}
-		});
-		this.applySelection(row, book.id);
-		row.insertCell().append(button(book.title, `打开 ${book.title}`, () => void this.openBook(book)));
-		row.insertCell().append(this.inlineTextEditor(document, book, 'author', '作者'));
-		row.insertCell().append(this.inlineTextEditor(document, book, 'tags', '标签'));
-		row.insertCell().append(this.ratingEditor(document, book));
-		row.insertCell().textContent = book.pageCount ? `${book.pageCount} 页` : '页数未提供';
-		row.insertCell().textContent = formatFileSize(book.fileSize);
-		row.insertCell().textContent = formatProgress(book.progress);
-		return row;
-	}
-
-	/** Updates the selection in place so the focused row or card is not rebuilt under the user. */
-	private selectBook(id: string): void {
-		this.selectedBookId = id;
-		const container = this.content;
-		if (!container) return;
-		for (const item of Array.from(container.querySelectorAll<HTMLElement>('[data-book-id]'))) {
-			this.applySelection(item, item.dataset.bookId ?? id);
-		}
-	}
-
-	private applySelection(item: HTMLElement, bookId: string): void {
-		item.dataset.bookId = bookId;
-		const selected = this.selectedBookId === bookId;
-		item.classList.toggle('is-selected', selected);
-		if (item.tagName === 'TR') item.setAttribute('aria-selected', String(selected));
-		else if (selected) item.setAttribute('aria-current', 'true');
-		else item.removeAttribute('aria-current');
-	}
-
-	private inlineTextEditor(document: Document, book: LibraryBook, field: 'author' | 'tags', label: string): HTMLInputElement {
-		const input = document.createElement('input');
-		input.className = 'rd-table-editor';
-		input.value = field === 'tags' ? book.tags.join('，') : book.author;
-		input.setAttribute('aria-label', `${book.title} 的${label}`);
-		const save = (): void => {
-			const value = field === 'tags' ? parseTags(input.value) : input.value.trim();
-			if (sameFieldValue(book, field, value)) return;
-			void this.updateBook(book, { [field]: value }, message => showEditorError(input, message));
+		}; drawOrder();
+		const add = async (): Promise<void> => {
+			if (!name.value.trim()) return;
+			try { await this.host.addCategory(name.value.trim()); name.value = ''; await this.reload(false); drawOrder(); status.textContent = '分类已保存'; name.focus(); }
+			catch (error) { status.textContent = errorMessage(error); }
 		};
-		input.addEventListener('blur', save);
-		input.addEventListener('keydown', event => {
-			if (event.key === 'Enter') {
-				event.preventDefault();
-				input.blur();
-			}
-		});
-		input.addEventListener('click', event => event.stopPropagation());
-		return input;
+		name.addEventListener('keydown', event => { if (event.key === 'Enter' && !event.isComposing) { event.preventDefault(); void add(); } });
+		dialog.body.append(name, button('新增分类', '新增分类', () => void add()), order, status); dialog.focusFirst();
 	}
-
-	private ratingEditor(document: Document, book: LibraryBook): HTMLSelectElement {
-		const select = document.createElement('select');
-		select.className = 'rd-rating-select';
-		select.setAttribute('aria-label', `${book.title} 的评分`);
-		select.append(option(document, '', '未评分'));
-		for (let value = 1; value <= 10; value += 1) select.append(option(document, String(value), `${value} 分`));
-		select.value = book.rating ? String(book.rating) : '';
-		select.addEventListener('click', event => event.stopPropagation());
-		select.addEventListener('change', () => void this.updateBook(
-			book,
-			{ rating: select.value ? Number(select.value) : undefined },
-			message => showEditorError(select, message)
-		));
-		return select;
+	private createList(trigger: HTMLElement): void {
+		if (!this.container) return; this.dialog?.close(false); const dialog = new ShelfDialog(this.container, '新建阅读列表', trigger); this.dialog = dialog;
+		const name = input('text', '阅读列表名称'); const status = this.state('', 'status');
+		const save = button('创建列表', '创建阅读列表', async () => {
+			if (!name.value.trim()) return; save.disabled = true;
+			try { await this.host.createList?.(name.value.trim()); await this.reload(false); dialog.close(); }
+			catch (error) { status.textContent = errorMessage(error); save.disabled = false; }
+		}); dialog.body.append(name, save, status); dialog.focusFirst();
 	}
-
-	private createLoadingState(): HTMLElement {
-		const state = element('div', 'rd-shelf-state rd-shelf-loading', '正在加载书架…');
-		state.setAttribute('role', 'status');
-		state.setAttribute('aria-live', 'polite');
-		return state;
+	private relink(book: LibraryBook, trigger: HTMLElement): void {
+		if (!this.container) return; this.dialog?.close(false); this.dialog = openRelinkDialog(this.container, trigger, book, this.host, () => this.reload(false));
 	}
-
-	private createEmptyState(): HTMLElement {
-		const state = element('div', 'rd-shelf-state rd-shelf-empty');
-		state.setAttribute('role', 'status');
-		if (!this.query && !this.categoryId) {
-			state.textContent = '书架中还没有图书。请扫描已配置的书库文件夹。';
-			return state;
-		}
-		state.textContent = this.query
-			? `没有与“${this.query}”匹配的图书。请清空上方搜索框，或选择其他分类。`
-			: '当前分类下没有图书。请选择其他分类，或清除筛选。';
-		state.append(button('清除筛选', '清除搜索与分类筛选', () => this.clearFilters()));
-		return state;
-	}
-
-	private clearFilters(): void {
-		this.query = '';
-		this.categoryId = undefined;
-		if (this.search) this.search.value = '';
-		this.refreshContent();
-	}
-
-	private createErrorState(): HTMLElement {
-		const state = element('div', 'rd-shelf-state rd-shelf-error');
-		state.setAttribute('role', 'alert');
-		state.append(element('p', 'rd-shelf-error-message', this.error ?? '书架发生未知错误。'));
-		state.append(button('重试', '重试加载书架', () => void this.reload()));
-		return state;
-	}
-
-	private async updateBook(
-		book: LibraryBook,
-		patch: Partial<Pick<LibraryBook, 'title' | 'author' | 'tags' | 'rating' | 'categoryId'>>,
-		onError?: (message: string) => void
-	): Promise<void> {
-		try {
-			await this.host.updateBook(book.id, patch);
-			Object.assign(book, patch);
-			this.paint();
-		} catch (error) {
-			const message = errorMessage(error, '无法保存图书信息');
-			if (onError) onError(message);
-			else {
-				this.error = message;
-				this.paint();
-			}
-		}
-	}
-
 	private async openBook(book: LibraryBook): Promise<void> {
-		this.selectBook(book.id);
-		try {
-			await this.host.openBook(book);
-		} catch (error) {
-			this.error = errorMessage(error, '无法打开图书');
-			this.paint();
-		}
+		try { await this.host.openBook(book); } catch (error) { this.error = errorMessage(error, '无法打开图书'); this.paint(); }
 	}
-
 	private async scan(): Promise<void> {
-		try {
-			await this.host.scan();
-			await this.reload();
-		} catch (error) {
-			this.error = errorMessage(error, '扫描书库失败');
-			this.paint();
-		}
+		try { await this.host.scan(); await this.reload(); } catch (error) { this.error = errorMessage(error, '扫描书库失败'); this.paint(); }
 	}
-}
-
-function element(tag: string, className: string, text?: string): HTMLElement {
-	const value = document.createElement(tag);
-	value.className = className;
-	if (text !== undefined) value.textContent = text;
-	return value;
-}
-
-function button(text: string, label: string, onClick: () => void): HTMLButtonElement {
-	const control = document.createElement('button');
-	control.type = 'button';
-	control.className = 'rd-button';
-	control.textContent = text;
-	control.setAttribute('aria-label', label);
-	control.addEventListener('click', event => {
-		event.stopPropagation();
-		onClick();
-	});
-	return control;
-}
-
-function documentInput(type: string, placeholder: string): HTMLInputElement {
-	const input = document.createElement('input');
-	input.type = type;
-	input.placeholder = placeholder;
-	return input;
-}
-
-function option(document: Document, value: string, label: string): HTMLOptionElement {
-	const item = document.createElement('option');
-	item.value = value;
-	item.textContent = label;
-	return item;
-}
-
-/** Surfaces an inline save failure beside the editor, keeping the row and its input intact. */
-function showEditorError(input: HTMLElement, message: string): void {
-	const cell = input.parentElement;
-	if (!cell) return;
-	cell.querySelector('.rd-table-error')?.remove();
-	const note = document.createElement('span');
-	note.className = 'rd-table-error';
-	note.setAttribute('role', 'alert');
-	note.textContent = message;
-	cell.append(note);
-}
-
-function bookMeta(book: LibraryBook): string {
-	const pages = book.pageCount ? `${book.pageCount} 页` : '页数未提供';
-	return `${pages} · ${formatFileSize(book.fileSize)}`;
-}
-
-function sameFieldValue(book: LibraryBook, field: 'author' | 'tags', value: string | string[]): boolean {
-	if (field === 'author') return book.author === value;
-	return book.tags.join('\u0000') === (value as string[]).join('\u0000');
-}
-
-function errorMessage(error: unknown, fallback: string): string {
-	return error instanceof Error && error.message ? error.message : fallback;
+	private clearFilters(): void { this.query = { query: '', sort: this.query.sort }; this.page = 1; if (this.search) this.search.value = ''; this.paint(); }
+	private state(message: string, role: string): HTMLElement { const state = element('div', 'rd-shelf-state', message); state.setAttribute('role', role); return state; }
 }

@@ -1,6 +1,6 @@
 # Reading Desk
 
-Margin v0.1.0 is a desktop-only Obsidian plugin for a shared PDF/EPUB library, PDF reading, anchored excerpts, comments, targets, and optional object storage.
+Margin v0.4.0 is a desktop-only Obsidian plugin for a shared PDF/EPUB library, PDF reading, anchored excerpts, comments, targets, and optional object storage.
 
 ## Develop
 
@@ -29,9 +29,13 @@ The Test Vault keeps Obsidian’s core Canvas enabled because Canvas is a requir
 ## Use
 
 1. Set one or more library folders in **Reading Desk 设置**, then run **扫描 Reading Desk 书库**.
-2. Open a PDF from the shelf. Reader layouts persist as focus or split.
+2. Filter and sort the shelf, organize books in reading lists, or batch-edit tags, categories and reading status. Open a PDF, or search excerpts and comments across the library.
 3. Select PDF text and use the color button, the selection context menu, or drag to a target. Generated Canvas, Excalidraw, and Markdown cards retain an exact Reading Desk source link.
 4. Configure OSS or COS only when you have credentials. Connection testing is read-only; Markdown image paste and remote crop upload stay disabled until object storage is enabled.
-5. Use the settings import/export panel or command palette to non-destructively import legacy Bookshelf metadata and to export Markdown/JSON.
+5. Use the settings data panel to import legacy Bookshelf metadata, CSL JSON, BibTeX or Zotero JSON. Confirm local attachments in the preview; repeated imports use source identity and preserve manual metadata.
+6. Export and restore a versioned full plugin-data backup from the same panel. It contains annotation geometry, comments, cards, lists and settings; it does **not** contain PDF/EPUB files, covers or native target notes. Back those files up with the vault. Cloud credentials are excluded by default.
+7. The data panel also exposes pending-save retry, protected reload, target-write recovery, recoverable annotations and safe fixed-placeholder excerpt templates. Source files that disappear remain indexed and can be explicitly reconnected.
+
+The repository checks external data before writes and preserves the prior value under the plugin directory's `recovery/` folder. This detects stale snapshots; it is not a cross-device atomic merge or a cloud synchronization service. Preserve that recovery folder when backing up the plugin. See [module ownership and recovery contracts](docs/enhancement-modules.md) and the [0.4.0 implementation and acceptance record](docs/implementation-0.4.0-2026-10-02.md).
 
 OpenCodian integration is optional. It is available only when its plugin and the two public commands needed to add the generated context note and open its view are present; no third-party private API is guessed.

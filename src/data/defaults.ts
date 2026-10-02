@@ -23,6 +23,10 @@ export const DEFAULT_SETTINGS: ReadingDeskSettings = {
 
 export function createEmptyData(): ReadingDeskData {
 	return {
+		schemaVersion: 1,
+		lists: [],
+		deletedAnnotations: {},
+		pendingTargetWrites: {},
 		books: {},
 		categories: [],
 		highlights: {},

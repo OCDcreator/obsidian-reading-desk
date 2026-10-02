@@ -6,19 +6,18 @@ import { PdfRenderer, type PdfOutlineEntry } from '../reader/PdfRenderer';
 import { TargetService, type CanvasOutlineEntry } from '../targets';
 import { ReaderCommentBridge } from '../reader/ReaderCommentBridge';
 import { type CropSelectionPayload } from '../ui/crop/CropSelectionOverlay';
-import { CropLauncher } from '../ui/crop/CropLauncher';
+import { ReaderCropController, type PdfCropRequest } from '../crop/ReaderCropController';
 import { handleCropDrop, type PreparedCropDrag } from '../ui/crop/CropDragTransport';
 import { ExcerptTargetPanel, type ExcerptCard } from '../ui/targets/ExcerptTargetPanel';
 import { ReaderSessionState } from '../reader/ReaderSessionState';
 import { anchorBelowToolbar, trackToolbarHeight } from '../reader/ReaderChromeMetrics';
-import { parseDraggedHighlightRects } from '../reader/ReaderDragTransport';
+import { parseDraggedExcerptSelection } from '../reader/ReaderDragTransport';
 import { executeCopyReaderPage } from '../reader/ReaderCopyCommand';
 import { ReaderHighlightCoordinator } from '../reader/ReaderHighlightCoordinator';
 import { boundVisiblePage } from '../reader/ReaderPageNavigation';
 import { ReaderNavigation, type OutlineLoadState, type ReaderNavigationMode } from '../reader/ReaderNavigation';
 import { observeReaderDensity } from '../reader/ReaderResponsive';
 import { ReaderTargetPanelController } from '../ui/targets/ReaderTargetPanelController';
-import { revealCreatedCanvasTarget } from '../reader/ReaderTargetHandoff';
 import { type ReaderFitMode } from '../reader/ReaderFit';
 import { ReaderFitController } from '../reader/ReaderFitController';
 import { TargetPanelDisclosure } from '../ui/targets/TargetPanelDisclosure';
@@ -34,7 +33,10 @@ import { bindReaderPageEvents, type ReaderPageEventDeps } from '../reader/Reader
 import { ReaderDisplayOptions } from '../reader/ReaderDisplayOptions';
 import { ReaderHistory } from '../reader/ReaderHistory';
 import { ReaderToolsController } from '../reader/ReaderToolsController';
-import { selectionRects, writeReaderExcerpt } from '../reader/ReaderExcerptWriter';
+import type { FrozenExcerptSelection } from '../reader/ReaderExcerptWriter';
+import { ReaderExcerptController, recolorReaderExcerpt } from '../reader/ReaderExcerptController';
+import { ReaderPositionController } from '../reader/ReaderPositionController';
+import { isReaderAbort } from '../reader/ReaderCancellation';
 import { chapterPathForPage } from '../reader/ReaderOutlineModel';
 
 export const READER_VIEW_TYPE = 'reading-desk-reader';
@@ -82,7 +84,9 @@ export class ReaderView extends ItemView {
 	private readonly drawerId = createId('rd-highlight-drawer');
 
 	private sourceMissing = false;
-	private cropLauncher = new CropLauncher();
+	private cropLauncher = new ReaderCropController();
+	private readonly positions: ReaderPositionController;
+	private readonly excerptWriter: ReaderExcerptController;
 	private fitController: ReaderFitController;
 	private stopDensityObserver: (() => void) | null = null;
 	private stopToolbarTracking: (() => void) | null = null;
@@ -105,6 +109,22 @@ export class ReaderView extends ItemView {
 	constructor(leaf: WorkspaceLeaf, private readonly host: ReaderHost) {
 		super(leaf);
 		this.pdf = host.createPdfRenderer();
+		this.positions = new ReaderPositionController({
+			surface: () => this.surface, pdf: () => this.pdf, page: () => this.page, pageCount: () => this.pages,
+			setPage: page => { this.page = page; this.session.setPage(page); }, history: this.history,
+			changed: page => this.handlePageChanged(page), showTarget: (path, id) => this.host.showTarget(path, id), onError: message => new Notice(message)
+		});
+		this.excerptWriter = new ReaderExcerptController({
+			input: (text, type, color) => this.surface && this.activePath() && !this.sourceMissing ? {
+				text, type, color, surface: this.surface, fallbackPage: this.page, pdfPath: this.activePath(), viewportFallback: null,
+				continuous: this.surface.mode === 'continuous', createTarget: candidate => this.host.createTarget(candidate),
+				selectedTarget: this.selectedTarget, selectedTargetPath: this.selectedTargetPath,
+				targets: this.host.targets, annotations: this.host.annotations, chapterPathFor: page => this.chapterForPage(page),
+				syncOutline: path => this.syncOutlineForTarget(path), onTargetResolved: (resolvedType, path) => { if (resolvedType === this.selectedTarget) this.selectedTargetPath = path; }
+			} : null,
+			setColor: color => { this.lastColor = color; }, refresh: () => this.refreshAnnotations(),
+			openTargetInSplit: (path, id) => this.host.openTargetInSplit(path, id)
+		});
 		this.highlightCoordinator = new ReaderHighlightCoordinator(id => this.jumpToHighlightTarget(id));
 		this.bridge = new ReaderCommentBridge({
 			annotations: () => this.host.annotations,
@@ -120,7 +140,8 @@ export class ReaderView extends ItemView {
 		this.tools = new ReaderToolsController({
 			pdf: () => this.pdf,
 			pageCount: () => this.pages,
-			goToPage: async page => { await this.goTo(page, { smooth: false }); },
+			goToPage: async (page, signal) => { await this.positions.goTo(page, { smooth: false, jump: true, signal }); },
+			ensurePageRendered: (page, signal) => this.surface?.ensurePageRendered(page, signal) ?? Promise.resolve(null),
 			hostForPage: page => this.surface?.hostForPage(page) ?? null,
 			currentPage: () => this.page,
 			annotations: () => this.host.annotations,
@@ -153,8 +174,8 @@ export class ReaderView extends ItemView {
 			commitCropDrop: (event, canvasTargetPath) => handleCropDrop(event, canvasTargetPath, (token, path) => this.host.commitPreparedCrop(token, path)),
 			dropExcerpt: event => {
 				const text = event.dataTransfer?.getData('text/plain').trim() ?? '';
-				const rects = parseDraggedHighlightRects(event.dataTransfer?.getData('application/x-reading-desk-rects') ?? '');
-				return text && rects ? this.createExcerpt(text, this.selectedTarget, this.lastColor, rects) : Promise.resolve();
+				const frozen = parseDraggedExcerptSelection(event.dataTransfer?.getData('application/x-reading-desk-selection') ?? '');
+				return text && frozen ? this.createExcerpt(text, this.selectedTarget, this.lastColor, frozen) : Promise.resolve();
 			},
 			renderExcerpts: container => this.excerptPanel.render(container, this.activePath()),
 			syncOutlineForCanvas: targetPath => this.syncOutlineForTarget(targetPath),
@@ -185,6 +206,7 @@ export class ReaderView extends ItemView {
 	}
 	async onClose(): Promise<void> {
 		this.lifecycle.close();
+		this.tools.resetForDocument(); this.positions.cancel();
 		this.openRequests.invalidate();
 		this.outlineLoader.invalidate();
 		this.highlightCoordinator.close();
@@ -204,6 +226,7 @@ export class ReaderView extends ItemView {
 	}
 	async openPdf(path: string, page = 1): Promise<void> {
 		const request = this.openRequests.begin(path);
+		this.tools.resetForDocument(); this.positions?.cancel(); this.cropLauncher?.destroy();
 		this.outlineLoader.invalidate();
 		const opened = await openReaderDocument(path, this.host.createPdfRenderer(), this.pdf, () => this.openRequests.isCurrent(request));
 		if (!opened) return;
@@ -279,6 +302,7 @@ export class ReaderView extends ItemView {
 		this.openRequests.invalidate();
 		this.outlineLoader.invalidate();
 		this.sourceMissing = true;
+		this.tools.resetForDocument(); this.positions.cancel();
 		this.cropLauncher.destroy();
 		this.pages = 0;
 		this.page = 1;
@@ -290,6 +314,7 @@ export class ReaderView extends ItemView {
 	}
 
 	private async render(): Promise<void> {
+		this.positions.cancel(); this.cropLauncher.destroy();
 		this.fitController.stop();
 		this.navigationMode = this.readerNavigation?.getMode() ?? this.navigationMode;
 		this.readerNavigation?.destroy();
@@ -359,6 +384,7 @@ export class ReaderView extends ItemView {
 		const surface = this.createSurface();
 		body.append(surface.stage);
 		bindReaderPageEvents(surface.stage, this.pageEventDeps());
+		this.positions.bindLinks(surface.stage);
 		try {
 			await surface.render();
 			await this.fitController.refit(true);
@@ -386,7 +412,8 @@ export class ReaderView extends ItemView {
 			callbacks: {
 				getHighlights: () => this.host.annotations.list(this.activePath()),
 				onPageChange: page => this.handlePageChanged(page),
-				onTextSignal: (page, selectable) => this.handleTextSignal(page, selectable)
+				onTextSignal: (page, selectable) => this.handleTextSignal(page, selectable),
+				onPageRendered: () => { this.tools.applySearchMarks(); this.bindHighlightPreview(); }
 			}
 		};
 		this.surface = this.display.scrollMode() === 'continuous' ? new ContinuousPageSurface(io) : new SinglePageSurface(io);
@@ -427,6 +454,7 @@ export class ReaderView extends ItemView {
 	detachNavigation(container: HTMLElement): void {
 		if (this.navigationContainer !== container) return;
 		this.navigationMode = this.readerNavigation?.getMode() ?? this.navigationMode;
+		this.pdf.releaseTarget(container);
 		this.readerNavigation?.destroy();
 		this.readerNavigation = this.navigationContainer = null;
 	}
@@ -450,11 +478,9 @@ export class ReaderView extends ItemView {
 	private async goTo(page: number, options?: { jump?: boolean; smooth?: boolean }): Promise<void> {
 		const bounded = boundVisiblePage(Number.isFinite(page) ? page : this.page, this.pages);
 		if (bounded.notice) new Notice(bounded.notice);
-		if (options?.jump) this.history.push({ page: bounded.page });
-		this.page = bounded.page;
-		this.session.setPage(this.page);
-		await this.surface?.goToPage(bounded.page, { smooth: options?.smooth });
-		this.handlePageChanged(bounded.page);
+		this.cropLauncher.destroy();
+		try { await this.positions.goTo(bounded.page, options); }
+		catch (error) { if (!isReaderAbort(error)) { console.error('[Reading Desk] 页面跳转失败', error); new Notice('页面跳转失败，请重试。'); } }
 	}
 
 	private handlePageChanged(page: number): void {
@@ -462,7 +488,7 @@ export class ReaderView extends ItemView {
 			this.page = page;
 			this.session.setPage(page);
 		}
-		this.history.replace({ page: this.page });
+		this.positions.recordPageChanged();
 		this.controls?.pageControl.update(this.page, this.pages);
 		this.controls?.updateHistory(this.history.canBack(), this.history.canForward());
 		this.readerNavigation?.revealPage(this.page);
@@ -477,6 +503,7 @@ export class ReaderView extends ItemView {
 	}
 
 	private async applyScale(nextScale: number): Promise<void> {
+		this.positions.cancel(); this.cropLauncher.destroy();
 		this.fitController.setManualScale(nextScale);
 		this.surface?.relayoutPending();
 		await this.surface?.render();
@@ -487,21 +514,20 @@ export class ReaderView extends ItemView {
 	}
 
 	private async rebuildSurface(): Promise<void> {
+		this.positions.cancel(); this.cropLauncher.destroy();
 		this.surface?.destroy();
 		this.surface = null;
 		if (!this.readerBody) return;
 		const surface = this.createSurface();
 		this.readerBody.replaceChildren(surface.stage);
 		bindReaderPageEvents(surface.stage, this.pageEventDeps());
+		this.positions.bindLinks(surface.stage);
 		await surface.render();
 	}
 
 	private async navigateHistory(direction: -1 | 1): Promise<void> {
-		const location = direction === -1 ? this.history.back() : this.history.forward();
-		if (!location) return;
-		await this.goTo(location.page, { smooth: false });
+		try { await this.positions.history(direction); } catch (error) { if (!isReaderAbort(error)) new Notice('历史位置无法载入，请重试。'); }
 	}
-
 
 	private syncDrawerState(): void {
 		if (!this.drawer || !this.drawerToggle) return;
@@ -512,21 +538,15 @@ export class ReaderView extends ItemView {
 		if (toolbar) anchorBelowToolbar(this.drawer, toolbar);
 	}
 	private async enterCropMode(): Promise<void> {
-		const path = this.activePath();
-		const surface = this.surface;
+		const path = this.activePath(); const surface = this.surface;
 		if (!path || !this.pages || !surface) return;
-		const page = this.page;
-		await this.cropLauncher.enter({
-			ensureRenderedHost: async () => {
-				const host = surface.hostForPage(page);
-				if (host) return host;
-				await surface.goToPage(page);
-				return surface.hostForPage(page);
-			},
-			prepareCrop: (payload: CropSelectionPayload) => this.prepareCropDrag(payload),
-			commit: (token: string) => this.host.commitPreparedCrop(token, this.selectedTarget === 'markdown' ? this.selectedTargetPath || undefined : undefined),
-			discard: (token: string) => this.host.discardPreparedCrop(token)
-		});
+		try {
+			await this.cropLauncher.enter({ surface, page: this.page,
+				prepare: (payload, request) => this.prepareCropDrag(payload, request),
+				commit: token => this.host.commitPreparedCrop(token, this.selectedTarget === 'markdown' ? this.selectedTargetPath || undefined : undefined),
+				discard: token => this.host.discardPreparedCrop(token)
+			});
+		} catch (error) { if (!isReaderAbort(error)) new Notice('当前页裁剪无法载入，请重试。'); }
 	}
 
 	private renderDrawer(): void {
@@ -539,36 +559,8 @@ export class ReaderView extends ItemView {
 		this.tools.openSelectionMenu(event, this.surface?.stage.getBoundingClientRect());
 	}
 
-	private async createExcerpt(text: string, type = this.selectedTarget, color: PdfHighlight['color'] = this.lastColor, frozenRects?: PdfHighlight['rects']): Promise<void> {
-		if (!this.surface) return;
-		const selection = window.getSelection();
-		const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
-		if (!range && !frozenRects) return;
-		this.lastColor = color;
-		try {
-			const written = await writeReaderExcerpt({
-				text, type, color, frozenRects,
-				surface: this.surface, fallbackPage: this.page,
-				pdfPath: this.activePath() ?? '', viewportFallback: this.pdf.getRenderedViewport(),
-				continuous: this.surface.mode === 'continuous',
-				createTarget: candidate => this.host.createTarget(candidate),
-				selectedTarget: this.selectedTarget, selectedTargetPath: this.selectedTargetPath,
-				targets: this.host.targets, annotations: this.host.annotations,
-				chapterPathFor: page => this.chapterForPage(page),
-				syncOutline: targetPath => this.syncOutlineForTarget(targetPath),
-				onTargetResolved: (resolvedType, path) => { if (resolvedType === this.selectedTarget) this.selectedTargetPath = path; }
-			}, range);
-			if (!written) return;
-			selection?.removeAllRanges();
-			await this.refreshAnnotations();
-			const target = written.highlight.target;
-			const reveal = target ? await revealCreatedCanvasTarget(target, this.host) : 'created' as const;
-			if (reveal === 'opened') new Notice('已创建 Canvas 卡片。');
-			else if (reveal === 'open-failed') new Notice('Canvas 卡片已创建，但无法自动打开；可从“摘录管理”手动打开。');
-		} catch (error) {
-			console.error('[Reading Desk] 创建摘录失败', error);
-			new Notice('创建摘录失败。请确认目标文档可用，然后重试一次。');
-		}
+	private async createExcerpt(text: string, type: TargetType, color: PdfHighlight['color'], frozenSelection?: FrozenExcerptSelection): Promise<void> {
+		await this.excerptWriter.create(text, type, color, frozenSelection);
 	}
 
 	private async createExcerptFromSelection(color: PdfHighlight['color']): Promise<void> {
@@ -577,10 +569,11 @@ export class ReaderView extends ItemView {
 		await this.createExcerpt(text, this.selectedTarget, color);
 	}
 
-	private async prepareCropDrag(payload: CropSelectionPayload): Promise<PreparedCropDrag> {
+	private async prepareCropDrag(payload: CropSelectionPayload, request: PdfCropRequest): Promise<PreparedCropDrag> {
 		const pdfPath = this.activePath();
 		if (!pdfPath) throw new Error('没有可裁剪的 PDF。');
-		const image = await this.pdf.renderCrop(payload.rect);
+		const image = await this.pdf.renderCrop(request);
+		if (this.activePath() !== pdfPath) throw new Error('PDF 已切换，请重新裁剪。');
 		return this.host.prepareCropDrag({ pdfPath, page: payload.page, rect: payload.rect, target: payload.target, image });
 	}
 
@@ -595,31 +588,10 @@ export class ReaderView extends ItemView {
 		console.info('[Reading Desk] Canvas outline synchronized', { pdfPath, targetPath, chapterCount: this.outline.length });
 	}
 
-	private beginExcerptDrag(event: DragEvent): void {
-		const text = window.getSelection()?.toString().trim() ?? '';
-		if (!text || !event.dataTransfer || !this.surface) return;
-		const selection = window.getSelection();
-		const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
-		const anchorElement = range?.startContainer instanceof Element ? range.startContainer : range?.startContainer.parentElement ?? null;
-		const host = anchorElement?.closest<HTMLElement>('.rd-pdf-page-host');
-		if (!host || !range) return;
-		const page = Number(host.dataset.page ?? this.page);
-		const rects = selectionRects(range, host, this.surface.viewportForPage(page), false);
-		if (!rects.length) return;
-		event.dataTransfer.setData('text/plain', text);
-		event.dataTransfer.setData('application/x-reading-desk-rects', JSON.stringify(rects));
-		event.dataTransfer.effectAllowed = 'copy';
-	}
-
+	private beginExcerptDrag(event: DragEvent): void { this.excerptWriter.beginDrag(event, this.surface, this.activePath()); }
 	private async focusHighlight(highlight: PdfHighlight, openTarget = true): Promise<void> {
-		await this.goTo(highlight.page + 1, { jump: true });
-		const scrolled = this.surface?.scrollToHighlight(highlight.id) ?? false;
-		if (scrolled) {
-			const reduced = this.readerBody?.ownerDocument.defaultView?.matchMedia('(prefers-reduced-motion: reduce)').matches ?? false;
-			const mark = this.surface?.hostForPage(this.page)?.querySelector<HTMLElement>(`[data-highlight-id="${highlight.id}"]`);
-			mark?.scrollIntoView({ block: 'center', behavior: reduced ? 'auto' : 'smooth' });
-		}
-		if (openTarget && highlight.target) await this.host.showTarget(highlight.target.path, highlight.target.objectId);
+		try { await this.positions.focusHighlight(highlight, openTarget); }
+		catch (error) { if (!isReaderAbort(error)) new Notice('高亮位置无法载入，请重试。'); }
 	}
 
 	private async jumpFromHighlight(event: MouseEvent): Promise<void> {
@@ -637,12 +609,8 @@ export class ReaderView extends ItemView {
 	private readerTitle(): string { const path = this.activePath(); return path ? `阅读：${path.split('/').pop()}` : 'Reading Desk 阅读器'; }
 
 	private async recolorHighlight(id: string, color: PdfHighlight['color']): Promise<void> {
-		const highlight = this.host.annotations.get(id);
-		if (!highlight) return;
-		await this.host.annotations.recolor(id, color);
-		const updated = this.host.annotations.get(id);
-		if (updated?.target) await this.host.targets.writeExcerpt(updated.target, updated);
-		await this.refreshAnnotations();
+		try { await recolorReaderExcerpt(this.host.annotations, this.host.targets, id, color); await this.refreshAnnotations(); }
+		catch (error) { console.error('[Reading Desk] 改色失败', error); new Notice('改色尚未保存，可在设置中重试待写入记录。'); }
 	}
 
 	private chapterForPage(page: number): string[] { return chapterPathForPage(this.outline, page); }

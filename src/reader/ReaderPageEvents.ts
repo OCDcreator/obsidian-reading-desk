@@ -34,7 +34,7 @@ export interface ReaderPageEventDeps {
 export function bindReaderPageEvents(stage: HTMLElement, deps: ReaderPageEventDeps): void {
 	stage.addEventListener('contextmenu', event => deps.openSelectionMenu(event));
 	stage.addEventListener('keydown', event => {
-		if (readerKeyTargetIsEditable(event.target)) return;
+		if (readerKeyTargetIsEditable(event.target) || (event.target as Element)?.closest('button, a, [role="button"]')) return;
 		const action = readerKeyAction(event);
 		if (!action) return;
 		event.preventDefault();
