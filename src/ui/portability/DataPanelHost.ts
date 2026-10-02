@@ -1,12 +1,15 @@
 import type { BibliographicImportPlan, BibliographicProvider } from '../../portability/BibliographicImportService';
 import type { RepositoryStatus } from '../../data/RepositoryStatus';
 import type { ExcerptTemplatePreview } from '../../targets/ExcerptTemplate';
+import type { BackupObjectDiff } from '../../portability/BackupTypes';
+import type { RecoverySnapshotInventory, RecoverySnapshotEntry, RecoveryRetentionPolicy, RecoveryCleanupPreview, RecoveryCleanupResult } from '../../portability/RecoverySnapshotService';
 
 export type Awaitable<T> = T | Promise<T>;
 export type ExportContent = Blob | string;
 export interface BackupPanelOptions {
 	mode?: 'replace' | 'merge';
 	conflictPolicy?: 'error' | 'keep-current' | 'use-backup';
+	objectDecisions?: Record<string, 'keep-current' | 'use-backup'>;
 }
 export interface BackupPanelPath {
 	key: string;
@@ -22,6 +25,7 @@ export interface BackupPanelPreview {
 	paths: BackupPanelPath[];
 	warnings: string[];
 	canApply: boolean;
+	objects?: BackupObjectDiff[];
 	plan: unknown;
 }
 export interface RecoveryPanelItem {
@@ -43,7 +47,11 @@ export interface ExcerptTemplatePanelState {
 /** Every new capability is optional, so existing Bookshelf hosts still work. */
 export interface DataPanelHost {
 	prepareBibliographicImport?(provider: BibliographicProvider, text: string, pathMappings: Record<string, string>): Awaitable<BibliographicImportPlan>;
-	applyBibliographicImport?(plan: BibliographicImportPlan): Awaitable<void>;
+	applyBibliographicImport?(plan: BibliographicImportPlan, selectedKeys?: readonly string[]): Awaitable<void>;
+	recoverySnapshots?(): Awaitable<RecoverySnapshotInventory>;
+	previewSnapshotCleanup?(policy: RecoveryRetentionPolicy): Awaitable<RecoveryCleanupPreview>;
+	cleanupSnapshots?(preview: RecoveryCleanupPreview): Awaitable<RecoveryCleanupResult>;
+	loadRecoverySnapshot?(entry: RecoverySnapshotEntry): Awaitable<string>;
 	exportBackup?(): Awaitable<ExportContent>;
 	previewBackup?(text: string, pathMappings: Record<string, string>, options?: BackupPanelOptions): Awaitable<BackupPanelPreview>;
 	/** Host validates the plan again and persists a current-data backup before applying it. */

@@ -681,3 +681,24 @@
 .rd-reader[data-rd-toolbar-overflow='secondary'] .rd-reader-toolbar .rd-reader-toolbar__more,
 .rd-reader[data-rd-toolbar-overflow='tight'] .rd-reader-toolbar .rd-reader-toolbar__more,
 .rd-reader[data-rd-toolbar-overflow='tight'] .rd-reader-toolbar .rd-toolbar-palette__more { display: inline-grid; }
+
+/* Reader saved-position controls: compact native sidebar forms. */
+.rd-reader-bookmark-entry { display: flex; flex-wrap: wrap; align-items: center; gap: var(--rd-space-2, 8px); margin-block: var(--rd-space-2, 8px); }
+.rd-reader-bookmark-entry .rd-input { flex: 1 1 100%; min-width: 0; max-width: 100%; }
+.rd-reader-bookmark-entry .rd-button { max-width: 100%; overflow-wrap: anywhere; white-space: normal; }
+
+/* Source diagnostics stay within the annotation drawer and use host tokens. */
+.rd-source-anchor-diagnostics { border-block: 1px solid var(--rd-line); padding-block: 8px; }
+.rd-source-anchor-diagnostics summary { cursor: pointer; }
+.rd-source-anchor-diagnostics summary:focus-visible { outline: 2px solid var(--rd-accent); outline-offset: 2px; }
+.rd-source-anchor-diagnostics ol { list-style: none; padding: 0; margin: 8px 0; }
+.rd-source-anchor-diagnostics li { padding: 8px 0; border-bottom: 1px solid var(--rd-line); }
+.rd-source-anchor-diagnostics p { margin: 4px 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+
+/* Data previews remain readable in detached and narrow settings windows. */
+.rd-data-section .rd-data-preview-row { min-width: 0; padding-block: 8px; border-bottom: 1px solid var(--background-modifier-border); }
+.rd-data-section .rd-data-preview-row p { margin-block: 4px; overflow-wrap: anywhere; }
+.rd-data-section .rd-data-preview-row pre { white-space: pre-wrap; overflow-wrap: anywhere; max-width: 100%; }
+.rd-data-section .rd-data-preview-row select, .rd-data-section .rd-data-preview-row input { max-width: 100%; }
+.rd-data-section .rd-data-preview-row summary { cursor: pointer; }
+.rd-data-section .rd-data-preview-row summary:focus-visible { outline: 2px solid var(--interactive-accent); outline-offset: 2px; }

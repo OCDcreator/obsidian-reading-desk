@@ -1,4 +1,4 @@
-import type { BookFormat, LibraryBook, LibraryCategory, LibraryList } from '../../types/contracts';
+import type { BookFormat, LibraryBook, LibraryCategory, LibraryList, ShelfViewState } from '../../types/contracts';
 import type { LibraryBookPatch } from '../../library/LibraryTypes';
 import type { AnnotationSearchQuery, AnnotationSearchResult } from '../../annotations/AnnotationSearchService';
 export type Awaitable<T> = T | Promise<T>;
@@ -22,6 +22,10 @@ export interface ShelfViewHost {
 	openSettings?(): Awaitable<void>;
 	getLists?(): Awaitable<LibraryList[]>;
 	createList?(name: string): Awaitable<LibraryList>;
+	renameList?(id: string, name: string): Awaitable<void>;
+	deleteList?(id: string): Awaitable<void>;
+	readShelfState?(): Awaitable<ShelfViewState | undefined>;
+	saveShelfState?(state: ShelfViewState): Awaitable<void>;
 	batchUpdate?(ids: string[], patch: ShelfBatchPatch): Awaitable<void>;
 	clearMetadataOverride?(id: string, fields: Array<'title' | 'author'>): Awaitable<void>;
 	searchAnnotations?(query: ShelfAnnotationQuery): Awaitable<ShelfAnnotationHit[]>;

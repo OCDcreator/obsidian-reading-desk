@@ -1,7 +1,9 @@
 import type { LibraryBook, LibraryCategory, LibraryList } from '../../types/contracts';
 import { formatFileSize, formatProgress, parseTags } from '../../views/shelf/ShelfViewModel';
-import { button, element, errorMessage, input, isItemActivation, select } from './ShelfDom';
-import type { BookPatch, ShelfViewHost } from './ShelfHost';
+import { button, element, input, isItemActivation, select } from './ShelfDom';
+import type { ShelfViewHost } from './ShelfHost';
+import type { ShelfBookDrafts } from './ShelfBookDrafts';
+import { bindBookEditor } from './ShelfBookEditor';
 import { STATUS_LABELS } from './ShelfQuery';
 
 export interface ShelfBookContext {
@@ -9,6 +11,7 @@ export interface ShelfBookContext {
 	categories: LibraryCategory[];
 	lists: LibraryList[];
 	selected: Set<string>;
+	drafts: ShelfBookDrafts;
 	onSelect(id: string, checked: boolean): void;
 	onOpen(book: LibraryBook): void;
 	onRelink(book: LibraryBook, trigger: HTMLElement): void;
@@ -49,7 +52,7 @@ export function createBookCard(book: LibraryBook, context: ShelfBookContext, com
 	card.addEventListener('click', event => { if (!(event.target as HTMLElement).closest('button, input, select, label, a')) open(); });
 	card.addEventListener('keydown', event => { if (isItemActivation(event)) { event.preventDefault(); open(); } });
 	const details = element('div', 'rd-book-details');
-	const title = element('h3', 'rd-book-title', book.title); title.title = book.title;
+	const title = element('p', 'rd-book-title', book.title); title.title = book.title;
 	details.append(title, createBookProgress(book));
 	if (!compact) {
 		details.append(element('p', 'rd-book-author', book.author || '作者未填写'), element('p', 'rd-book-meta', (book.pageCount ? book.pageCount + ' 页' : '页数未提供') + ' · ' + formatFileSize(book.fileSize)));
@@ -73,11 +76,11 @@ function selectionControl(book: LibraryBook, context: ShelfBookContext): HTMLEle
 	label.append(checkbox, '选择'); return label;
 }
 function categoryControl(book: LibraryBook, context: ShelfBookContext): HTMLElement {
+	const wrapper = element('div', 'rd-book-category');
 	const label = element('label', 'rd-book-category', '分类');
 	const control = select(book.title + ' 的分类', [['', '未分类'], ...context.categories.map(category => [category.id, category.name] as [string, string])], book.categoryId ?? '');
-	control.dataset.editor = book.id + ':categoryId';
-	control.addEventListener('change', () => void saveBook(control, book, { categoryId: control.value || undefined }, context));
-	label.append(control); return label;
+	label.append(control); wrapper.append(label);
+	bindBookEditor(control, wrapper, book, 'categoryId', context, value => ({ categoryId: value || undefined })); return wrapper;
 }
 export function createBookTable(books: LibraryBook[], context: ShelfBookContext): HTMLElement {
 	const wrapper = element('div', 'rd-library-table-wrap');
@@ -96,12 +99,12 @@ export function createBookTable(books: LibraryBook[], context: ShelfBookContext)
 		if (book.missing) { const relink = button('重新关联文件', '重新关联 ' + book.title, () => context.onRelink(book, relink)); titleCell.append(relink); }
 		row.insertCell().append(metadataEditor(book, 'author', context));
 		row.insertCell().textContent = book.format.toUpperCase();
-		const tags = input('text', book.title + ' 的标签', book.tags.join('，')); tags.className = 'rd-table-editor'; tags.dataset.editor = book.id + ':tags';
-		bindTextSave(tags, () => void saveBook(tags, book, { tags: parseTags(tags.value) }, context)); row.insertCell().append(tags);
+		const tags = input('text', book.title + ' 的标签', book.tags.join('，')); tags.className = 'rd-table-editor';
+		const tagsCell = row.insertCell(); tagsCell.append(tags); bindBookEditor(tags, tagsCell, book, 'tags', context, value => ({ tags: parseTags(value) }));
 		const rating = select(book.title + ' 的评分', [['', '未评分'], ...Array.from({ length: 10 }, (_, i) => [String(i + 1), (i + 1) + ' 分'] as [string, string])], String(book.rating ?? ''));
-		rating.dataset.editor = book.id + ':rating'; rating.addEventListener('change', () => void saveBook(rating, book, { rating: rating.value ? Number(rating.value) : undefined }, context)); row.insertCell().append(rating);
-		const status = select(book.title + ' 的状态', Object.entries(STATUS_LABELS), book.readingStatus ?? 'unread'); status.dataset.editor = book.id + ':status';
-		status.addEventListener('change', () => void saveBook(status, book, { readingStatus: status.value as LibraryBook['readingStatus'] }, context)); row.insertCell().append(status);
+		const ratingCell = row.insertCell(); ratingCell.append(rating); bindBookEditor(rating, ratingCell, book, 'rating', context, value => ({ rating: value ? Number(value) : undefined }));
+		const status = select(book.title + ' 的状态', Object.entries(STATUS_LABELS), book.readingStatus ?? 'unread');
+		const statusCell = row.insertCell(); statusCell.append(status); bindBookEditor(status, statusCell, book, 'readingStatus', context, value => ({ readingStatus: value as LibraryBook['readingStatus'] }));
 		row.insertCell().append(categoryControl(book, context));
 		row.insertCell().textContent = context.lists.filter(list => book.listIds?.includes(list.id)).map(list => list.name).join('、') || '未加入列表';
 		row.insertCell().textContent = formatProgress(book.progress);
@@ -111,29 +114,15 @@ export function createBookTable(books: LibraryBook[], context: ShelfBookContext)
 function metadataEditor(book: LibraryBook, field: 'title' | 'author', context: ShelfBookContext): HTMLElement {
 	const wrapper = element('div', 'rd-metadata-editor');
 	const label = field === 'title' ? '标题' : '作者';
-	const text = input('text', book.title + ' 的' + label, book[field]); text.className = 'rd-table-editor'; text.dataset.editor = book.id + ':' + field;
-	bindTextSave(text, () => { if (text.value !== book[field]) void saveBook(text, book, { [field]: text.value.trim() }, context); });
-	wrapper.append(text);
+	const text = input('text', book.title + ' 的' + label, book[field]); text.className = 'rd-table-editor';
+	wrapper.append(text); bindBookEditor(text, wrapper, book, field, context, value => ({ [field]: value.trim() }));
 	if (book.metadataOverrides?.[field] !== undefined) {
 		wrapper.append(element('span', 'rd-metadata-source', '人工' + label));
 		const reset = button('恢复自动' + label, '恢复 ' + book.title + ' 的自动' + label, async () => {
 			reset.disabled = true;
-			try { await context.host.clearMetadataOverride?.(book.id, [field]); context.onChanged(); }
-			catch (error) { showSaveError(wrapper, errorMessage(error)); reset.disabled = false; }
+			await context.drafts.save(book.id, field, book.autoMetadata?.[field] ?? book[field], async () => context.host.clearMetadataOverride?.(book.id, [field]), context.onChanged, true);
+			reset.disabled = !context.host.clearMetadataOverride;
 		}); reset.disabled = !context.host.clearMetadataOverride; wrapper.append(reset);
 	}
 	return wrapper;
-}
-function bindTextSave(control: HTMLInputElement, save: () => void): void {
-	control.addEventListener('blur', save);
-	control.addEventListener('keydown', event => { if (event.key === 'Enter' && !event.isComposing) { event.preventDefault(); control.blur(); } });
-}
-async function saveBook(control: HTMLElement, book: LibraryBook, patch: BookPatch, context: ShelfBookContext): Promise<void> {
-	control.setAttribute('aria-busy', 'true');
-	try { await context.host.updateBook(book.id, patch); context.onChanged(); }
-	catch (error) { showSaveError(control.parentElement ?? control, errorMessage(error, '无法保存图书信息')); }
-	finally { control.removeAttribute('aria-busy'); }
-}
-function showSaveError(parent: HTMLElement, message: string): void {
-	parent.querySelector('.rd-table-error')?.remove(); const status = element('span', 'rd-table-error', message); status.setAttribute('role', 'alert'); parent.append(status);
 }

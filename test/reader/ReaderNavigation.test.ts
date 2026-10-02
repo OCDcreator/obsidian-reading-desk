@@ -86,7 +86,7 @@ function renderNavigation(options: { outline?: PdfOutlineEntry[]; page?: number;
 	const jumps: number[] = [];
 	const goTo = vi.fn(async (page: number) => { jumps.push(page); });
 	const doc = new FakeDocument();
-	const navigation = new ReaderNavigation({ renderThumbnail: vi.fn(async () => undefined) } as never, 10, () => options.page ?? 1, goTo, 'outline', undefined, options.style ?? 'tree');
+	const navigation = new ReaderNavigation({ renderThumbnail: vi.fn(async () => true), releaseTarget: vi.fn() } as never, 10, () => options.page ?? 1, goTo, 'outline', undefined, options.style ?? 'tree');
 	navigation.setOutline(options.outline ?? flatNumbered, 'ready');
 	const container = new FakeElement('div', doc);
 	navigation.render(container as unknown as HTMLElement);
@@ -470,7 +470,7 @@ describe('P2 regression: focus survives navigation re-render and re-attach', () 
 		const branch = itemByTitle(tree, '1.1 Branch');
 		titleOf(branch).click();
 		expect(doc.activeElement).toBe(branch);
-		const rebuilt = new ReaderNavigation({ renderThumbnail: vi.fn(async () => undefined) } as never, 10, () => 1, goTo, 'outline', undefined, 'tree');
+		const rebuilt = new ReaderNavigation({ renderThumbnail: vi.fn(async () => true), releaseTarget: vi.fn() } as never, 10, () => 1, goTo, 'outline', undefined, 'tree');
 		rebuilt.setOutline(deepNumbered, 'ready');
 		rebuilt.render(container as unknown as HTMLElement);
 		const after = outlineOf(container);

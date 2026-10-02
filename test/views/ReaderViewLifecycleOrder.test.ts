@@ -19,7 +19,7 @@ describe('ReaderView workspace restore ordering', () => {
 		await view.onOpen();
 		await view.setState({ pdfPath: 'fixtures/restored.pdf', page: 9 }, {} as never);
 		expect(view['openPdf']).toHaveBeenCalledOnce();
-		expect(view['openPdf']).toHaveBeenCalledWith('fixtures/restored.pdf', 9);
+		expect(view['openPdf']).toHaveBeenCalledWith('fixtures/restored.pdf', 9, true);
 	});
 
 	it('opens exactly once when onOpen precedes setState', async () => {
@@ -28,6 +28,6 @@ describe('ReaderView workspace restore ordering', () => {
 		await view.setState({ pdfPath: 'fixtures/restored.pdf', page: 4 }, {} as never);
 		await view.setState({ pdfPath: 'fixtures/restored.pdf', page: 4 }, {} as never);
 		expect(view['openPdf']).toHaveBeenCalledOnce();
-		expect(view['openPdf']).toHaveBeenCalledWith('fixtures/restored.pdf', 4);
+		expect(view['openPdf']).toHaveBeenCalledWith('fixtures/restored.pdf', 4, true);
 	});
 });

@@ -27,6 +27,17 @@ describe('single-page excerpt correctness', () => {
 		expect(result?.highlight).toMatchObject({ page: 6, rotation: 90, text: 'actual selected text' });
 		expect(f.workflow).toHaveBeenCalledOnce(); expect(f.input.annotations.save).not.toHaveBeenCalled();
 	});
+	it('freezes printed page label while keeping physical page and geometry', async () => {
+		const f = fixture(); const result = await writeReaderExcerpt({ ...f.input, pageLabelFor: page => page === 7 ? 'iv' : 'wrong' }, f.range);
+		expect(result?.highlight).toMatchObject({ page: 6, pageLabel: 'iv', rotation: 90 }); expect(result?.highlight.rects).not.toHaveLength(0);
+	});
+	it('copies the rendered source fingerprint and preserves the drag snapshot across later source changes', async () => {
+		const f = fixture(); const fingerprint = { mtime: 10, size: 100 };
+		const result = await writeReaderExcerpt({ ...f.input, sourceFingerprint: fingerprint }, f.range); fingerprint.mtime = 20;
+		expect(result?.highlight.sourceFingerprint).toEqual({ mtime: 10, size: 100 });
+		const dragged = await writeReaderExcerpt({ ...f.input, sourceFingerprint: { mtime: 30, size: 300 }, frozenSelection: { pdfPath: 'source.pdf', page: 7, rotation: 90, rects: [{ x: 0.1, y: 0.2, width: 0.1, height: 0.1 }], text: 'drag', sourceFingerprint: { mtime: 10, size: 100 } } }, null);
+		expect(dragged?.highlight.sourceFingerprint).toEqual({ mtime: 10, size: 100 });
+	});
 	it('rejects cross-page endpoints before creating a target', async () => {
 		const f = fixture(); const another = f.host.ownerDocument.createElement('div'); another.className = 'rd-pdf-page-host';
 		(f.range as unknown as TestRange).endContainer = another.createEl('span');

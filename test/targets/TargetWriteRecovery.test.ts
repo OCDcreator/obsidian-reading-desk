@@ -92,9 +92,14 @@ describe('durable target write recovery', () => {
 		const results = await Promise.all([
 			state.service.writeAndSaveExcerpt(target, highlight, state.store),
 			state.service.removeMissingTargetHighlights(target, [{ ...highlight, target }], state.store),
-			state.service.writeAndSaveExcerpt(target, { ...highlight, color: 'brick' }, state.store)
+			state.service.writeAndSaveExcerpt(target, { ...highlight, color: 'brick' }, state.store).catch(error => error)
 		]);
 		expect(results[1]).toEqual([]);
+		expect(results[2]).toBeInstanceOf(Error);
+		expect(state.store.get('h')?.color).toBe('moss');
+		const current = state.store.get('h');
+		if (!current) throw new Error('Expected initial source to remain');
+		await state.service.writeAndSaveExcerpt(target, { ...current, color: 'brick' }, state.store);
 		expect(state.store.get('h')?.color).toBe('brick');
 		expect(JSON.parse(state.content()).nodes).toHaveLength(1);
 	});

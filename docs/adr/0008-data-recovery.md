@@ -42,15 +42,27 @@ readLists/readDeletedAnnotations/readPendingTargetWrites 分别提供列表、�
 
 PDF page 全程为 0-based，第 1 页必须保留 0；可见页码只由展示层加一。此规则也适用于 pendingTargetWrites 和 deletedAnnotations，不因迁移或路径映射改变。坐标保留 x/y/width/height，不保存屏幕像素。
 
+公开 JSON 导出与恢复共用 `BackupCapacity` 的 64 MiB UTF-8 容量上限；`serializeBackup` 在返回可下载内容前校验，恢复文件入口在读取前以相同上限拦截，解析前再次按实际 UTF-8 字节校验。超限明确提示保留原始 data.json 与 vault，不提示不存在的分批恢复。文献导入仍限制 10 MiB。插件私有原件保护直接保存 raw snapshot，不受分享导出容量上限影响。
+
 `parseBackup` 对 envelope、完整集合、schema 和记录校验；JSON 文本中的重复键在 JSON.parse 丢弃它们之前被检测并拒绝。`previewRestore(input, current, options)` 返回 canApply、候选 data、changes、duplicates、conflicts、issues、pathChanges 与 warnings。
 
-恢复模式为 replace 或 merge；稳定 ID 内容相同为重复但可应用，不同内容默认阻止，需明确 keep-current 或 use-backup。缺失分类/列表、孤儿评论/卡片状态、重复分类/列表/评论 ID、重复图书路径、同一目标对象的冲突引用、有效/删除状态重叠等阻止应用。允许尚未索引的 PDF 引用并给警告，避免将书库之外的合法标注丢弃。跨集合的有效/删除冲突不自动选择赢家。
+恢复模式为 replace 或 merge；稳定 ID 内容相同为重复但可应用，不同内容默认阻止，需明确 keep-current 或 use-backup。缺失分类/列表、孤儿评论/卡片状态、重复分类/列表/评论 ID、重复图书路径、同一目标对象的冲突引用、有效/删除状态重叠等阻止应用。允许尚未索引的 PDF 引用并给警告，避免将书库之外的合法标注丢弃。跨集合的有效/删除冲突不自动选择赢家；0.5 的逐对象决策入口允许用户明确选择当前或备份的整组标注，见下文。
 
 路径映射按最长来源前缀且只应用一次，同时更新书路径、封面、PDF 标注、目标引用、删除记录、pending 意图和 libraryFolders。拒绝绝对路径、反斜杠、控制字符和 ..；映射后的重复图书路径阻止恢复。existingPaths 应由宿主提供所有 vault 文件；源文件/目标/封面缺失为可见警告，JSON 恢复仅保留引用。
 
 `restore(preview, host)` 只使用服务保存的内部计划；修改预览显示对象不能改变应用内容。应用前核对当前 snapshot 和仓库状态，必须成功调用 `backupBeforeRestore(backup)`，等待备份后再次核对，再调用 `replaceData(data, { recoverInvalid, expectedSignature: plan.currentSignature })`。Repository 在替换操作出队后、最新 sink 检查完成且赋值前，同步比较当前内存的规范 JSON 签名与 expectedSignature；如果此前排队的评论等提交已经完成，拒绝旧恢复并要求重新预览，保留已保存的新增内容。签名检查和赋值之间不插入 await。
 
 expectedSignature 为可选参数，旧调用方与只接受 data 的第三方回调继续兼容；需要排队保护的宿主必须把 options 转发给 Repository，或在自己的原子替换边界履行同样检查。该签名保护本实例队列顺序，不改变跨设备最后读与写之间的竞争限制。签名不匹配时没有新 replacement pending，也不覆盖原数据；恢复候选被接受但实际保存失败时仍进入 pending，retry 重试已接受快照，不再次比较预览旧签名。显式损坏原件恢复在相同安全视图签名下仍要求 recoverInvalid 和原件备份回调。备份失败、pending、保存中、外部冲突或旧预览均不替换。调用方直接使用 replaceData 时应同样重建并验证预览，宿主原件备份回调仍必需。
+
+## 0.5：逐对象决策与恢复快照管理
+
+`BackupObjectDecisions` 为每个图书、分类、列表、设置项提供差异 key、变动字段与脱敏的当前/备份摘要。摘要只截短展示，不参与应用；已知 storage 凭据不会显示。`objectDecisions[key]` 可选 keep-current/use-backup，未知 key/值拒绝。恢复的高亮、评论、卡片、pending 与删除记录以同一 highlightId 为原子组，选择任一侧即采用该侧整组的存在/不存在状态；不再把不同快照的评论、墓碑与 pending 混拼。有效/删除状态相撞必须显式逐项决定，即使整体规则是 use-backup 也不默认选赢家。合并后仍重新执行引用完整性检查；跨图书/分类引用冲突不会绕过校验。恢复前的私有计划、签名和排队保护保持不变。
+
+`RecoverySnapshotService` 通过注入 `RecoverySnapshotGateway {root,list,read,remove}` 读取插件 recovery 直属文件，Host 承担实际 I/O，不依赖 Obsidian 类。清单显示文件数量、大小、时间、能否预览恢复和保护原因；用户选择单个条目后将 raw snapshot 转为备份 envelope，交给原 BackupRestorePanel 的差异预览及双确认，不自动恢复。旧 schema 数据可迁移；坏 JSON/引用、未知文件、目录和超过当前公开恢复容量的原件保留且禁用恢复。私有原件可能含本机凭据，清单与摘要不展示凭据。
+
+自动清理只识别 `ISOstamp-sequence-(commit|retry|replace).json` 或 `ISOstamp-snapshot-(UUID|timestamp-base36)-(commit|retry|replace).json`。手工、before-restore、发布前目录、未知/损坏文件与最新可用自动快照不删。策略按最新数量或最近天数生成明确候选，至少留最新可用一份；用户先预览再点击两次确认。策略改变使旧确认失效，服务只使用 WeakMap 内部候选，逐项删除前重验目录清单、候选文件和保底原件的 SHA-256/size/mtime，目录或同元数据下内容变动都停止旧计划。部分 remove 失败逐项返回，不谎称全部完成，已用计划不可重复使用。最后检查与真实文件 remove 之间不宣称跨设备原子事务。备份写入保护不因清理入口或保留策略而关闭。
+
+验证覆盖同 size/mtime 下候选/保底原件被替换、目录新增、伪造路径与计划显示对象、部分失败、旧/新自动文件名、无读取超限原件、选择只预览，以及主动/删除冲突整组两种决策、孤儿保护、凭据隐藏和原签名失效。
 
 ## 文件内容边界
 

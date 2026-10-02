@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ShelfView } from '../../../src/views/ShelfView';
 import { createBookCard } from '../../../src/ui/shelf/ShelfBooks';
+import { ShelfBookDrafts } from '../../../src/ui/shelf/ShelfBookDrafts';
 import type { ShelfViewHost } from '../../../src/ui/shelf/ShelfHost';
 import type { LibraryBook } from '../../../src/types/contracts';
 import { FakeEvent } from '../../support/fake-dom';
@@ -14,7 +15,7 @@ const labeled = (node: UiNode, label: string): UiNode => { const found = node.qu
 describe('shelf interaction regressions', () => {
 	it('keeps select Enter/Space native while direct card Enter opens once', () => {
 		const bookValue = book('1'); const host = hostFor([bookValue]); const open = vi.fn();
-		const card = createBookCard(bookValue, { host, categories: [{ id: 'c', name: '学习', order: 0 }], lists: [], selected: new Set(), onSelect: vi.fn(), onOpen: open, onRelink: vi.fn(), onChanged: vi.fn() }) as unknown as UiNode;
+		const card = createBookCard(bookValue, { host, categories: [{ id: 'c', name: '学习', order: 0 }], lists: [], selected: new Set(), drafts: new ShelfBookDrafts(), onSelect: vi.fn(), onOpen: open, onRelink: vi.fn(), onChanged: vi.fn() }) as unknown as UiNode;
 		document.body.append(card); const select = labeled(card, '书 1 的分类');
 		expect(select.keydown('Enter').defaultPrevented).toBe(false); expect(select.keydown(' ').defaultPrevented).toBe(false); expect(open).not.toHaveBeenCalled();
 		card.keydown('Enter'); expect(open).toHaveBeenCalledOnce();

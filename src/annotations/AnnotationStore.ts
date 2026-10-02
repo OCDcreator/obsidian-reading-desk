@@ -47,18 +47,23 @@ export class AnnotationStore {
 		});
 	}
 
+	/** Capture before waiting on any target path lock; null records an absent source. */
+	captureTargetWriteSource(id: string): AnnotationTargetWrite | null {
+		const current = this.get(id);
+		return current ? new AnnotationTargetWrite(current, this.excerptCard(id)) : null;
+	}
+
 	/** Persist the source annotation and replayable intent before target I/O. */
-	async stageTargetWrite(highlight: PdfHighlight, card?: ExcerptCardState): Promise<AnnotationTargetWrite> {
+	async stageTargetWrite(highlight: PdfHighlight, card?: ExcerptCardState, expected?: AnnotationTargetWrite | null): Promise<AnnotationTargetWrite> {
 		if (!highlight.target?.path) throw new Error('目标写入意图缺少目标路径。');
 		this.pending();
 		const snapshot = copy(highlight);
-		const observed = this.get(highlight.id);
-		const before = observed && new AnnotationTargetWrite(observed, this.excerptCard(highlight.id));
+		const before = expected === undefined ? this.captureTargetWriteSource(highlight.id) : expected;
 		let receipt: AnnotationTargetWrite | undefined;
 		await this.persistence.commit(() => {
 			const current = this.get(snapshot.id);
 			if (this.deleted()[snapshot.id]) throw new Error(`标注已删除，请通过恢复入口重试：${snapshot.id}`);
-			if (before ? !current || !before.matchesHighlight(current) : !!current) {
+			if (before ? !current || !before.matchesIntent(current) || !before.matchesCard(this.excerptCard(snapshot.id)) : !!current) {
 				throw new Error(`标注在写入排队期间已变化，请重试：${snapshot.id}`);
 			}
 			this.persistence.readHighlights()[snapshot.id] = copy(snapshot);
@@ -196,8 +201,8 @@ export class AnnotationStore {
 		await this.removeIds([id], reason);
 	}
 
-	async removeMissingTargetIds(ids: string[]): Promise<void> {
-		await this.removeIds(ids, 'target-deleted');
+	async removeMissingTargetIds(ids: string[], expected?: ReadonlyMap<string, AnnotationTargetWrite>): Promise<string[]> {
+		return this.removeIds(ids, 'target-deleted', expected);
 	}
 
 	listDeleted(): DeletedAnnotation[] {
@@ -228,11 +233,16 @@ export class AnnotationStore {
 		return restored;
 	}
 
-	private async removeIds(ids: string[], reason: DeletedAnnotation['reason']): Promise<void> {
+	private async removeIds(ids: string[], reason: DeletedAnnotation['reason'], expected?: ReadonlyMap<string, AnnotationTargetWrite>): Promise<string[]> {
+		const removed: string[] = [];
 		await this.persistence.commit(() => {
 			for (const id of new Set(ids)) {
 				const highlight = this.get(id);
 				if (!highlight) continue;
+				const observed = expected?.get(id);
+				if (expected && (!observed?.matchesIntent(highlight) || !observed.matchesCard(this.excerptCard(id))
+					|| this.persistence.readPendingTargetWrites?.()[id] || this.failedTargetWrites.has(id))) continue;
+				removed.push(id);
 				this.deleted()[id] = {
 					highlight: copy(highlight), comments: copy(this.comments(id)), excerptCard: this.excerptCard(id), deletedAt: Date.now(), reason
 				};
@@ -245,6 +255,7 @@ export class AnnotationStore {
 				if (pending) delete pending[id];
 			}
 		});
+		return removed;
 	}
 
 	private deleted(): Record<string, DeletedAnnotation> {

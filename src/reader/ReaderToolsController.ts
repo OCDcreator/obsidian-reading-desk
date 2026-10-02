@@ -55,6 +55,8 @@ export class ReaderToolsController {
 		this.searchService.reset();
 	}
 
+	searchFor(query: string): void { void this.searchPanel.search(query); }
+
 	toggleSearch(): void {
 		this.searchPanel.toggle();
 		this.applySearchMarks();

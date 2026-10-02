@@ -17,7 +17,7 @@ function renderer(openResult: Promise<number>, outline: PdfOutlineEntry[]) {
 	return {
 		open: vi.fn(() => openResult),
 		close: vi.fn(async () => undefined),
-		getOutline: vi.fn(async () => outline)
+		getOutline: vi.fn(async () => outline), pageLabels: vi.fn(async () => [])
 	};
 }
 

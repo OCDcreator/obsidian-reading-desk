@@ -20,7 +20,7 @@ PDF.js text items 和 TextLayer.textDivs 使用相同次序建立页文本索引
 
 ReaderSearchService 与 ReaderSearchPanel 分别检查文档代次和请求代次；AbortSignal 终止等待、更新与导航。新查询、重复同一查询、关闭、切书和重建面板均使旧请求失效；提取拒绝不污染缓存、不阻塞下一次查询。当前命中以 Range 矩形单独标记，导航等待目标页真正渲染后定位到该 offset。
 
-ReaderPositionController 拥有每 leaf 的可取消跳转、冷页高亮定位、PDF 内链及跳转历史。PageSurface.ensurePageRendered(page, signal?) 完成之前不查找高亮；后来的跳转与生命周期取消旧请求。历史保存页面及显示空间中的规范化 x/y，跨页和同页跳转的前进/后退均恢复页内位置。
+ReaderPositionController 拥有每 leaf 的可取消跳转、冷页高亮定位、PDF 内链及跳转历史。PageSurface.ensurePageRendered(page, signal?) 完成之前不查找高亮；后来的跳转与生命周期取消旧请求。历史保存页面及显示空间中的规范化 x/y，跨页和同页跳转的前进/后退均恢复页内位置。连续阅读的当前页按视口中心判定，页顶/左缘可能尚未到视口边缘，因此历史偏移允许负值，不能截为零；混合页尺寸与跨页视口同样按有符号比例往返恢复。
 
 ### 渲染与资源
 
@@ -30,6 +30,8 @@ PdfRenderer 持有 PDF.js 文档和渲染代次，捕获每次调用的 scale/ro
 
 PdfCanvasBudget 区分渲染 complete、表面 adopt 和 everConnected。完成后仍脱离 DOM 等待接管的 staging 画布不能被其他任务扫成零；只扫曾连接且后来脱离 DOM 的完成画布。staging 失败、淘汰、预览关闭和表面销毁均由 releaseTarget 显式归还。
 
+缩略图由 ReaderThumbnailLifecycle 持续观察可见窗口，离屏、关闭侧栏、切换目录或切书时取消并释放，返回原处重新绘制；缺少 IntersectionObserver 时使用相同窗口语义的滚动观察。并发 raster 最多两个。缩略图单个 backing store 限 20 万像素，含复制预留在内最多占总池中的 300 万像素，不能吃掉正文预留。PdfRenderer 在脱离 DOM 的画布完成缩略图，取消后必须等 PDF.js raster promise 真正结束才能回收该画布；提交复制前将预留转换为目标画布，复制期间源与目标都计入预算。文档 close 同样等待取消任务结束，不让迟到结果复活已关闭的画布。
+
 ### PDF 链接与临时预览
 
 仅从 PDF.js getAnnotations({intent:'display'}) 的 Link 注释创建语义按钮和链接。内部目的地通过 getDestination/getPageIndex 解析；XYZ、FitH/FitV/FitR 位置在 viewport 下转换。内部链接显式点击跳转，Shift 点击或独立“预览”按钮显示临时页面。预览有“打开此位置”和关闭按钮、Escape 关闭并恢复触发控件焦点；预览本身不改当前页、滚动位置或历史，且禁用嵌套链接层。PDF 自动 JS、JS/actions、remote GoTo、Launch 和自定义 URL scheme 不接入。外链只接受绝对 http/https/mailto，必须用户显式点击，并设置 noopener/noreferrer。
@@ -38,9 +40,9 @@ PdfCanvasBudget 区分渲染 complete、表面 adopt 和 everConnected。完成�
 
 ## 所有权
 
-- ReaderView 保留每 leaf 生命周期及协作者接线，本次由 649 行缩减到约 617 行；未增加 main.ts 渲染职责或 ReaderHost 回调。
+- ReaderView 保留每 leaf 生命周期及协作者接线，保持 650 行以内；未增加 main.ts 渲染职责。读位/书签的 ReaderStatePort、恢复顺序与页码标签见 ADR 0014；宿主接口独立放在 reader/ReaderHost.ts。
 - PdfRenderer 持有 PDF.js 文档、TextLayer、注释读取和光栅化；PdfCanvasBudget 持有画布预算，PdfTextIndex 持有 offset 索引，PdfLinks 持有安全目的地解析和语义层创建。
-- PageSurface/ReaderPageDeck 持有表面窗口、并发、渲染代次、接管和释放；ReaderPositionController/ReaderLinkPreview 持有定位与临时预览生命周期。
+- PageSurface/ReaderPageDeck 持有表面窗口、并发、渲染代次、接管和释放；ReaderThumbnailLifecycle 持有导航缩略图的可见窗口、并发和取消；ReaderPositionController/ReaderLinkPreview 持有定位与临时预览生命周期。
 - ReaderExcerptWriter/ReaderExcerptController 持有选区冻结和 Reader 摘录流程；src/crop/ReaderCropController 持有冻结裁剪几何和裁剪生命周期。
 - ReaderSearchService/ReaderSearchMarks/ReaderToolsController/ReaderSearchPanel 持有检索、精确标记与最新请求界面状态。
 - 所有 UI/CSS 继续由 UI owner 实现；Reader 只写 live geometry、类名、状态和语义动作。

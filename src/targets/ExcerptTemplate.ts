@@ -1,8 +1,8 @@
 import type { PdfHighlight } from '../types/contracts';
 
-export const EXCERPT_TEMPLATE_PLACEHOLDERS = ['title', 'text', 'page', 'pdfPath', 'sourceLink', 'color', 'chapterPath', 'tags'] as const;
-export const DEFAULT_EXCERPT_TEMPLATE = '{{text}}\n\n[原文第 {{page}} 页]({{sourceLink}})';
-export type ExcerptTemplateValues = Record<typeof EXCERPT_TEMPLATE_PLACEHOLDERS[number], string>;
+export const EXCERPT_TEMPLATE_PLACEHOLDERS = ['title', 'text', 'page', 'pageLabel', 'pdfPath', 'sourceLink', 'color', 'chapterPath', 'tags'] as const;
+export const DEFAULT_EXCERPT_TEMPLATE = '{{text}}\n\n[原文第 {{pageLabel}} 页]({{sourceLink}})';
+export type ExcerptTemplateValues = Record<Exclude<typeof EXCERPT_TEMPLATE_PLACEHOLDERS[number], 'pageLabel'>, string> & { pageLabel?: string };
 
 export interface ExcerptTemplatePreview {
 	text: string;
@@ -11,7 +11,7 @@ export interface ExcerptTemplatePreview {
 
 export function excerptTemplateValues(highlight: PdfHighlight, title: string, sourceLink: string): ExcerptTemplateValues {
 	return {
-		title, text: highlight.text, sourceLink, page: String(highlight.page + 1), pdfPath: highlight.pdfPath,
+		title, text: highlight.text, sourceLink, page: String(highlight.page + 1), pageLabel: highlight.pageLabel || String(highlight.page + 1), pdfPath: highlight.pdfPath,
 		color: highlight.color, chapterPath: highlight.chapterPath.join(' / '), tags: highlight.tags.join(', ')
 	};
 }
@@ -25,7 +25,7 @@ export function previewExcerptTemplate(template: string | undefined, values: Exc
 			unknown.add(key);
 			return match;
 		}
-		return values[key as keyof ExcerptTemplateValues];
+		return key === 'pageLabel' ? values.pageLabel || values.page : values[key as keyof ExcerptTemplateValues] ?? '';
 	});
 	return { text, unknownPlaceholders: [...unknown] };
 }

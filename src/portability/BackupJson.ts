@@ -1,7 +1,9 @@
 import { BackupError } from './BackupTypes';
+import { assertBackupCapacity } from './BackupCapacity';
 
 /** JSON.parse silently drops duplicate keys; backup import must reject them before losing an ID. */
 export function parseBackupJson(input: string): unknown {
+	assertBackupCapacity(input);
 	let value: unknown;
 	try { value = JSON.parse(input); }
 	catch { throw new BackupError('invalid-backup', '备份 JSON 无法解析'); }

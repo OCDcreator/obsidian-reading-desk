@@ -46,6 +46,8 @@ export class ReaderDisplayOptions {
 		this.stopThemeObserver = null;
 	}
 
+	restoreRotation(rotation: number): void { this.rotation = rotation; this.deps.pdf().setRotation(rotation); }
+
 	async rotate(delta: 90 | -90): Promise<void> {
 		this.rotation = (((this.rotation + delta) % 360) + 360) % 360;
 		this.deps.pdf().setRotation(this.rotation);

@@ -9,6 +9,8 @@ export type ReaderPaletteColor = PdfHighlight['color'];
 export interface ReaderToolbarView {
 	page(): number;
 	pages(): number;
+	pageLabel?(page: number): string;
+	resolvePage?(value: string): number | null;
 	scale(): number;
 	selectedTarget(): TargetType;
 	scrollMode(): 'continuous' | 'single';
@@ -39,7 +41,7 @@ export interface ReaderToolbarView {
 export function bindReaderToolbar(toolbar: HTMLElement, view: ReaderToolbarView): ReaderToolbarControls {
 	return createReaderToolbar(toolbar, {
 		page: view.page(),
-		pages: view.pages(),
+		pages: view.pages(), pageLabel: view.pageLabel, resolvePage: view.resolvePage,
 		scale: view.scale(),
 		selectedTarget: view.selectedTarget(),
 		scrollMode: view.scrollMode(),

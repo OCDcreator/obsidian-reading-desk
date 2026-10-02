@@ -33,9 +33,23 @@ describe('local bibliographic import panel', () => {
 		expect(prepare).toHaveBeenLastCalledWith('csl', sourceText, { 'csl:one': 'Library/paper.pdf' });
 		const planned = prepare.mock.results[1].value;
 		byLabel(element, '确认导入文献').click(); await flushPanel();
-		expect(apply).toHaveBeenCalledWith(planned);
+		expect(apply).toHaveBeenCalledWith(planned, ['csl:one']);
 		expect(apply.mock.calls[0][0]).toBe(planned);
 		expect(byLabel(element, '确认导入文献').disabled).toBe(true);
+	});
+
+	it('reports applicable and skipped entries consistently when only some attachments are confirmed', async () => {
+		const service = new BibliographicImportService();
+		const apply = vi.fn();
+		const panel = new BibliographicImportPanel({ prepareBibliographicImport: (_provider, text, mappings) => service.plan(service.parse('csl', text), [], { availablePaths: ['Library/paper.pdf'], pathMappings: mappings }), applyBibliographicImport: apply });
+		const element = root(panel.root);
+		byLabel(element, '选择文献导出文件').choose(JSON.stringify([{ id: 'one', type: 'book', title: 'Paper', file: '/export/paper.pdf' }, { id: 'bad', type: 'book', title: 'Bad A' }, { id: 'bad', type: 'book', title: 'Bad B' }, { id: 'none', type: 'book', title: 'No attachment' }])); await flushPanel();
+		byLabel(element, '确认关联：Paper').click(); await flushPanel();
+		expect(element.textContent).toContain('可应用 1 条；跳过 2 条');
+		expect(byLabel(element, '确认导入文献').disabled).toBe(false);
+		byLabel(element, '确认导入文献').click(); await flushPanel();
+		expect(apply).toHaveBeenCalledOnce();
+		expect(element.textContent).toContain('已应用 1 条文献，跳过 2 条');
 	});
 
 	it('invalidates the previous preview after a path edit and blocks invalid file application', async () => {

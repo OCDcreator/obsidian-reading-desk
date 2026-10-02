@@ -1,6 +1,6 @@
 export interface ReaderLocation {
 	page: number;
-	/** Normalized displayed page offsets, independent of scale. */
+	/** Signed displayed page offsets, independent of scale; negative when the page starts below/right of the viewport. */
 	x?: number;
 	y?: number;
 }

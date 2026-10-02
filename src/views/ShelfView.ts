@@ -1,4 +1,4 @@
-import type { LibraryBook, LibraryCategory, LibraryList } from '../types/contracts';
+import type { LibraryBook, LibraryCategory, LibraryList, ShelfViewState } from '../types/contracts';
 import { ShelfSearchController, sortCategories } from './shelf/ShelfViewModel';
 import { button, element, errorMessage, input } from '../ui/shelf/ShelfDom';
 import type { ShelfViewHost } from '../ui/shelf/ShelfHost';
@@ -9,6 +9,9 @@ import { ShelfDialog } from '../ui/shelf/ShelfDialog';
 import { openBatchEditor } from '../ui/shelf/ShelfBatchEditor';
 import { openRelinkDialog } from '../ui/shelf/ShelfRelink';
 import { ShelfAnnotationSearch } from '../ui/shelf/ShelfAnnotationSearch';
+import { ShelfBookDrafts } from '../ui/shelf/ShelfBookDrafts';
+import { ShelfStatePersistence } from '../ui/shelf/ShelfStatePersistence';
+import { openListManager } from '../ui/shelf/ShelfListManager';
 export type { ShelfViewHost } from '../ui/shelf/ShelfHost';
 
 /** A framework-free shelf surface. LibraryIndex/AnnotationStore remain the sources. */
@@ -31,13 +34,19 @@ export class ShelfView {
 	private batchButton?: HTMLButtonElement;
 	private dialog?: ShelfDialog;
 	private readonly searchController = new ShelfSearchController();
+	private readonly drafts = new ShelfBookDrafts();
 	private readonly annotationSearch: ShelfAnnotationSearch;
-	constructor(private readonly host: ShelfViewHost) { this.annotationSearch = new ShelfAnnotationSearch(host); }
+	private readonly preferences: ShelfStatePersistence;
+	private preferencesReady = false;
+	private userStateChanged = false;
+	constructor(private readonly host: ShelfViewHost) { this.annotationSearch = new ShelfAnnotationSearch(host); this.preferences = new ShelfStatePersistence(host); }
 
 	async render(container: HTMLElement): Promise<void> { this.container = container; this.ensureShell(); await this.reload(); }
-	destroy(): void {
-		this.generation++; this.dialog?.close(false); this.annotationSearch.destroy();
+	destroy(): Promise<void> {
+		if (this.preferencesReady || this.userStateChanged) this.preferences.record(this.viewState());
+		this.generation++; this.dialog?.close(false); this.annotationSearch.destroy(); this.drafts.clear();
 		this.container?.replaceChildren(); this.container = undefined; this.content = undefined; this.toolbar = undefined;
+		return this.preferences.flush();
 	}
 	private ensureShell(): void {
 		const root = this.container; if (!root || this.content) return;
@@ -51,24 +60,27 @@ export class ShelfView {
 		this.toolbar = element('div', 'rd-shelf-toolbar'); this.toolbar.append(this.search);
 		const modes = element('div', 'rd-view-switch'); modes.setAttribute('role', 'group'); modes.setAttribute('aria-label', '书架视图');
 		for (const [mode, label] of [['cards', '卡片视图'], ['table', '表格视图'], ['annotations', '摘录与评论']] as const) {
-			const control = button(label, label, () => { this.mode = mode; this.annotationSearch.destroy(); this.paint(); });
-			control.dataset.shelfMode = mode; modes.append(control);
+			const control = button(label, label, () => { this.mode = mode; this.annotationSearch.destroy(); this.paintChanged(); });
+			control.classList.add('rd-view-switch-button'); control.dataset.shelfMode = mode; modes.append(control);
 		}
-		this.toolbar.append(modes); this.content = element('div', 'rd-shelf-results'); root.append(header, this.toolbar, this.content);
+		this.toolbar.append(modes); this.content = element('div', 'rd-shelf-results'); root.append(header, this.toolbar, this.preferences.root, this.content);
 	}
 	private applySearch(completed: boolean): void {
 		const value = this.search?.value ?? '';
 		const next = completed ? this.searchController.endComposition(value) : this.searchController.input(value);
-		if (next !== null) { this.query.query = next; this.page = 1; this.paint(); }
+		if (next !== null) { this.query.query = next; this.page = 1; this.paintChanged(); }
 	}
 	private async reload(initial = true): Promise<void> {
 		const generation = ++this.generation;
 		if (initial) { this.loading = true; this.paint(); }
 		try {
-			const [books, categories, lists] = await Promise.all([this.host.getBooks(), this.host.getCategories(), this.host.getLists?.() ?? []]);
+			const [books, categories, lists, savedState] = await Promise.all([this.host.getBooks(), this.host.getCategories(), this.host.getLists?.() ?? [],
+				this.readPreferences()]);
 			if (generation !== this.generation || !this.container) return;
 			this.books = books; this.categories = sortCategories(categories); this.lists = lists;
-			const ids = new Set(books.map(book => book.id)); this.selected = new Set([...this.selected].filter(id => ids.has(id))); this.error = undefined;
+			this.restorePreferences(savedState);
+			this.sanitizeFilters();
+			const ids = new Set(books.map(book => book.id)); this.selected = new Set([...this.selected].filter(id => ids.has(id))); this.drafts.retainBooks(ids); this.error = undefined;
 		} catch (error) { if (generation === this.generation) this.error = errorMessage(error, '无法加载书架'); }
 		finally { if (generation === this.generation) { this.loading = false; this.paint(); } }
 	}
@@ -80,8 +92,11 @@ export class ShelfView {
 		const label = active && root.contains(active) ? active.getAttribute('aria-label') : null;
 		const editor = active && root.contains(active) ? active.dataset.editor : undefined;
 		const selection = active instanceof HTMLInputElement ? [active.selectionStart, active.selectionEnd] : undefined;
-		root.replaceChildren();
-		for (const control of Array.from(this.toolbar?.querySelectorAll<HTMLElement>('[data-shelf-mode]') ?? [])) control.setAttribute('aria-pressed', String(control.dataset.shelfMode === this.mode));
+		this.drafts.clearBindings(); root.replaceChildren();
+		for (const control of Array.from(this.toolbar?.querySelectorAll<HTMLElement>('[data-shelf-mode]') ?? [])) {
+			const selected = control.dataset.shelfMode === this.mode;
+			control.setAttribute('aria-pressed', String(selected)); control.classList.toggle('is-selected', selected);
+		}
 		if (this.loading) root.append(this.state('正在加载书架…', 'status'));
 		else if (this.error) {
 			const state = this.state(this.error, 'alert'); state.append(button('重试', '重试加载书架', () => void this.reload())); root.append(state);
@@ -91,6 +106,26 @@ export class ShelfView {
 		const equivalent = editor ? controls.find(node => node.dataset.editor === editor) : label ? controls.find(node => node.getAttribute('aria-label') === label) : undefined;
 		equivalent?.focus();
 		if (equivalent instanceof HTMLInputElement && selection && equivalent.type === 'text') equivalent.setSelectionRange(selection[0], selection[1]);
+		if (this.preferencesReady && !this.loading && !this.error) this.preferences.record(this.viewState());
+	}
+	private async readPreferences(): Promise<ShelfViewState | undefined> {
+		if (this.preferencesReady) return undefined;
+		try { return await this.host.readShelfState?.(); }
+		catch (error) { this.preferences.message('无法读取书架视图：' + errorMessage(error)); return undefined; }
+	}
+	private restorePreferences(saved?: ShelfViewState): void {
+		if (this.preferencesReady) return;
+		const state: ShelfViewState = saved ?? { mode: 'cards', query: { query: '', sort: 'title' }, page: 1 };
+		this.preferences.initialize(state);
+		if (!this.userStateChanged) { this.mode = state.mode; this.query = { ...state.query }; this.page = state.page; if (this.search) this.search.value = this.query.query; }
+		this.preferencesReady = true;
+	}
+	private paintChanged(): void { this.userStateChanged = true; this.paint(); }
+	private viewState(): ShelfViewState { return { mode: this.mode, query: { ...this.query }, page: this.page }; }
+	private sanitizeFilters(): void {
+		if (this.query.categoryId && !this.categories.some(item => item.id === this.query.categoryId)) delete this.query.categoryId;
+		if (this.query.listId && !this.lists.some(item => item.id === this.query.listId)) delete this.query.listId;
+		this.page = pageBooks(queryBooks(this.books, this.query), this.page).page;
 	}
 	private createContent(): HTMLElement {
 		const content = element('div', 'rd-shelf-content'); const context = this.bookContext();
@@ -101,7 +136,7 @@ export class ShelfView {
 				const items = element('div', 'rd-continue-reading-list'); for (const book of books) items.append(createBookCard(book, context, true)); rail.append(items); content.append(rail);
 			}
 		}
-		content.append(this.createCategoryPanel(), createShelfFilters(this.books, this.lists, this.query, patch => { Object.assign(this.query, patch); this.page = 1; this.paint(); }));
+		content.append(this.createCategoryPanel(), createShelfFilters(this.books, this.lists, this.query, patch => { Object.assign(this.query, patch); this.page = 1; this.paintChanged(); }));
 		const books = queryBooks(this.books, this.query); const window = pageBooks(books, this.page); this.page = window.page;
 		const summary = element('div', 'rd-shelf-summary'); summary.append(element('span', '', '显示 ' + window.items.length + ' / ' + window.total + ' 本'));
 		if (hasShelfFilters(this.query)) summary.append(button('清除筛选', '清除所有书架筛选', () => this.clearFilters())); content.append(summary, this.createSelectionBar(window.items, books));
@@ -115,8 +150,8 @@ export class ShelfView {
 	private createCategoryPanel(): HTMLElement {
 		const panel = element('section', 'rd-category-panel'); panel.setAttribute('aria-label', '图书分类');
 		const category = (id: string | undefined, name: string): void => {
-			const control = button(name, name, () => { this.query.categoryId = id; this.page = 1; this.paint(); });
-			control.classList.add('rd-category-chip'); control.setAttribute('aria-pressed', String(this.query.categoryId === id)); panel.append(control);
+			const control = button(name, name, () => { this.query.categoryId = id; this.page = 1; this.paintChanged(); });
+			control.classList.add('rd-category-chip'); control.setAttribute('aria-pressed', String(this.query.categoryId === id)); control.classList.toggle('is-selected', this.query.categoryId === id); panel.append(control);
 		}; category(undefined, '全部 ' + this.books.length);
 		for (const item of this.categories) category(item.id, item.name + ' ' + this.books.filter(book => book.categoryId === item.id).length);
 		const manage = button('管理分类', '管理分类', () => this.manageCategories(manage)); panel.append(manage); return panel;
@@ -133,6 +168,12 @@ export class ShelfView {
 		if (this.host.createList) {
 			const create = button('新建阅读列表', '新建阅读列表', () => this.createList(create)); bar.append(create);
 		}
+		if (this.host.renameList || this.host.deleteList) {
+			const manage = button('管理阅读列表', '管理阅读列表', () => {
+				if (!this.container) return; this.dialog?.close(false);
+				this.dialog = openListManager(this.container, manage, () => this.lists, () => this.books, this.host, () => this.reload(false));
+			}); bar.append(manage);
+		}
 		return bar;
 	}
 	private syncSelection(): void {
@@ -142,13 +183,13 @@ export class ShelfView {
 		for (const node of Array.from(this.content?.querySelectorAll<HTMLInputElement>('[data-select-book]') ?? [])) node.checked = this.selected.has(node.dataset.selectBook ?? '');
 	}
 	private bookContext(): ShelfBookContext {
-		return { host: this.host, categories: this.categories, lists: this.lists, selected: this.selected,
+		return { host: this.host, categories: this.categories, lists: this.lists, selected: this.selected, drafts: this.drafts,
 			onSelect: (id, checked) => { if (checked) this.selected.add(id); else this.selected.delete(id); this.syncSelection(); },
 			onOpen: book => void this.openBook(book), onRelink: (book, trigger) => this.relink(book, trigger), onChanged: () => void this.reload(false) };
 	}
 	private createPagination(pages: number): HTMLElement {
 		const nav = element('nav', 'rd-shelf-pagination'); nav.setAttribute('aria-label', '书架分页');
-		const go = (page: number): void => { this.page = page; this.paint(); this.content?.querySelector<HTMLElement>('.rd-shelf-card, .rd-library-table button')?.focus(); };
+		const go = (page: number): void => { this.page = page; this.paintChanged(); this.content?.querySelector<HTMLElement>('.rd-shelf-grid .rd-shelf-card, .rd-library-table input[data-select-book]')?.focus(); };
 		const prev = button('上一页', '上一页图书', () => go(this.page - 1)); prev.disabled = this.page <= 1;
 		const next = button('下一页', '下一页图书', () => go(this.page + 1)); next.disabled = this.page >= pages;
 		nav.append(prev, element('span', '', this.page + ' / ' + pages + ' 页 · 每页最多 40 本'), next); return nav;
@@ -196,6 +237,6 @@ export class ShelfView {
 	private async scan(): Promise<void> {
 		try { await this.host.scan(); await this.reload(); } catch (error) { this.error = errorMessage(error, '扫描书库失败'); this.paint(); }
 	}
-	private clearFilters(): void { this.query = { query: '', sort: this.query.sort }; this.page = 1; if (this.search) this.search.value = ''; this.paint(); }
+	private clearFilters(): void { this.query = { query: '', sort: this.query.sort }; this.page = 1; if (this.search) this.search.value = ''; this.paintChanged(); }
 	private state(message: string, role: string): HTMLElement { const state = element('div', 'rd-shelf-state', message); state.setAttribute('role', role); return state; }
 }

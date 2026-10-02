@@ -31,12 +31,13 @@ describe('LibraryIndex bibliographic import', () => {
 
 	it('rejects conflicting source/path identities before committing any planned writes', async () => {
 		const source = { provider: 'zotero' as const, id: 'library:ABC' };
-		const { index, commit } = libraryHarness([libraryBook('one', undefined, { source }), libraryBook('two')]);
+		const { index } = libraryHarness([libraryBook('one', undefined, { source }), libraryBook('two')]);
+		const before = structuredClone(index.list());
 		await expect(index.applyImportedBooks([
 			libraryBook('would-be-new'),
 			libraryBook('incoming', '书/two.pdf', { source })
 		])).rejects.toThrow('身份冲突');
-		expect(commit).not.toHaveBeenCalled();
+		expect(index.list()).toEqual(before);
 		expect(index.get('would-be-new')).toBeUndefined();
 		expect(index.list()).toHaveLength(2);
 		await expect(index.updateImport({ source, path: 'moved/one.pdf', title: '书', author: '' })).rejects.toThrow('重新关联');
@@ -44,9 +45,10 @@ describe('LibraryIndex bibliographic import', () => {
 
 	it('rejects duplicate existing source records instead of choosing an arbitrary identity', async () => {
 		const source = { provider: 'csl' as const, id: 'duplicate' };
-		const { index, commit } = libraryHarness([libraryBook('one', undefined, { source }), libraryBook('two', undefined, { source })]);
+		const { index } = libraryHarness([libraryBook('one', undefined, { source }), libraryBook('two', undefined, { source })]);
+		const before = structuredClone(index.list());
 		await expect(index.updateImport({ source, path: '书/one.pdf', title: '书', author: '' })).rejects.toThrow('身份冲突');
-		expect(commit).not.toHaveBeenCalled();
+		expect(index.list()).toEqual(before);
 	});
 
 	it('retains bibliographic automatic fields when a PDF scan refreshes cover and page metadata', async () => {

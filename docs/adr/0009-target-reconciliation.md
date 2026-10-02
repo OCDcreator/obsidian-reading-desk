@@ -8,7 +8,7 @@
 
 ## 目标核验
 
-`TargetService.reconcileTarget(target, candidates, store)` 返回 `{ removedIds, diagnostics }`；旧 `removeMissingTargetHighlights` 委托该方法并继续返回 ID 数组。只核验当前 AnnotationStore 中仍属于相同路径、相同格式的候选，避免旧事件删除已转移的标注。
+`TargetService.reconcileTarget(target, candidates, store)` 返回 `{ removedIds, diagnostics }`；旧 `removeMissingTargetHighlights` 委托该方法并继续返回 ID 数组。只核验当前 AnnotationStore 中仍属于相同路径、相同格式的候选，避免旧事件删除已转移的标注。核验生成 missing ID 时同时捕获源对象与字段签名、卡片状态；`removeMissingTargetIds(ids, expected)` 在 Repository 删除提交真正执行时重验该凭据及当前 pending，跳过排队期间 rename/relink、改字段、替换源或新建待写意图的标注，并返回实际删除 ID。直接用户删除保持原有语义。
 
 - 完整、可解析文档中摘录卡片确实不存在：先归档，再清理活动高亮、评论和卡片状态。
 - Markdown 标记残缺、嵌套、错配、重复，JSON 缺失/损坏、ID 不一致或孤立 metadata：保留标注，诊断待修复。标记被整体移除但回链仍在，也属于身份损坏。
@@ -33,7 +33,7 @@
 
 `TargetService.writeAndSaveExcerpt(target, highlight, store, options?)` 返回原 `TargetWriteResult`，并承担整个流程，ReaderExcerptWriter 只调用此入口：
 
-1. `store.stageTargetWrite(highlightWithTarget, card?)` 成功保存高亮和意图，并返回本次写入的 `AnnotationTargetWrite` 凭据；显式 title/folded 同时保存在 excerptCards，显式 chapterPath 写入高亮。没有活动标注且没有墓碑的初次创建仍合法；排队期间活动数据改变或 ID 已删除时拒绝旧 stage。
+1. `store.stageTargetWrite(highlightWithTarget, card?)` 成功保存高亮和意图，并返回本次写入的 `AnnotationTargetWrite` 凭据；显式 title/folded 同时保存在 excerptCards，显式 chapterPath 写入高亮。没有活动标注且没有墓碑的初次创建仍合法；排队期间活动数据改变或 ID 已删除时拒绝旧 stage。`TargetService` 在进入路径串行队列前通过 `captureTargetWriteSource` 捕获当前源/卡片凭据（不存在时显式为 null），传给 stage 并在 Repository 提交闭包内验证；不能获得路径锁后才捕获。并发全量快照中较晚请求若已陈旧，明确拒绝并保留当前值，用户重新取得最新源后可显式重试，不默默覆盖。
 2. 检查存在的目标文件，使用凭据的固定高亮快照和最新文件内容原子、幂等写入目标。
 3. `store.completeTargetWrite(receipt, writtenTarget, card?)` 在一个 Repository commit 闭包中重新读取当前高亮、墓碑、待写意图和卡片，验证意图对象身份及内容签名、当前高亮和卡片签名。验证成功后仅给当前高亮补入目标 objectId，并保存目标实际标题/折叠状态、清除本次对应意图；不在 I/O 后全量覆盖高亮，不再分开 save/finish。
 

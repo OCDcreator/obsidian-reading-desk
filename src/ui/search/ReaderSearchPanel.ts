@@ -51,6 +51,11 @@ export class ReaderSearchPanel {
 		this.renderList(); this.renderStatus();
 		if (this.open && query) void this.refresh();
 	}
+	async search(query: string): Promise<void> {
+		this.open = true; this.container?.classList.remove('is-hidden');
+		if (this.input) { this.input.value = query; this.input.focus(); }
+		await this.refresh();
+	}
 	toggle(): void { this.open ? this.close() : this.show(); }
 	isOpen(): boolean { return this.open; }
 	currentQuery(): string { return this.input?.value.trim() ?? ''; }

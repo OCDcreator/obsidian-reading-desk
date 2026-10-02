@@ -1,5 +1,5 @@
 import { Notice } from 'obsidian';
-import type { PdfHighlight, TargetType } from '../types/contracts';
+import type { PdfHighlight, TargetType, SourceFingerprint } from '../types/contracts';
 import type { PageSurface } from './PageSurface';
 import { freezeExcerptSelection, ReaderSelectionError, writeReaderExcerpt, type ExcerptWriteInput, type FrozenExcerptSelection } from './ReaderExcerptWriter';
 import { revealCreatedCanvasTarget } from './ReaderTargetHandoff';
@@ -29,11 +29,11 @@ export class ReaderExcerptController {
 			new Notice(error instanceof ReaderSelectionError ? error.message : '创建摘录失败；已保留的待写入记录可从设置中重试。');
 		}
 	}
-	beginDrag(event: DragEvent, surface: PageSurface | null, pdfPath: string): void {
+	beginDrag(event: DragEvent, surface: PageSurface | null, pdfPath: string, sourceFingerprint?: SourceFingerprint): void {
 		if (!surface || !event.dataTransfer) return;
 		const selection = window.getSelection(); const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
 		try {
-			const frozen = freezeExcerptSelection(surface, range, pdfPath); if (!frozen?.text) return;
+			const frozen = freezeExcerptSelection(surface, range, pdfPath, sourceFingerprint); if (!frozen?.text) return;
 			event.dataTransfer.setData('text/plain', frozen.text);
 			event.dataTransfer.setData('application/x-reading-desk-selection', JSON.stringify(frozen));
 			event.dataTransfer.setData('application/x-reading-desk-rects', JSON.stringify(frozen.rects));

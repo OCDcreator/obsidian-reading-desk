@@ -19,9 +19,21 @@ ReaderToolbar 的显示选项与 more 共用动作定义，more 读取按钮的�
 
 SettingSaveFeedback 在设置行内呈现保存中、成功、失败和重试，保留控件、草稿与焦点。每行串行保存，只让最新草稿状态影响 live region，旧失败不覆盖新成功。ReadingDeskSettingTab 的数据页通过 plugin.dataPanelHost() 接线 ImportExportPanelHost；备份/迁移/恢复逻辑仍由数据与互操作服务承担。
 
+## 0.5 修复补充
+
+分类与视图按钮同步 `aria-pressed` 和既有选中样式类；翻页只把焦点送到当前页书卡或表格首行选择控件，继续阅读轨不参与。书卡书名使用非标题元素，遵守 DESIGN 的 Heading-Root Rule。
+
+`ShelfBookDrafts` 只保存叶片内尚未提交的控件值与版本，不能作为书籍元数据源；`ShelfBookEditor` 负责把这些草稿绑定到重建后的控件与局部保存反馈。标题、作者、标签、评分、分类、阅读状态统一按书籍 ID 与字段标识草稿。每字段提交串行，成功仅清除所提交的版本，期间输入的新版本、其它字段和页面上的草稿均保留。旧请求失败不覆盖新稿；失败保留原操作供重试，包括“恢复自动”操作。翻页或切换视图保留叶片内草稿，销毁叶片释放草稿和控件监听。正式写入继续经过 LibraryIndex host；草稿不会作为元数据加入持久化或备份。
+
+## 0.5 阅读列表与视图恢复
+
+阅读列表管理调用 LibraryIndex.renameList/deleteList；删除先呈现所影响书籍数量和只移除列表关系的说明，再显式确认。书籍、文件、标注不随列表删除。失败保留名称或确认状态供重试，隐藏的确认控件不进入对话框键盘循环。
+
+`settings.shelf` 保存最近操作的书架默认视图：mode、书籍组合查询和页码。ShelfStatePersistence 通过 readShelfState/saveShelfState host 端口读取与提交，UI 不直接访问 Repository。旧数据默认卡片、标题排序、第一页；读取迟到不覆盖用户已经输入的查询。恢复及书库刷新会移除不存在的分类/列表过滤，页码按当前结果夹取。每次操作以 500ms 合并，单个保存请求串行处理最新快照，旧失败不覆盖新请求状态；失败保留待保存视图并显示重试。关闭叶片取消计时并等待最新提交尝试。此状态不包含批量选择、元数据草稿或摘录检索文本；多叶片继续拥有各自交互状态。
+
 ## 宿主契约
 
-ShelfItemView 将 LibraryIndex 的 listLists/createList/batchUpdate/clearMetadataOverride 适配成书架 host；主宿主提供 openSettings、searchAnnotations(query)、openHighlight(path,id)、listSourcePaths()（或 candidateFiles()）、relinkBook(id,path)。检索结果用稳定 highlightId 和 pdfPath 回到原文。
+ShelfItemView 将 LibraryIndex 的 listLists/createList/renameList/deleteList/batchUpdate/clearMetadataOverride 适配成书架 host；主宿主提供 openSettings、searchAnnotations(query)、openHighlight(path,id)、listSourcePaths()（或 candidateFiles()）、relinkBook(id,path)。检索结果用稳定 highlightId 和 pdfPath 回到原文。
 
 ## 验证与限制
 

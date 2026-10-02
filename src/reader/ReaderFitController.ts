@@ -25,6 +25,8 @@ export class ReaderFitController {
 
 	constructor(private readonly io: ReaderFitControllerIO) { }
 
+	restore(mode: ReaderFitMode, scale: number): void { this.mode = mode; this.io.pdf().setScale(scale); this.io.onScaleChanged(this.io.pdf().getScale()); }
+
 	getMode(): ReaderFitMode { return this.mode; }
 
 	setManualScale(scale: number): void {

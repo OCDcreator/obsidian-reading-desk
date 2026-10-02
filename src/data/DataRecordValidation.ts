@@ -1,3 +1,4 @@
+import { bookmarksCheck, readerPositionCheck, shelfStateCheck } from './WorkspaceStateValidation';
 import { choice, flag, nonEmptyText, numeric, shape, text, texts, type ValueCheck } from './DataValidationSupport';
 
 const timestamp = numeric(0);
@@ -11,6 +12,7 @@ export const bookCheck = shape({
 }, {
 	pageCount: numeric(1, Infinity, true), coverPath: text, categoryId: text, rating: numeric(0, 5), lastReadAt: timestamp,
 	metadataError: text, coverRetryable: flag, coverError: text, missing: flag,
+	lastReadPosition: readerPositionCheck, bookmarks: bookmarksCheck,
 	metadataOverrides: shape({}, { title: text, author: text }), autoMetadata: shape({ title: text, author: text }),
 	source: shape({ provider: choice('csl', 'bibtex', 'zotero'), id: nonEmptyText }, { doi: text, isbn: text, citationKey: text }),
 	listIds: texts, readingStatus: choice('unread', 'reading', 'finished', 'abandoned')
@@ -30,7 +32,7 @@ export const highlightCheck: ValueCheck = (value, path, check) => {
 		rects: (rects, rectPath, validator) => validator.array(rects, rectPath, rectangle),
 		text, color: choice('moss', 'amber', 'brick', 'indigo', 'plum'), chapterPath: texts, tags: texts,
 		createdAt: timestamp, updatedAt: timestamp
-	}, { target });
+	}, { target, pageLabel: nonEmptyText, sourceFingerprint: shape({ mtime: timestamp, size: numeric(0) }) });
 	if (!check.object(value, path)) return;
 	if (typeof value.rotation === 'number' && value.rotation % 90 !== 0) check.issue(`${path}.rotation`, '旋转必须为 90 度的整数倍');
 	if (Array.isArray(value.rects)) value.rects.forEach((rect, index) => {
@@ -49,7 +51,7 @@ export const deletedAnnotationCheck: ValueCheck = (value, path, check) => {
 };
 
 export const settingsCheck = shape({}, {
-	libraryFolders: texts, importedBookshelf: flag, excerptTemplate: text,
+	libraryFolders: texts, importedBookshelf: flag, excerptTemplate: text, shelf: shelfStateCheck,
 	storage: shape({}, {
 		enabled: flag, imageHostEnabled: flag, provider: choice('oss', 'cos'), endpoint: text, region: text,
 		bucket: text, prefix: text, accessKeyId: text, secretAccessKey: text

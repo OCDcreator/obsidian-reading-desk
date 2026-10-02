@@ -1,4 +1,5 @@
 import { AnnotationStore } from '../annotations/AnnotationStore';
+import { AnnotationTargetWrite } from '../annotations/AnnotationTargetWrite';
 import type { AnnotationTarget, PdfHighlight } from '../types/contracts';
 import { canvasExcerptIds, canvasObjectIds, deleteCanvasExcerpt, syncCanvasOutline, writeCanvasExcerpt, type CanvasOutlineEntry, type CanvasOutlineSyncResult } from './CanvasTargetAdapter';
 import { excalidrawExcerptIds, excalidrawObjectIds, deleteExcalidrawExcerpt, writeExcalidrawExcerpt } from './ExcalidrawTargetAdapter';
@@ -26,10 +27,11 @@ export class TargetService {
 
 	/** Durable intent -> target -> atomic guarded source/card completion and clear. */
 	async writeAndSaveExcerpt(target: AnnotationTarget, highlight: PdfHighlight, store: AnnotationStore, options: TargetCardOptions = {}): Promise<TargetWriteResult> {
+		const expected = store.captureTargetWriteSource(highlight.id);
 		return this.serial(target.path, async () => {
 			const staged: PdfHighlight = { ...highlight, target: { ...target }, chapterPath: options.chapterPath ?? highlight.chapterPath };
 			const card = { ...(options.title !== undefined ? { title: options.title } : {}), ...(options.folded !== undefined ? { folded: options.folded } : {}) };
-			const receipt = await store.stageTargetWrite(staged, Object.keys(card).length ? card : undefined);
+			const receipt = await store.stageTargetWrite(staged, Object.keys(card).length ? card : undefined, expected);
 			const result = await this.transformExcerpt(target, receipt.highlight, options);
 			const completed = await store.completeTargetWrite(receipt, result.target, { title: result.title, folded: result.folded });
 			if (completed !== 'completed') throw new Error(completed === 'deleted'
@@ -97,6 +99,7 @@ export class TargetService {
 			const own = candidates.map(item => store.get(item.id))
 				.filter((item): item is PdfHighlight => !!item && item.target?.type === target.type && item.target.path === target.path);
 			let missing: string[] = [];
+			const observed = new Map<string, AnnotationTargetWrite>();
 			let diagnostics: TargetRepairDiagnostic[] = [];
 			const inspect = (content: string | undefined): string => {
 				if (content === undefined) throw new TargetRepairError('unavailable', '目标文件暂缺，保留标注等待修复。');
@@ -113,7 +116,10 @@ export class TargetService {
 					const linkSurvives = target.type === 'markdown' && content.includes(createSourceLink(candidate));
 					if (objectSurvives || linkSurvives) {
 						diagnostics.push({ target, highlightIds: [candidate.id], reason: 'metadata-missing', message: '目标内容仍在，但摘录元数据缺失或变化，已保留原标注。' });
-					} else missing.push(candidate.id);
+					} else {
+						missing.push(candidate.id);
+						observed.set(candidate.id, new AnnotationTargetWrite(candidate, store.excerptCard(candidate.id)));
+					}
 				}
 				return content;
 			};
@@ -125,7 +131,7 @@ export class TargetService {
 				diagnostics = [{ target, highlightIds: own.map(item => item.id), reason: error instanceof TargetRepairError ? error.reason : 'invalid-document', message: errorMessage(error) }];
 			}
 			this.setRepairs(target.path, diagnostics);
-			if (missing.length) await store.removeMissingTargetIds(missing);
+			if (missing.length) missing = await store.removeMissingTargetIds(missing, observed);
 			return { removedIds: missing, diagnostics };
 		});
 	}

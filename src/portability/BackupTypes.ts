@@ -21,6 +21,8 @@ export interface BackupRestoreOptions {
 	/** Optional vault inventory makes unresolved source/target paths visible in the preview. */
 	existingPaths?: string[];
 	recoverInvalid?: boolean;
+	/** Object keys from preview.objects; annotation families are one atomic decision. */
+	objectDecisions?: Record<string, 'keep-current' | 'use-backup'>;
 }
 export interface BackupIssue {
 	code: 'duplicate-id' | 'duplicate-path' | 'conflict' | 'reference' | 'path' | 'missing-file';
@@ -31,6 +33,12 @@ export interface BackupIssue {
 export interface BackupConflict { collection: string; id: string; resolution: 'error' | 'keep-current' | 'use-backup'; }
 export interface BackupPathChange { field: string; from: string; to: string; }
 export interface BackupCollectionChange { collection: string; added: number; updated: number; removed: number; unchanged: number; }
+export interface BackupObjectDiff {
+	key: string; collection: string; id: string; label: string;
+	status: 'added' | 'removed' | 'changed' | 'unchanged';
+	resolution: 'error' | 'keep-current' | 'use-backup';
+	fields: string[]; currentSummary: string; backupSummary: string;
+}
 export interface BackupRestorePreview {
 	canApply: boolean;
 	mode: 'replace' | 'merge';
@@ -40,6 +48,7 @@ export interface BackupRestorePreview {
 	duplicates: { collection: string; id: string }[];
 	pathChanges: BackupPathChange[];
 	changes: BackupCollectionChange[];
+	objects: BackupObjectDiff[];
 	filesIncluded: false;
 	warnings: string[];
 }

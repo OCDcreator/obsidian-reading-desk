@@ -1,14 +1,13 @@
 import { ItemView, Notice, type ViewStateResult, type WorkspaceLeaf } from 'obsidian';
-import { AnnotationStore } from '../annotations/AnnotationStore';
-import type { PdfHighlight, TargetType, ViewerSettings } from '../types/contracts';
+import type { PdfHighlight, TargetType, ViewerSettings, ReaderSavedPosition, SourceFingerprint } from '../types/contracts';
 import { createId } from '../utils/ids';
 import { PdfRenderer, type PdfOutlineEntry } from '../reader/PdfRenderer';
-import { TargetService, type CanvasOutlineEntry } from '../targets';
+import { type CanvasOutlineEntry } from '../targets';
 import { ReaderCommentBridge } from '../reader/ReaderCommentBridge';
 import { type CropSelectionPayload } from '../ui/crop/CropSelectionOverlay';
 import { ReaderCropController, type PdfCropRequest } from '../crop/ReaderCropController';
 import { handleCropDrop, type PreparedCropDrag } from '../ui/crop/CropDragTransport';
-import { ExcerptTargetPanel, type ExcerptCard } from '../ui/targets/ExcerptTargetPanel';
+import { ExcerptTargetPanel } from '../ui/targets/ExcerptTargetPanel';
 import { ReaderSessionState } from '../reader/ReaderSessionState';
 import { anchorBelowToolbar, trackToolbarHeight } from '../reader/ReaderChromeMetrics';
 import { parseDraggedExcerptSelection } from '../reader/ReaderDragTransport';
@@ -39,32 +38,22 @@ import { ReaderPositionController } from '../reader/ReaderPositionController';
 import { isReaderAbort } from '../reader/ReaderCancellation';
 import { chapterPathForPage } from '../reader/ReaderOutlineModel';
 
+import type { ReaderHost } from '../reader/ReaderHost';
+import { ReaderPersistenceController } from '../reader/ReaderPersistenceController';
+import { ReaderPageLabels } from '../reader/ReaderPageLabels';
+import { renderReaderBookmarks } from '../reader/ReaderBookmarksPanel';
+import { diagnoseSourceAnchors } from '../annotations/SourceAnchorDiagnostics';
+import { SourceAnchorDiagnosticsPanel } from '../ui/annotations/SourceAnchorDiagnosticsPanel';
+
 export const READER_VIEW_TYPE = 'reading-desk-reader';
-export interface ReaderHost {
-	createPdfRenderer(): PdfRenderer;
-	annotations: AnnotationStore;
-	targets: TargetService;
-	openFile(path: string): Promise<void>;
-	createTarget(type: TargetType): Promise<{ type: TargetType; path: string }>;
-	recordProgress(path: string, progress: number): void;
-	showTarget(path: string, objectId?: string): Promise<void>;
-	listTargets(type: TargetType): Promise<Array<{ path: string; label: string }>>;
-	prepareCropDrag(input: { pdfPath: string; page: number; rect: PdfHighlight['rects'][number]; target: 'canvas' | 'image' | 'markdown'; image: Blob }): Promise<PreparedCropDrag>;
-	commitPreparedCrop(dragToken: string, targetPath?: string): Promise<void>;
-	discardPreparedCrop(dragToken: string): Promise<void>;
-	readExcerptCards(pdfPath: string): Promise<ExcerptCard[]>;
-	updateExcerptCard(highlightId: string, patch: { title?: string; folded?: boolean }): Promise<void>;
-	openTargetInSplit(path: string, objectId?: string): Promise<void>;
-	copyPageLink(path: string, page: number): Promise<void>;
-	copyHighlightLink(highlight: PdfHighlight): Promise<void>;
-	openNavigation(): Promise<void>;
-	viewerSettings(): ViewerSettings;
-	updateViewerSettings(patch: Partial<ViewerSettings>): Promise<void>;
-	openSettings(): Promise<void>;
-}
+export type { ReaderHost } from '../reader/ReaderHost';
 
 export class ReaderView extends ItemView {
 	private pdf: PdfRenderer;
+	private readonly persistence: ReaderPersistenceController;
+	private readonly anchorDiagnostics = new SourceAnchorDiagnosticsPanel();
+	private labels = new ReaderPageLabels();
+	private sourceFingerprint?: SourceFingerprint;
 	private readonly session = new ReaderSessionState();
 	private page = 1;
 	private pages = 0;
@@ -114,12 +103,16 @@ export class ReaderView extends ItemView {
 			setPage: page => { this.page = page; this.session.setPage(page); }, history: this.history,
 			changed: page => this.handlePageChanged(page), showTarget: (path, id) => this.host.showTarget(path, id), onError: message => new Notice(message)
 		});
+		this.persistence = new ReaderPersistenceController({ port: host.readerState, capture: () => {
+			const location = this.positions.capture(); if (!this.surface || !this.activePath()) return null;
+			return { page: location.page - 1, x: location.x ?? 0, y: location.y ?? 0, rotation: this.pdf.getRotation() as ReaderSavedPosition['rotation'], scale: this.pdf.getScale(), fitMode: this.fitController.getMode() };
+		}, restore: position => this.restorePosition(position, true), error: message => new Notice(message) });
 		this.excerptWriter = new ReaderExcerptController({
 			input: (text, type, color) => this.surface && this.activePath() && !this.sourceMissing ? {
-				text, type, color, surface: this.surface, fallbackPage: this.page, pdfPath: this.activePath(), viewportFallback: null,
+				text, type, color, sourceFingerprint: this.sourceFingerprint, surface: this.surface, fallbackPage: this.page, pdfPath: this.activePath(), viewportFallback: null,
 				continuous: this.surface.mode === 'continuous', createTarget: candidate => this.host.createTarget(candidate),
 				selectedTarget: this.selectedTarget, selectedTargetPath: this.selectedTargetPath,
-				targets: this.host.targets, annotations: this.host.annotations, chapterPathFor: page => this.chapterForPage(page),
+				targets: this.host.targets, annotations: this.host.annotations, chapterPathFor: page => this.chapterForPage(page), pageLabelFor: page => this.labels.label(page),
 				syncOutline: path => this.syncOutlineForTarget(path), onTargetResolved: (resolvedType, path) => { if (resolvedType === this.selectedTarget) this.selectedTargetPath = path; }
 			} : null,
 			setColor: color => { this.lastColor = color; }, refresh: () => this.refreshAnnotations(),
@@ -202,10 +195,11 @@ export class ReaderView extends ItemView {
 	getState(): Record<string, unknown> { return { ...this.session.serialize() }; }
 	async setState(state: unknown, _result: ViewStateResult): Promise<void> {
 		this.session.restore(state);
-		await this.lifecycle.onState(this.session.serialize(), (path, page) => this.openPdf(path, page));
+		await this.lifecycle.onState(this.session.serialize(), (path, page) => this.openPdf(path, page, true));
 	}
 	async onClose(): Promise<void> {
-		this.lifecycle.close();
+		const saved = this.persistence?.leave();
+		this.lifecycle.close(); this.anchorDiagnostics.destroy();
 		this.tools.resetForDocument(); this.positions.cancel();
 		this.openRequests.invalidate();
 		this.outlineLoader.invalidate();
@@ -222,17 +216,29 @@ export class ReaderView extends ItemView {
 		this.cropLauncher.destroy();
 		this.surface?.destroy();
 		this.surface = null;
-		await this.pdf.close();
+		await this.pdf.close(); await saved;
 	}
-	async openPdf(path: string, page = 1): Promise<void> {
+	async openPdf(path: string, page?: number, workspaceRestore = false): Promise<void> {
 		const request = this.openRequests.begin(path);
+		const leaving = this.persistence?.leave();
+		if (leaving) await leaving;
+		if (!this.openRequests.isCurrent(request)) return;
 		this.tools.resetForDocument(); this.positions?.cancel(); this.cropLauncher?.destroy();
 		this.outlineLoader.invalidate();
+		const sourceBefore = this.host.sourceFingerprint?.(path);
 		const opened = await openReaderDocument(path, this.host.createPdfRenderer(), this.pdf, () => this.openRequests.isCurrent(request));
 		if (!opened) return;
 		this.pdf = opened.renderer;
-		this.session.open(request.path, page);
-		this.lifecycle.markLoaded(request.path, page);
+		const sourceAfter = this.host.sourceFingerprint?.(path);
+		this.sourceFingerprint = sourceBefore && sourceAfter && sourceBefore.mtime === sourceAfter.mtime && sourceBefore.size === sourceAfter.size ? { ...sourceBefore } : undefined;
+		const saved = this.persistence?.begin(request.path);
+		const restore = page === undefined || workspaceRestore ? saved : undefined;
+		const labels = await this.pdf.pageLabels().catch(() => []);
+		if (!this.openRequests.isCurrent(request)) return;
+		this.labels = new ReaderPageLabels(labels);
+		if (restore) { this.display.restoreRotation(restore.rotation); this.fitController.restore(restore.fitMode, restore.scale); } else this.display?.restoreRotation(0);
+		this.session.open(request.path, restore ? restore.page + 1 : page ?? 1);
+		this.lifecycle.markLoaded(request.path, page ?? this.session.pageNumber());
 		this.sourceMissing = false;
 		this.pages = opened.pages;
 		this.outline = [];
@@ -248,6 +254,9 @@ export class ReaderView extends ItemView {
 		if (bounded.notice) new Notice(bounded.notice);
 		this.session.setPage(this.page);
 		await this.render();
+		if (!this.openRequests.isCurrent(request)) return;
+		if (restore) await this.positions.goTo(this.page, { smooth: false, location: { page: this.page, x: restore.x, y: restore.y } });
+		if (this.surface) { this.persistence?.activate(this.surface.stage); if (!workspaceRestore) this.persistence?.changed(); }
 		const loadedOutline = await outline;
 		if (!loadedOutline) return;
 		if (!loadedOutline.error) {
@@ -262,13 +271,13 @@ export class ReaderView extends ItemView {
 	}
 
 	async openPdfAtHighlight(path: string, highlightId: string): Promise<void> {
-		await this.openPdf(path);
+		await this.openPdf(path, 1);
 		const highlight = this.host.annotations.get(highlightId);
 		if (highlight) await this.focusHighlight(highlight, false);
 	}
 
 	async onOpen(): Promise<void> {
-		await this.lifecycle.onOpen(this.session.serialize(), (path, page) => this.openPdf(path, page));
+		await this.lifecycle.onOpen(this.session.serialize(), (path, page) => this.openPdf(path, page, true));
 		// Obsidian may deliver the serialized leaf state right after onOpen; deferring
 		// the empty-state paint by one macrotask lets that restore win without flashing.
 		if (!this.activePath()) {
@@ -291,7 +300,7 @@ export class ReaderView extends ItemView {
 	/** Called by the vault rename observer; preserves rendered bytes and current page. */
 	async handleSourceRename(oldPath: string, newPath: string): Promise<boolean> {
 		const changed = this.session.rename(oldPath, newPath);
-		if (changed) await this.refreshAnnotations();
+		if (changed) { this.persistence?.rename(oldPath, newPath); await this.refreshAnnotations(); }
 		return changed;
 	}
 
@@ -301,6 +310,7 @@ export class ReaderView extends ItemView {
 		if (!deleted) return false;
 		this.openRequests.invalidate();
 		this.outlineLoader.invalidate();
+		await this.persistence?.leave();
 		this.sourceMissing = true;
 		this.tools.resetForDocument(); this.positions.cancel();
 		this.cropLauncher.destroy();
@@ -343,7 +353,8 @@ export class ReaderView extends ItemView {
 		const toolbar = root.createDiv({ cls: 'rd-reader-toolbar' });
 		this.controls = bindReaderToolbar(toolbar, {
 			page: () => this.page,
-			pages: () => this.pages,
+			pages: () => this.pages, pageLabel: page => this.labels.label(page),
+			resolvePage: value => { const result = this.labels.resolve(value, this.pages); if (result.message) new Notice(result.message); return result.page ?? null; },
 			scale: () => this.pdf.getScale(),
 			selectedTarget: () => this.selectedTarget,
 			scrollMode: () => this.display.scrollMode(),
@@ -389,7 +400,7 @@ export class ReaderView extends ItemView {
 			await surface.render();
 			await this.fitController.refit(true);
 			const opened = this.activePath();
-			if (opened && this.pages) this.host.recordProgress(opened, this.page / this.pages);
+			if (!this.host.readerState && opened && this.pages) this.host.recordProgress(opened, this.page / this.pages);
 		} catch (error) {
 			console.error('[Reading Desk] PDF 页面渲染失败', error);
 			body.replaceChildren();
@@ -400,7 +411,7 @@ export class ReaderView extends ItemView {
 		this.drawer = root.createDiv({ cls: 'rd-highlight-drawer', attr: { id: this.drawerId } });
 		this.renderDrawer();
 		this.syncDrawerState();
-		this.bindHighlightPreview();
+		this.bindHighlightPreview(); this.persistence?.observe(surface.stage);
 	}
 
 	private createSurface(): PageSurface {
@@ -446,7 +457,7 @@ export class ReaderView extends ItemView {
 		this.readerNavigation = new ReaderNavigation(this.pdf, this.pages, () => this.page, page => this.goTo(page, { jump: true }), this.navigationMode, mode => {
 			this.navigationMode = mode;
 			try { window.localStorage.setItem('reading-desk-nav-mode', mode); } catch { /* Storage can be unavailable in private windows. */ }
-		}, this.host.viewerSettings().outlineStyle);
+		}, this.host.viewerSettings().outlineStyle, { label: page => this.labels.label(page), bookmarks: parent => renderReaderBookmarks(parent, this.persistence, page => this.labels.description(page)) });
 		this.readerNavigation.setOutline(this.outline, this.outlineState, this.outlineError);
 		this.readerNavigation.render(container);
 		this.readerNavigation.revealPage(this.page);
@@ -460,7 +471,7 @@ export class ReaderView extends ItemView {
 	}
 	setPreferredNavigationMode(mode: ReaderNavigationMode): void {
 		if (this.navigationMode === mode) return;
-		this.navigationMode = mode;
+		this.navigationMode = mode; this.readerNavigation?.destroy(); this.readerNavigation = null;
 		if (this.navigationContainer) this.attachNavigation(this.navigationContainer);
 	}
 	/** Applies an outline-style change to the open navigation without reopening the PDF. */
@@ -468,7 +479,7 @@ export class ReaderView extends ItemView {
 	async copyCurrentPageLink(): Promise<void> {
 		const path = this.activePath();
 		if (!path || this.pages === 0) throw new Error('当前没有可复制的 PDF 页面。');
-		await this.host.copyPageLink(path, this.page);
+		await this.host.copyPageLink(path, this.page, this.labels.label(this.page));
 	}
 	canCopyCurrentPage(): boolean { return !!this.activePath() && this.pages > 0; }
 	canCopySelection(): boolean { return this.tools.canCopySelection(); }
@@ -488,12 +499,12 @@ export class ReaderView extends ItemView {
 			this.page = page;
 			this.session.setPage(page);
 		}
-		this.positions.recordPageChanged();
+		this.positions.recordPageChanged(); this.persistence?.changed();
 		this.controls?.pageControl.update(this.page, this.pages);
 		this.controls?.updateHistory(this.history.canBack(), this.history.canForward());
 		this.readerNavigation?.revealPage(this.page);
 		const path = this.activePath();
-		if (path && this.pages) this.host.recordProgress(path, this.page / this.pages);
+		if (!this.host.readerState && path && this.pages) this.host.recordProgress(path, this.page / this.pages);
 	}
 
 	private handleTextSignal(page: number, selectable: boolean): void {
@@ -523,6 +534,22 @@ export class ReaderView extends ItemView {
 		bindReaderPageEvents(surface.stage, this.pageEventDeps());
 		this.positions.bindLinks(surface.stage);
 		await surface.render();
+		this.persistence?.observe(surface.stage); this.persistence?.changed();
+	}
+
+	private async restorePosition(position: ReaderSavedPosition, jump = false): Promise<void> {
+		const pdf = this.pdf; this.persistence.pause();
+		if (jump) { this.history.replace(this.positions.capture()); this.history.push({ page: position.page + 1, x: position.x, y: position.y }); }
+		this.positions.cancel(); this.cropLauncher.destroy();
+		this.display.restoreRotation(position.rotation); this.fitController.restore(position.fitMode, position.scale);
+		this.page = Math.max(1, Math.min(this.pages, position.page + 1));
+		let restored = false;
+		try {
+			await this.rebuildSurface(); if (pdf !== this.pdf) return;
+			if (position.fitMode !== 'manual') await this.fitController.refit(true);
+			if (pdf !== this.pdf) return;
+			await this.positions.goTo(this.page, { smooth: false, location: { page: this.page, x: position.x, y: position.y } }); restored = true;
+		} finally { if (pdf === this.pdf && this.surface) { this.persistence.activate(this.surface.stage); if (restored) this.persistence.changed(); } }
 	}
 
 	private async navigateHistory(direction: -1 | 1): Promise<void> {
@@ -551,7 +578,9 @@ export class ReaderView extends ItemView {
 
 	private renderDrawer(): void {
 		if (!this.drawer) return;
-		this.bridge.renderList(this.drawer, this.host.annotations.list(this.activePath()), this.page - 1, this.highlightCoordinator.getScope());
+		const highlights = this.host.annotations.list(this.activePath());
+		this.bridge.renderList(this.drawer, highlights, this.page - 1, this.highlightCoordinator.getScope());
+		this.anchorDiagnostics.render(this.drawer, diagnoseSourceAnchors(highlights, this.host.sourceFingerprint?.(this.activePath())), query => this.tools.searchFor(query));
 	}
 
 	private bindHighlightPreview(): void { this.highlightCoordinator.bind(this.surface?.hostForPage(this.page) ?? null, this.drawer); }
@@ -588,7 +617,7 @@ export class ReaderView extends ItemView {
 		console.info('[Reading Desk] Canvas outline synchronized', { pdfPath, targetPath, chapterCount: this.outline.length });
 	}
 
-	private beginExcerptDrag(event: DragEvent): void { this.excerptWriter.beginDrag(event, this.surface, this.activePath()); }
+	private beginExcerptDrag(event: DragEvent): void { this.excerptWriter.beginDrag(event, this.surface, this.activePath(), this.sourceFingerprint); }
 	private async focusHighlight(highlight: PdfHighlight, openTarget = true): Promise<void> {
 		try { await this.positions.focusHighlight(highlight, openTarget); }
 		catch (error) { if (!isReaderAbort(error)) new Notice('高亮位置无法载入，请重试。'); }

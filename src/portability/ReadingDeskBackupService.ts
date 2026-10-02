@@ -4,6 +4,7 @@ import type { ReadingDeskData } from '../types/contracts';
 import { containsBackupCredentials, preserveLocalCredentials, removeBackupCredentials } from './BackupCredentials';
 import { checkBackupIntegrity } from './BackupIntegrity';
 import { parseBackupJson } from './BackupJson';
+import { assertBackupCapacity } from './BackupCapacity';
 import { mergeBackupData } from './BackupMerge';
 import { checkBackupPaths, mapBackupPaths } from './BackupPaths';
 import { BACKUP_FORMAT, BACKUP_SCHEMA_VERSION, BackupError, type BackupExportOptions, type BackupRestoreHost, type BackupRestoreOptions, type BackupRestorePreview, type ReadingDeskBackup } from './BackupTypes';
@@ -32,7 +33,9 @@ export class ReadingDeskBackupService {
 	}
 
 	serializeBackup(value: ReadingDeskData, options: BackupExportOptions = {}): string {
-		return JSON.stringify(this.exportBackup(value, options), null, 2);
+		const text = JSON.stringify(this.exportBackup(value, options), null, 2);
+		assertBackupCapacity(text);
+		return text;
 	}
 
 	parseBackup(input: unknown): ReadingDeskBackup {

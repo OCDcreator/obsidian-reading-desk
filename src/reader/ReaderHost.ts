@@ -1,0 +1,31 @@
+import type { PdfHighlight, TargetType, ViewerSettings, SourceFingerprint } from '../types/contracts';
+import type { PdfRenderer } from './PdfRenderer';
+import type { AnnotationStore } from '../annotations/AnnotationStore';
+import type { TargetService } from '../targets';
+import type { PreparedCropDrag } from '../ui/crop/CropDragTransport';
+import type { ExcerptCard } from '../ui/targets/ExcerptTargetPanel';
+import type { ReaderStatePort } from './ReaderPersistenceController';
+export interface ReaderHost {
+	readerState?: ReaderStatePort;
+	sourceFingerprint?(path: string): SourceFingerprint | undefined;
+	createPdfRenderer(): PdfRenderer;
+	annotations: AnnotationStore;
+	targets: TargetService;
+	openFile(path: string): Promise<void>;
+	createTarget(type: TargetType): Promise<{ type: TargetType; path: string }>;
+	recordProgress(path: string, progress: number): void;
+	showTarget(path: string, objectId?: string): Promise<void>;
+	listTargets(type: TargetType): Promise<Array<{ path: string; label: string }>>;
+	prepareCropDrag(input: { pdfPath: string; page: number; rect: PdfHighlight['rects'][number]; target: 'canvas' | 'image' | 'markdown'; image: Blob }): Promise<PreparedCropDrag>;
+	commitPreparedCrop(dragToken: string, targetPath?: string): Promise<void>;
+	discardPreparedCrop(dragToken: string): Promise<void>;
+	readExcerptCards(pdfPath: string): Promise<ExcerptCard[]>;
+	updateExcerptCard(highlightId: string, patch: { title?: string; folded?: boolean }): Promise<void>;
+	openTargetInSplit(path: string, objectId?: string): Promise<void>;
+	copyPageLink(path: string, page: number, pageLabel?: string): Promise<void>;
+	copyHighlightLink(highlight: PdfHighlight): Promise<void>;
+	openNavigation(): Promise<void>;
+	viewerSettings(): ViewerSettings;
+	updateViewerSettings(patch: Partial<ViewerSettings>): Promise<void>;
+	openSettings(): Promise<void>;
+}

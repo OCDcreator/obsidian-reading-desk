@@ -1,5 +1,5 @@
 import type { PageViewport } from 'pdfjs-dist';
-import type { PdfHighlight, TargetType } from '../types/contracts';
+import type { PdfHighlight, TargetType, SourceFingerprint } from '../types/contracts';
 import { createId } from '../utils/ids';
 import type { AnnotationStore } from '../annotations/AnnotationStore';
 import type { TargetService } from '../targets';
@@ -7,6 +7,7 @@ import type { PageSurface } from './PageSurface';
 import { normalizeClientRect } from './PdfSelectionGeometry';
 
 export interface FrozenExcerptSelection {
+	sourceFingerprint?: SourceFingerprint;
 	pdfPath: string;
 	/** One-based surface page. */
 	page: number;
@@ -15,6 +16,7 @@ export interface FrozenExcerptSelection {
 	text: string;
 }
 export interface ExcerptWriteInput {
+	sourceFingerprint?: SourceFingerprint;
 	text: string;
 	type: TargetType;
 	color: PdfHighlight['color'];
@@ -31,6 +33,7 @@ export interface ExcerptWriteInput {
 	targets: TargetService;
 	annotations: AnnotationStore;
 	chapterPathFor(page: number): string[];
+	pageLabelFor?(page: number): string;
 	syncOutline(targetPath: string): Promise<void>;
 	onTargetResolved(type: TargetType, path: string): void;
 }
@@ -70,22 +73,22 @@ export function selectionRects(range: Range | null, host: HTMLElement, viewport:
 		bottom: Math.min(bounds.height, rect.bottom - bounds.top) * scaleY
 	} as DOMRect, { left: 0, top: 0 } as DOMRect, viewport)).filter(rect => rect.width > 0 && rect.height > 0);
 }
-export function freezeExcerptSelection(surface: PageSurface, range: Range | null, pdfPath: string): FrozenExcerptSelection | null {
+export function freezeExcerptSelection(surface: PageSurface, range: Range | null, pdfPath: string, sourceFingerprint?: SourceFingerprint): FrozenExcerptSelection | null {
 	const anchor = selectionAnchor(surface, 0, range);
 	if (!anchor?.viewport || !range) return null;
 	const rects = selectionRects(range, anchor.host, anchor.viewport);
 	if (!rects.length) return null;
-	return { pdfPath, page: anchor.page, rotation: anchor.viewport.rotation, rects, text: range.toString().trim() };
+	return { pdfPath, sourceFingerprint: sourceFingerprint ? { ...sourceFingerprint } : undefined, page: anchor.page, rotation: anchor.viewport.rotation, rects, text: range.toString().trim() };
 }
 /** Validates before any target mutation and delegates persistence to its workflow. */
 export async function writeReaderExcerpt(input: ExcerptWriteInput, range: Range | null): Promise<WrittenExcerpt | null> {
-	const frozen = input.frozenSelection ?? freezeExcerptSelection(input.surface, range, input.pdfPath);
+	const frozen = input.frozenSelection ?? freezeExcerptSelection(input.surface, range, input.pdfPath, input.sourceFingerprint);
 	if (!frozen || !frozen.text || !frozen.rects.length) return null;
 	if (frozen.pdfPath !== input.pdfPath) throw new ReaderSelectionError('选区来自另一份 PDF，请重新选择。');
 	const highlight: PdfHighlight = {
 		id: createId('highlight'), pdfPath: input.pdfPath, page: frozen.page - 1, rotation: frozen.rotation,
 		rects: frozen.rects.map(rect => ({ ...rect })), text: frozen.text,
-		color: input.color, chapterPath: input.chapterPathFor(frozen.page - 1), tags: [], createdAt: Date.now(), updatedAt: Date.now()
+		sourceFingerprint: frozen.sourceFingerprint ? { ...frozen.sourceFingerprint } : undefined, pageLabel: input.pageLabelFor?.(frozen.page), color: input.color, chapterPath: input.chapterPathFor(frozen.page - 1), tags: [], createdAt: Date.now(), updatedAt: Date.now()
 	};
 	const target = input.selectedTargetPath && input.type === input.selectedTarget
 		? { type: input.type, path: input.selectedTargetPath } : await input.createTarget(input.type);

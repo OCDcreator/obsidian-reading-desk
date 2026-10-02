@@ -21,6 +21,14 @@ export function createPageLink(input: { file: string; page: number; bookId?: str
 	return `${PROTOCOL}?${params.toString()}`;
 }
 
+/** Optional printed label changes only Markdown display text; destination stays physical. */
+export function createPageCitation(input: { file: string; page: number; bookId?: string; pageLabel?: string }): string {
+	const link = createPageLink(input); const label = input.pageLabel?.replace(/[\r\n]+/g, ' ').trim();
+	if (!label || label === String(input.page)) return link;
+	const escaped = label.replace(/\\/g, '\\\\').replace(/\[/g, '\\[').replace(/\]/g, '\\]');
+	return `[第 ${escaped} 页](${link})`;
+}
+
 /** Parses both the original highlight route and the new mutually-exclusive page route. */
 export function parseReadingDeskLink(params: Record<string, string>): ReadingDeskLinkParseResult {
 	const highlightId = params.highlight?.trim();

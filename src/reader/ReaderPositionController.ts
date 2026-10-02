@@ -29,8 +29,8 @@ export class ReaderPositionController {
 		const page = this.io.page(); const surface = this.io.surface(); const host = surface?.hostForPage(page);
 		if (!surface || !host) return { page };
 		const bounds = host.getBoundingClientRect(); const stage = surface.stage.getBoundingClientRect();
-		return { page, x: bounds.width > 0 ? Math.max(0, Math.min(1, (stage.left - bounds.left) / bounds.width)) : 0,
-			y: bounds.height > 0 ? Math.max(0, Math.min(1, (stage.top - bounds.top) / bounds.height)) : 0 };
+		return { page, x: bounds.width > 0 ? (stage.left - bounds.left) / bounds.width : 0,
+			y: bounds.height > 0 ? (stage.top - bounds.top) / bounds.height : 0 };
 	}
 	recordPageChanged(): void { if (!this.navigating) this.io.history.replace(this.capture()); }
 	private restore(location: ReaderLocation, surface: PageSurface): void {

@@ -19,16 +19,23 @@ export class ShelfDialog {
 		this.panel.addEventListener('keydown', event => {
 			if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); this.close(); }
 			if (event.key !== 'Tab') return;
-			const controls = Array.from(this.panel.querySelectorAll<HTMLElement>('button, input, select, textarea, [tabindex="0"]')).filter(node => !node.hasAttribute('disabled') && !node.hidden);
+			const controls = this.focusableControls();
 			const first = controls[0], last = controls[controls.length - 1];
 			if (!first) { event.preventDefault(); this.panel.focus(); }
-			else if (event.shiftKey && (document.activeElement === first || document.activeElement === this.panel)) { event.preventDefault(); last.focus(); }
-			else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+			else if (event.shiftKey && (this.panel.ownerDocument.activeElement === first || this.panel.ownerDocument.activeElement === this.panel)) { event.preventDefault(); last.focus(); }
+			else if (!event.shiftKey && this.panel.ownerDocument.activeElement === last) { event.preventDefault(); first.focus(); }
 		});
 		root.append(this.panel);
 		this.panel.focus();
 	}
-	focusFirst(): void { this.body.querySelector<HTMLElement>('input, select, button')?.focus(); }
+	focusFirst(): void { (this.focusableControls().find(node => this.body.contains(node)) ?? this.focusableControls()[0] ?? this.panel).focus(); }
+	private focusableControls(): HTMLElement[] {
+		return Array.from(this.panel.querySelectorAll<HTMLElement>('button, input, select, textarea, [tabindex="0"]')).filter(node => {
+			if (node.hasAttribute('disabled')) return false;
+			for (let parent: HTMLElement | null = node; parent && parent !== this.panel; parent = parent.parentElement) if (parent.hidden) return false;
+			return true;
+		});
+	}
 	close(restore = true): void {
 		if (this.closed) return;
 		this.closed = true;

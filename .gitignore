@@ -5,6 +5,7 @@ node_modules/
 lib/
 .impeccable/
 .obsidian-debug/
+.slim/deepwork/
 .omo/
 .opencode/
 .agents/

@@ -1,4 +1,5 @@
-import type { LibraryBook, LibraryCategory, LibraryList, SourceFingerprint } from '../types/contracts';
+import { dataSignature } from '../data/DataValidation';
+import type { ReaderBookState, ReaderBookmark, ReaderSavedPosition, LibraryBook, LibraryCategory, LibraryList, SourceFingerprint } from '../types/contracts';
 import { createId } from '../utils/ids';
 import { applyAutomaticMetadata, applyBookPatch, clearOverrides, extractedAutomaticMetadata, uniqueValues, validateBookPatch } from './LibraryMetadata';
 import { planImportedBooks } from './LibraryImport';
@@ -130,6 +131,45 @@ export class LibraryIndex {
 		});
 	}
 
+	readReaderState(path: string): ReaderBookState | null {
+		const book = this.getByPath(path);
+		return book ? structuredClone({ bookId: book.id, path: book.path, position: book.lastReadPosition, bookmarks: book.bookmarks ?? [] }) : null;
+	}
+
+	/** Read the current record inside the Repository queue; queued restores cannot be overwritten by a stale book copy. */
+	saveReaderPosition(bookId: string, position: ReaderSavedPosition): Promise<void> {
+		const captured = structuredClone(position);
+		return this.enqueue(() => this.persistence.commit(() => {
+			const book = this.require(bookId);
+			if (book.lastReadPosition && book.lastReadPosition.updatedAt > captured.updatedAt) return;
+			book.lastReadPosition = captured;
+			book.lastReadAt = Math.max(book.lastReadAt ?? 0, captured.updatedAt);
+			if (book.pageCount) book.progress = Math.min(1, (captured.page + 1) / book.pageCount);
+		}));
+	}
+
+	saveBookmark(bookId: string, bookmark: ReaderBookmark): Promise<void> {
+		const captured = structuredClone(bookmark);
+		captured.name = captured.name.trim();
+		if (!captured.name) return Promise.reject(new Error('书签名称不能为空'));
+		return this.enqueue(() => this.persistence.commit(() => {
+			const book = this.require(bookId);
+			const bookmarks = book.bookmarks ??= [];
+			const index = bookmarks.findIndex(item => item.id === captured.id);
+			if (index >= 0) {
+				if (bookmarks[index].updatedAt > captured.updatedAt) throw new Error('书签已变化，请重新读取后编辑');
+				bookmarks[index] = { ...captured, createdAt: bookmarks[index].createdAt };
+			} else bookmarks.push(captured);
+		}));
+	}
+
+	removeBookmark(bookId: string, bookmarkId: string): Promise<void> {
+		return this.enqueue(() => this.persistence.commit(() => {
+			const book = this.require(bookId);
+			book.bookmarks = (book.bookmarks ?? []).filter(item => item.id !== bookmarkId);
+		}));
+	}
+
 	addCategory(name: string): Promise<LibraryCategory> {
 		return this.enqueue(async () => {
 			const category: LibraryCategory = { id: createId('category'), name: requireName(name), order: this.persistence.readCategories().length };
@@ -213,11 +253,21 @@ export class LibraryIndex {
 	}
 
 	/** Source identity/path/ID only. No automatic same-name or DOI merging. */
-	applyImportedBooks(books: LibraryBook[]): Promise<LibraryBook[]> {
+	applyImportedBooks(books: LibraryBook[], options: { expectedSignature?: string } = {}): Promise<LibraryBook[]> {
+		const incoming = structuredClone(books);
 		return this.enqueue(async () => {
-			const planned = planImportedBooks(this.persistence.readBooks(), books);
-			if (planned.length) await this.commitBooks(planned);
-			return planned;
+			let planned: LibraryBook[] = [];
+			if (!incoming.length) return planned;
+			try {
+				await this.persistence.commit(() => {
+					const current = this.persistence.readBooks();
+					const previewChanged = options.expectedSignature !== undefined && dataSignature(current) !== options.expectedSignature;
+					if (previewChanged) throw new Error('预览后书库已变化，请重新预览');
+					planned = planImportedBooks(current, incoming);
+					for (const book of planned) current[book.id] = book;
+				});
+			} finally { this.rebuildPathMap(); }
+			return structuredClone(planned);
 		});
 	}
 

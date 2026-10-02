@@ -30,6 +30,7 @@ export function parseDraggedExcerptSelection(value: string): FrozenExcerptSelect
 			|| !Number.isInteger(parsed.page) || (parsed.page ?? 0) < 1
 			|| ![0, 90, 180, 270].includes(parsed.rotation ?? -1)
 			|| !Array.isArray(parsed.rects) || !parsed.rects.length || !parsed.rects.every(isNormalizedRect)) return null;
+		if (parsed.sourceFingerprint && (![parsed.sourceFingerprint.mtime, parsed.sourceFingerprint.size].every(Number.isFinite) || parsed.sourceFingerprint.mtime < 0 || parsed.sourceFingerprint.size < 0)) return null;
 		return parsed as FrozenExcerptSelection;
 	} catch { return null; }
 }

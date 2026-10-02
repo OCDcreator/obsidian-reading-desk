@@ -1,4 +1,4 @@
-import { DISPLAY_PAGE_PIXELS, PdfCanvasBudget } from './PdfCanvasBudget';
+import { DISPLAY_PAGE_PIXELS, PdfCanvasBudget, THUMBNAIL_PAGE_PIXELS } from './PdfCanvasBudget';
 import { indexPdfText, type PdfPageTextIndex } from './PdfTextIndex';
 import { abortableReaderTask, isReaderAbort, throwIfReaderAborted } from './ReaderCancellation';
 import type { PdfCropRequest } from '../crop/ReaderCropController';
@@ -51,6 +51,7 @@ export class PdfRenderer {
 	private readonly activeRenderTasks = new Map<HTMLElement, RenderTask>();
 	private readonly targetEpoch = new WeakMap<HTMLElement, number>();
 	private readonly canvasBudget = new PdfCanvasBudget();
+	private readonly thumbnailRasters = new Set<Promise<void>>();
 
 	constructor(private readonly source: PdfBinarySource) { }
 
@@ -121,8 +122,12 @@ export class PdfRenderer {
 	}
 	/** Frees backing stores when a virtual page or temporary preview is evicted. */
 	releaseTarget(target: HTMLElement): void {
+		this.targetEpoch.set(target, (this.targetEpoch.get(target) ?? 0) + 1);
 		this.activeRenderTasks.get(target)?.cancel();
-		for (const canvas of Array.from(target.querySelectorAll('canvas'))) this.activeRenderTasks.get(canvas)?.cancel();
+		for (const canvas of Array.from(target.querySelectorAll('canvas'))) {
+			this.targetEpoch.set(canvas, (this.targetEpoch.get(canvas) ?? 0) + 1);
+			this.activeRenderTasks.get(canvas)?.cancel();
+		}
 		this.canvasBudget.releaseTarget(target);
 	}
 	adoptTarget(target: HTMLElement): void { for (const canvas of Array.from(target.querySelectorAll('canvas'))) this.canvasBudget.adopt(canvas); }
@@ -133,24 +138,34 @@ export class PdfRenderer {
 	}
 
 	/** Paints a lightweight, real PDF-page preview without changing Reader scale state. */
-	async renderThumbnail(pageNumber: number, canvas: HTMLCanvasElement, maxWidth = 136): Promise<void> {
+	async renderThumbnail(pageNumber: number, canvas: HTMLCanvasElement, maxWidth = 136, signal?: AbortSignal): Promise<boolean> {
+		throwIfReaderAborted(signal);
 		const proxy = this.requireDocument(); const generation = this.renderGeneration; const rotation = this.rotation;
-		const page = await proxy.getPage(pageNumber);
-		if (!this.ownsRender(generation, proxy)) return;
-		const natural = page.getViewport({ scale: 1, rotation });
-		const viewport = page.getViewport({ scale: maxWidth / natural.width, rotation });
+		const epoch = (this.targetEpoch.get(canvas) ?? 0) + 1; this.targetEpoch.set(canvas, epoch);
 		this.activeRenderTasks.get(canvas)?.cancel();
-		const ratio = this.canvasBudget.allocate(canvas, viewport.width, viewport.height, canvasPixelRatio(canvas));
-		canvas.style.width = `${viewport.width}px`; canvas.style.height = `${viewport.height}px`;
-		const context = canvas.getContext('2d'); if (!context) { this.canvasBudget.release(canvas); throw new Error('无法创建缩略图 canvas 上下文'); }
-		const task = page.render({ canvasContext: context, viewport, transform: ratio === 1 ? undefined : [ratio, 0, 0, ratio, 0, 0] });
-		this.activeRenderTasks.set(canvas, task);
+		const owns = (): boolean => this.ownsRender(generation, proxy) && this.targetEpoch.get(canvas) === epoch && !signal?.aborted;
+		const staging = canvas.ownerDocument.createElement('canvas');
 		try {
-			await task.promise;
-			if (!this.ownsRender(generation, proxy)) this.canvasBudget.release(canvas);
-			else this.canvasBudget.complete(canvas);
-		} catch (error) { this.canvasBudget.release(canvas); if (!isReaderAbort(error)) throw error; }
-		finally { if (this.activeRenderTasks.get(canvas) === task) this.activeRenderTasks.delete(canvas); }
+			const page = await abortableReaderTask(proxy.getPage(pageNumber), signal); if (!owns()) return false;
+			const natural = page.getViewport({ scale: 1, rotation });
+			const viewport = page.getViewport({ scale: maxWidth / natural.width, rotation });
+			const ratio = this.canvasBudget.allocate(staging, viewport.width, viewport.height, canvasPixelRatio(canvas), THUMBNAIL_PAGE_PIXELS, true, true);
+			// Preserve layout while the bitmap is released outside the observer window.
+			canvas.style.width = `${viewport.width}px`; canvas.style.height = `${viewport.height}px`;
+			const context = staging.getContext('2d'); if (!context) throw new Error('无法创建缩略图 canvas 上下文');
+			const task = page.render({ canvasContext: context, viewport, transform: ratio === 1 ? undefined : [ratio, 0, 0, ratio, 0, 0] });
+			this.activeRenderTasks.set(canvas, task); this.thumbnailRasters.add(task.promise);
+			const abort = (): void => task.cancel(); signal?.addEventListener('abort', abort, { once: true });
+			// Cancellation requests stop rasterization; its backing store stays owned until PDF.js settles.
+			try { await task.promise; }
+			finally { this.thumbnailRasters.delete(task.promise); signal?.removeEventListener('abort', abort); if (this.activeRenderTasks.get(canvas) === task) this.activeRenderTasks.delete(canvas); }
+			if (!owns()) return false;
+			this.canvasBudget.copyTarget(staging, canvas);
+			const output = canvas.getContext('2d'); if (!output) { this.canvasBudget.release(canvas); throw new Error('无法创建缩略图 canvas 上下文'); }
+			output.drawImage(staging, 0, 0, staging.width, staging.height, 0, 0, canvas.width, canvas.height);
+			this.canvasBudget.complete(canvas); return true;
+		} catch (error) { if (isReaderAbort(error) || !owns()) return false; throw error; }
+		finally { this.canvasBudget.release(staging); }
 	}
 
 	/** Repaints only the annotation overlay, leaving PDF canvas/text selection intact. */
@@ -200,6 +215,8 @@ export class PdfRenderer {
 		return links;
 	}
 
+	async pageLabels(): Promise<string[]> { return (await this.requireDocument().getPageLabels()) ?? []; }
+
 	async getOutline(): Promise<PdfOutlineEntry[]> {
 		const items = (await this.requireDocument().getOutline()) ?? [];
 		const entries: PdfOutlineEntry[] = [];
@@ -217,13 +234,12 @@ export class PdfRenderer {
 
 	async close(): Promise<void> {
 		this.invalidateRendering();
-		this.canvasBudget.clear();
-		if (!this.document) return;
 		const document = this.document;
 		this.document = null;
 		this.renderedViewport = null;
 		this.renderedPageNumber = null;
-		await document.destroy();
+		try { await document?.destroy(); }
+		finally { await Promise.allSettled(Array.from(this.thumbnailRasters)); this.canvasBudget.clear(); }
 	}
 
 	async renderCrop(request: PdfCropRequest): Promise<Blob> {

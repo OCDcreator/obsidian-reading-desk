@@ -3,7 +3,8 @@ import path from 'node:path';
 
 const phase = process.argv[2] ?? 'inspect';
 const endpoint = process.env.RD_CDP_URL ?? 'http://127.0.0.1:19222';
-const output = path.resolve('.obsidian-debug/enhancement-20261002');
+const output = path.resolve(process.env.RD_EVIDENCE_DIR ?? '.obsidian-debug/enhancement-20261002');
+const expectedVault = process.env.RD_VAULT_PATH ?? '/Volumes/SDD2T/obsidian-vault-write/testvault';
 fs.mkdirSync(output, { recursive: true });
 const targets = (await (await fetch(`${endpoint}/json/list`)).json()).filter(tab => tab.type === 'page' && tab.url === 'app://obsidian.md/index.html' && tab.title.includes('testvault'));
 if (targets.length !== 1) throw new Error(`Expected one testvault, got ${targets.length}`);
@@ -34,7 +35,9 @@ const evaluate = async expression => {
 };
 try {
 await send('Runtime.enable');
-if (phase === 'ui' || phase === 'functional') { await send('Runtime.discardConsoleEntries'); events.length = 0; }
+const actualVault = await evaluate('app.vault.adapter.getBasePath()');
+if (actualVault !== expectedVault) throw new Error(`Unexpected vault: ${actualVault}`);
+if (phase === 'ui' || phase === 'functional' || phase === 'margin-reader') { await send('Runtime.discardConsoleEntries'); events.length = 0; }
 if (phase === 'preflight') {
 	const { build } = await import('esbuild');
 	const bundle = await build({ entryPoints: ['src/data/DataValidation.ts'], bundle: true, platform: 'browser', format: 'iife', globalName: 'RdValidation', write: false });
@@ -50,6 +53,10 @@ if (phase === 'reload') {
 if (phase === 'ui') {
 	const { runUiScenarios } = await import('./enhancement-ui-scenarios.mjs');
 	console.log(JSON.stringify(await runUiScenarios({ evaluate, send, output }), null, 2));
+}
+if (phase === 'margin-reader') {
+	const { runReaderScenarios } = await import('./margin-reader-scenarios.mjs');
+	console.log(JSON.stringify(await runReaderScenarios({ evaluate, send, output }), null, 2));
 }
 if (phase === 'functional-cleanup') {
 	const { retryFunctionalCleanup } = await import('./enhancement-functional-scenarios.mjs');
@@ -71,7 +78,7 @@ const expectedBuild = fs.readFileSync('main.js', 'utf8').match(/["']([0-9]+\.[0-
 const result = { phase, checkedAt: new Date().toISOString(), expectedBuild, inspection, startup, scopedErrors };
 fs.writeFileSync(path.join(output, `${phase}.json`), JSON.stringify(result, null, 2));
 if (phase === 'reload' && (!expectedBuild || !startup.some(text => text.includes(expectedBuild)) || inspection.repositoryStatus?.phase !== 'ready' || inspection.version !== JSON.parse(fs.readFileSync('manifest.json', 'utf8')).version)) throw new Error(`Reading Desk startup verification failed: ${JSON.stringify(result)}`);
-if (['reload', 'ui', 'functional'].includes(phase) && scopedErrors.length) throw new Error(`Reading Desk scoped runtime errors: ${JSON.stringify(scopedErrors)}`);
+if (['reload', 'ui', 'functional', 'margin-reader'].includes(phase) && scopedErrors.length) throw new Error(`Reading Desk scoped runtime errors: ${JSON.stringify(scopedErrors)}`);
 if (phase === 'reload') {
 	const baselinePath = path.join(output, 'preflight-validation.json');
 	if (fs.existsSync(baselinePath) && inspection.dataShape.highlights !== JSON.parse(fs.readFileSync(baselinePath, 'utf8')).highlights) throw new Error('Existing annotations changed during deployment');

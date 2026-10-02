@@ -11,6 +11,7 @@ import {
 import { BackupRestorePanel } from './BackupRestorePanel';
 import { BibliographicImportPanel } from './BibliographicImportPanel';
 import { RepositoryRecoveryPanel } from './RepositoryRecoveryPanel';
+import { RecoverySnapshotPanel } from './RecoverySnapshotPanel';
 import { ExcerptTemplatePanel } from './ExcerptTemplatePanel';
 import type { Awaitable, DataPanelHost, ExportContent } from './DataPanelHost';
 import type { PanelSection } from './PanelSection';
@@ -96,9 +97,11 @@ export class ImportExportPanel {
 
 	private buildDataSections(root: HTMLElement): void {
 		if (this.host.repositoryStatus || this.host.recoveryStatus) this.sections.push(new RepositoryRecoveryPanel(this.host));
-		if (this.host.exportBackup || this.host.previewBackup) this.sections.push(new BackupRestorePanel(this.host, (content, filename) => {
-			downloadBlob(toBlob(content, 'application/json;charset=utf-8'), filename);
-		}));
+		if (this.host.exportBackup || this.host.previewBackup) {
+			const backup = new BackupRestorePanel(this.host, (content, filename) => downloadBlob(toBlob(content, 'application/json;charset=utf-8'), filename));
+			if (this.host.recoverySnapshots) this.sections.push(new RecoverySnapshotPanel(this.host, text => backup.loadSnapshot(text)));
+			this.sections.push(backup);
+		}
 		if (this.host.prepareBibliographicImport) this.sections.push(new BibliographicImportPanel(this.host));
 		if (this.host.excerptTemplate && this.host.previewExcerptTemplate) this.sections.push(new ExcerptTemplatePanel(this.host));
 		for (const section of this.sections) root.append(section.root);

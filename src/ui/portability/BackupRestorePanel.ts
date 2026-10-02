@@ -1,3 +1,4 @@
+import { BACKUP_CAPACITY_MESSAGE, MAX_BACKUP_BYTES } from '../../portability/BackupCapacity';
 import type { BackupPanelOptions, BackupPanelPreview, DataPanelHost, ExportContent } from './DataPanelHost';
 import { PanelSection, labelledInput, panelElement, readPanelFile } from './PanelSection';
 
@@ -9,7 +10,8 @@ export class BackupRestorePanel extends PanelSection {
 	private plan: BackupPanelPreview | null = null;
 	private dirty = false;
 	private confirmPending = false;
-	private readonly options: Required<BackupPanelOptions> = { mode: 'replace', conflictPolicy: 'use-backup' };
+	private readonly options: Required<Pick<BackupPanelOptions, 'mode' | 'conflictPolicy'>> = { mode: 'replace', conflictPolicy: 'use-backup' };
+	private decisions: NonNullable<BackupPanelOptions['objectDecisions']> = {};
 	private readonly preview = panelElement('div');
 	private readonly modeNotice = panelElement('p');
 	private readonly acknowledgement = panelElement('input');
@@ -34,6 +36,13 @@ export class BackupRestorePanel extends PanelSection {
 		this.cancelButton.hidden = true;
 		this.body.append(label, this.restoreButton, this.cancelButton);
 		this.message('选择完整备份文件后会先显示恢复预览。'); this.refreshControls();
+	}
+
+	/** Recovery-index selection only previews; the existing double confirmation still applies. */
+	loadSnapshot(text: string): Promise<void> {
+		this.plan = null; this.text = text; this.dirty = false; this.cancelConfirmation(); this.decisions = {};
+		this.mappings = Object.create(null) as Record<string, string>; this.clearContents(this.preview);
+		return this.run('正在预览所选恢复快照…', () => this.prepareNow());
 	}
 
 	private buildOptions(): void {
@@ -92,10 +101,10 @@ export class BackupRestorePanel extends PanelSection {
 	}
 
 	private loadFile(file: File): Promise<void> {
-		this.plan = null; this.text = ''; this.dirty = false; this.cancelConfirmation();
+		this.plan = null; this.text = ''; this.dirty = false; this.cancelConfirmation(); this.decisions = {};
 		this.mappings = Object.create(null) as Record<string, string>; this.clearContents(this.preview);
 		return this.run('正在读取完整备份…', async () => {
-			const text = await readPanelFile(file);
+			const text = await readPanelFile(file, { bytes: MAX_BACKUP_BYTES, message: BACKUP_CAPACITY_MESSAGE });
 			if (this.disposed) return;
 			this.text = text; await this.prepareNow();
 		});
@@ -108,10 +117,11 @@ export class BackupRestorePanel extends PanelSection {
 
 	private async prepareNow(): Promise<void> {
 		if (!this.host.previewBackup) throw new Error('宿主尚未提供完整备份预览');
-		const plan = await this.host.previewBackup(this.text, { ...this.mappings }, { ...this.options });
+		const plan = await this.host.previewBackup(this.text, { ...this.mappings }, { ...this.options, ...(Object.keys(this.decisions).length ? { objectDecisions: { ...this.decisions } } : {}) });
 		if (this.disposed) return;
 		this.plan = plan; this.dirty = false; this.clearContents(this.preview);
 		for (const text of [...plan.summary, ...plan.warnings]) this.preview.append(panelElement('p', text));
+		this.renderObjects(plan);
 		const paths = panelElement('div'); this.preview.append(paths);
 		this.pagedRows(paths, plan.paths, '恢复路径预览', path => {
 			const row = panelElement('div'); row.className = 'rd-data-preview-row';
@@ -126,6 +136,26 @@ export class BackupRestorePanel extends PanelSection {
 			row.append(wrapper); return row;
 		});
 		this.message(plan.canApply ? '请核对恢复差异，备份当前数据并勾选确认后应用。' : '存在阻止恢复的冲突或无效数据，请选择冲突处理规则或修正后重新预览。', !plan.canApply);
+	}
+
+	private renderObjects(plan: BackupPanelPreview): void {
+		if (!plan.objects?.length) return;
+		this.preview.append(panelElement('p', '逐项恢复决策：同一标注的高亮、评论、卡片、待写意图和删除记录一起选择，避免引用断开。'));
+		const rows = panelElement('div'); this.preview.append(rows);
+		const labels: Record<string, string> = { books: '图书', annotations: '标注与评论', categories: '分类', lists: '阅读列表', settings: '设置' };
+		this.pagedRows(rows, plan.objects, '恢复对象差异', object => {
+			const row = panelElement('div'); row.className = 'rd-data-preview-row';
+			row.append(panelElement('p', `${labels[object.collection] ?? object.collection} · ${object.label} · ${object.fields.join('、')}`));
+			const select = this.control(panelElement('select')); select.setAttribute('aria-label', `恢复决策：${object.key}`);
+			for (const [value, text] of [['', '按整体规则'], ['keep-current', '保留当前对象'], ['use-backup', '使用备份对象']]) { const option = panelElement('option', text); option.value = value; select.append(option); }
+			select.value = this.decisions[object.key] ?? '';
+			select.addEventListener('change', () => {
+				if (select.value) this.decisions[object.key] = select.value as 'keep-current' | 'use-backup'; else delete this.decisions[object.key];
+				this.dirty = true; this.cancelConfirmation(); this.refreshControls(); this.message('逐项决策已更改，请重新预览恢复差异。');
+			});
+			const details = panelElement('details'); details.append(panelElement('summary', '查看当前与备份内容'), panelElement('p', '当前'), panelElement('pre', object.currentSummary), panelElement('p', '备份'), panelElement('pre', object.backupSummary));
+			row.append(select, details); return row;
+		});
 	}
 
 	private requestRestore(): void {

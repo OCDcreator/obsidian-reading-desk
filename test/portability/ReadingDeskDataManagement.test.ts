@@ -26,6 +26,30 @@ async function setup() {
 const csl = JSON.stringify([{ id: 'paper-a', type: 'article-journal', title: 'Paper A', author: [{ family: 'Example', given: 'A' }] }]);
 
 describe('ReadingDeskDataManagement integration', () => {
+	it('applies confirmed safe entries and skips unrelated identity conflicts', async () => {
+		const { management, library } = await setup();
+		const text = JSON.stringify([{ id: 'good', type: 'book', title: 'Good' }, { id: 'duplicate', type: 'book', title: 'One' }, { id: 'duplicate', type: 'book', title: 'Two' }]);
+		const plan = management.prepareBibliographicImport('csl', text, { 'csl:good': 'Books/a.pdf' });
+		expect(plan.summary.conflict).toBe(1);
+		expect(plan.resultBooks).toHaveLength(1);
+		await management.applyBibliographicImport(plan);
+		expect(library.list().map(book => book.title)).toEqual(['Good']);
+	});
+	it('accepts only originally applicable selection keys and does not trust displayed source records', async () => {
+		const { management, library } = await setup();
+		const text = JSON.stringify([{ id: 'good', type: 'book', title: 'Good' }, { id: 'unconfirmed', type: 'book', title: 'Not confirmed' }]);
+		const plan = management.prepareBibliographicImport('csl', text, { 'csl:good': 'Books/a.pdf' });
+		await expect(management.applyBibliographicImport(plan, ['csl:unconfirmed'])).rejects.toThrow('原预览');
+		plan.entries[0].record.title = 'Changed through UI record';
+		await management.applyBibliographicImport(plan, ['csl:good']);
+		expect(library.list().map(book => book.title)).toEqual(['Good']);
+	});
+	it('does not apply an unselected confirmed entry', async () => {
+		const { management, library } = await setup();
+		const plan = management.prepareBibliographicImport('csl', csl, { 'csl:paper-a': 'Books/a.pdf' });
+		await management.applyBibliographicImport(plan, []);
+		expect(library.list()).toEqual([]);
+	});
 	it('recomputes an import instead of trusting mutated presentation, protects manual values and rejects stale previews', async () => {
 		const { library, management } = await setup();
 		const preview = management.prepareBibliographicImport('csl', csl, { 'csl:paper-a': 'Books/a.pdf' });

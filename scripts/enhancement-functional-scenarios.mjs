@@ -122,7 +122,7 @@ async function createFixtureRemote(key) {
 	finally { await state.collect(); }
 	await state.flush();
 	const book = plugin.library.getByPath(fixture.pdf);
-	if (!book || book.missing || book.pageCount !== 2) throw new Error('Fixture was not indexed as a two-page book');
+	if (!book || book.missing || book.pageCount !== (fixture.pageCount ?? 2)) throw new Error('Fixture page count does not match its declared PDF');
 	const leaf = app.workspace.getLeaf(true);
 	if (state.originalLeaves.has(leaf.id)) throw new Error('Workspace did not create a new fixture leaf');
 	state.leaf = leaf;
@@ -130,7 +130,7 @@ async function createFixtureRemote(key) {
 	await leaf.view.openPdf(fixture.pdf, 1);
 	app.workspace.setActiveLeaf(leaf, { focus: true });
 	const view = state.view();
-	if (view.pages !== 2 || !view.surface || typeof view.createExcerpt !== 'function') throw new Error('Fixture reader APIs unavailable');
+	if (view.pages !== (fixture.pageCount ?? 2) || !view.surface || typeof view.createExcerpt !== 'function') throw new Error('Fixture reader APIs unavailable');
 	view.selectedTarget = 'markdown'; view.selectedTargetPath = fixture.target;
 	// This guard is per-fixture leaf; a changed API must fail instead of creating a user target.
 	view.host = { ...view.host, createTarget: async () => { throw new Error('Functional test must use its existing fixture Markdown target'); } };
@@ -480,5 +480,25 @@ export async function runFunctionalScenarios({ evaluate, send, output }) {
 	}
 	assert(result.artifacts.some(name => /functional-(search|excerpt|link-preview|failure)\.png$/.test(name)), 'No CDP screenshot artifact was saved');
 	if (result.failures.length) throw new Error('Functional scenarios failed; inspect ' + path.join(output, 'functional-scenarios.json') + ': ' + result.failures.join('\n'));
+	return result;
+}
+
+/** Shared identity-ledger harness for additional scoped PDF workflows. */
+export async function withFunctionalFixture({ evaluate, send, output, buildPdf, pageCount, scenario }) {
+	fs.mkdirSync(output, { recursive: true });
+	const runId = Date.now() + '-' + randomUUID(), folder = 'ReadingDesk-Functional-' + runId;
+	const fixture = { runId, folder, pageCount, pdf: folder + '/fixture.pdf', target: folder + '/excerpt-target.md', note: folder + '/FIXTURE.md' };
+	const key = '__readingDeskFunctional_' + runId.replace(/-/g, '_'), bytes = buildPdf(runId);
+	const result = { checkedAt: new Date().toISOString(), fixture, samples: {}, cleanup: {}, failures: [], artifacts: [], limitations: ['Uses actual deployed Reader private APIs and DOM with scoped fixture identity; it does not claim manual input testing.'] };
+	try {
+		result.samples.preflight = await remote(evaluate, initializeRemote, key, fixture, bytes.toString('base64'), createHash('sha256').update(fixture.pdf).digest('hex'), PLUGIN_ID, READER_TYPE);
+		result.samples.fixture = await remote(evaluate, createFixtureRemote, key);
+		await scenario({ key, fixture, result, evaluate, send, output });
+	} catch (error) { result.failures.push(errorText(error)); }
+	finally {
+		await cleanup(evaluate, key, result); result.finishedAt = new Date().toISOString();
+		fs.writeFileSync(path.join(output, 'functional-scenarios.json'), JSON.stringify(result, null, 2));
+	}
+	if (result.failures.length) throw new Error(JSON.stringify(result));
 	return result;
 }

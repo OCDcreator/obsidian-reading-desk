@@ -11,6 +11,8 @@ import { readLegacyBookshelfSource } from './portability/LegacyBookshelfSourceRe
 import { createExcalidrawDocument, describeImageUploadFailure, isAlreadyExistingFolderError, prefersReducedMotion, readingDeskHighlightId, targetMatches } from './host/HostUtilities';
 import { VaultChangeBatch } from './host/VaultChangeBatch';
 import { remapAnnotationPaths } from './host/SourcePathRemap';
+import { RecoverySnapshotFiles } from './host/RecoverySnapshotFiles';
+import { RecoverySnapshotService } from './portability/RecoverySnapshotService';
 import { presentBackupPreview } from './host/DataPanelPresentation';
 import { ReadingDeskDataManagement } from './portability/ReadingDeskDataManagement';
 import type { BackupRestorePreview } from './portability/ReadingDeskBackupService';
@@ -25,7 +27,7 @@ import { CropImageService } from './storage/CropImageService';
 import { ProgressFlusher } from './library/ProgressFlusher';
 import { detachDuplicateNavigationLeaves, PdfNavigationView, PDF_NAVIGATION_VIEW_TYPE } from './views/PdfNavigationView';
 import { ShelfItemView, SHELF_VIEW_TYPE } from './views/ShelfItemView';
-import { createHighlightLink, createPageLink, writeReadingDeskLink } from './reader/ReadingDeskLinks';
+import { createHighlightLink, createPageCitation, writeReadingDeskLink } from './reader/ReadingDeskLinks';
 import { canCopyReaderPage, executeCopyReaderPage } from './reader/ReaderCopyCommand';
 import { routeReadingDeskLink } from './reader/ReadingDeskLinkRouter';
 import { hostThemeDark, marginAnchorIconId, READING_DESK_MARGIN_ANCHOR_DAY, READING_DESK_MARGIN_ANCHOR_NIGHT } from './ui/icons/ReadingDeskIcons';
@@ -43,11 +45,14 @@ export default class ReadingDeskPlugin extends Plugin {
 	private progressFlusher!: ProgressFlusher;
 	private settingsTabHint: string | null = null;
 	private vaultChanges!: VaultChangeBatch;
-	private recoverySequence = 0;
+	private recoveryFiles!: RecoverySnapshotFiles;
+	private recoverySnapshots!: RecoverySnapshotService;
 	private dataManagement!: ReadingDeskDataManagement;
 	private annotationSearch!: AnnotationSearchService;
 
 	async onload(): Promise<void> {
+		this.recoveryFiles = new RecoverySnapshotFiles(this.app.vault.adapter, `${this.manifest.dir}/recovery`);
+		this.recoverySnapshots = new RecoverySnapshotService(this.recoveryFiles);
 		this.repository = new ReadingDeskRepository({ load: () => this.loadData(), save: data => this.saveData(data) }, {
 			beforeOverwrite: (value, context) => this.preserveDataSnapshot(value, context.reason)
 		});
@@ -79,6 +84,11 @@ export default class ReadingDeskPlugin extends Plugin {
 		} });
 		this.ai = new AiIntegrationService(this.pluginRegistry(), { opencodian: plugin => this.createOpenCodianBridge(plugin) });
 		this.registerView(READER_VIEW_TYPE, leaf => new ReaderView(leaf, {
+			readerState: {
+				read: path => this.library.readReaderState(path), savePosition: (id, position) => this.library.saveReaderPosition(id, position),
+				saveBookmark: (id, bookmark) => this.library.saveBookmark(id, bookmark), removeBookmark: (id, bookmarkId) => this.library.removeBookmark(id, bookmarkId)
+			},
+			sourceFingerprint: path => { const file = this.app.vault.getAbstractFileByPath(path); return file instanceof TFile ? { mtime: file.stat.mtime, size: file.stat.size } : undefined; },
 			createPdfRenderer: () => this.createPdfRenderer(),
 			annotations: this.annotations,
 			targets: this.targets,
@@ -99,7 +109,7 @@ export default class ReadingDeskPlugin extends Plugin {
 			openTargetInSplit: (path, objectId) => this.openTargetInSplit(path, objectId),
 			readExcerptCards: path => this.readExcerptCards(path),
 			updateExcerptCard: (highlightId, patch) => this.updateExcerptCard(highlightId, patch),
-			copyPageLink: (path, page) => this.copyPageLink(path, page),
+			copyPageLink: (path, page, label) => this.copyPageLink(path, page, label),
 			copyHighlightLink: highlight => this.copyHighlightLink(highlight),
 			openNavigation: () => this.openPdfNavigation()
 		}));
@@ -112,6 +122,7 @@ export default class ReadingDeskPlugin extends Plugin {
 			scan: () => this.scanLibrary(),
 			resourceUrl: path => this.app.vault.adapter.getResourcePath(path),
 			openSettings: () => this.openPluginSettings('library'),
+			readShelfState: () => structuredClone(this.repository.readSettings().shelf), saveShelfState: shelf => this.repository.updateSettings({ shelf }),
 			searchAnnotations: query => this.annotationSearch.search(query), openHighlight: (path, id) => this.openLinkedReader(path, id),
 			listSourcePaths: () => this.app.vault.getFiles().filter(file => isLibraryPath(file.path)).map(file => file.path),
 			candidateFiles: () => this.app.vault.getFiles().filter(file => isLibraryPath(file.path)).map(toLibraryFile), relinkBook: (id, path) => this.relinkBook(id, path)
@@ -225,8 +236,10 @@ export default class ReadingDeskPlugin extends Plugin {
 	dataPanelHost(): ImportExportPanelHost {
 		const service = this.dataManagement;
 		return {
+			recoverySnapshots: () => this.recoverySnapshots.inventory(), previewSnapshotCleanup: policy => this.recoverySnapshots.previewCleanup(policy),
+			cleanupSnapshots: preview => this.recoverySnapshots.cleanup(preview), loadRecoverySnapshot: entry => this.recoverySnapshots.backupText(entry),
 			importLegacy: () => this.importLegacyBookshelf(), exportMarkdown: () => this.exportMarkdown(), exportJson: () => this.exportJson(), status: () => this.portabilityStatus(),
-			prepareBibliographicImport: (provider, text, paths) => service.prepareBibliographicImport(provider, text, paths), applyBibliographicImport: plan => service.applyBibliographicImport(plan),
+			prepareBibliographicImport: (provider, text, paths) => service.prepareBibliographicImport(provider, text, paths), applyBibliographicImport: (plan, selectedKeys) => service.applyBibliographicImport(plan, selectedKeys),
 			exportBackup: () => service.exportBackup(), previewBackup: (text, mappings, options) => presentBackupPreview(service.previewBackup(text, mappings, options), mappings),
 			restoreBackup: preview => service.restoreBackup(preview.plan as BackupRestorePreview),
 			repositoryStatus: () => this.repository.status(), retryRepository: () => service.retryRepository(), reloadRepository: () => service.reloadRepository(),
@@ -246,7 +259,7 @@ export default class ReadingDeskPlugin extends Plugin {
 		const leaf = this.readerLeafFor(path) ?? this.app.workspace.getLeaf(true);
 		await leaf.setViewState({ type: READER_VIEW_TYPE, state: {}, active: true });
 		const reader = leaf.view instanceof ReaderView ? leaf.view : null;
-		if (reader) { await reader.openPdf(path, page ?? 1); await this.openPdfNavigation(false); }
+		if (reader) { await reader.openPdf(path, page); await this.openPdfNavigation(false); }
 	}
 
 	/** Reuses the reader leaf already showing this PDF so links never stack duplicate tabs. */
@@ -291,9 +304,9 @@ export default class ReadingDeskPlugin extends Plugin {
 		if (reader?.canUndoLastExcerpt()) void reader.undoLastExcerpt();
 	}
 
-	private async copyPageLink(path: string, page: number): Promise<void> {
-		const link = createPageLink({ file: path, page, bookId: this.library.getByPath(path)?.id });
-		await this.copyLink(link, `已复制第 ${page} 页链接。`);
+	private async copyPageLink(path: string, page: number, pageLabel?: string): Promise<void> {
+		const link = createPageCitation({ file: path, page, pageLabel, bookId: this.library.getByPath(path)?.id });
+		await this.copyLink(link, `已复制第 ${pageLabel || page} 页链接。`);
 	}
 
 	private async copyHighlightLink(highlight: PdfHighlight): Promise<void> {
@@ -431,14 +444,7 @@ export default class ReadingDeskPlugin extends Plugin {
 		return { type, path };
 	}
 
-	private async preserveDataSnapshot(value: unknown, reason: string): Promise<void> {
-		if (value === null || value === undefined) return;
-		const adapter = this.app.vault.adapter;
-		const folder = `${this.manifest.dir}/recovery`;
-		if (!await adapter.exists(folder)) await adapter.mkdir(folder);
-		const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-		await adapter.write(`${folder}/${stamp}-${++this.recoverySequence}-${reason}.json`, `${JSON.stringify(value, null, '\t')}\n`);
-	}
+	private preserveDataSnapshot(value: unknown, reason: string): Promise<void> { return this.recoveryFiles.preserve(value, reason); }
 
 	private async applyVaultChanges(paths: string[]): Promise<void> {
 		const files = paths.filter(isLibraryPath).map(path => this.app.vault.getAbstractFileByPath(path)).filter((file): file is TFile => file instanceof TFile);

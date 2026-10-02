@@ -107,8 +107,8 @@ export class PanelSection {
 	destroy(): void { this.disposed = true; this.root.remove(); }
 }
 
-export async function readPanelFile(file: File): Promise<string> {
-	if (file.size > 10 * 1024 * 1024) throw new Error('文件超过 10 MiB，请分批处理');
+export async function readPanelFile(file: File, capacity = { bytes: 10 * 1024 * 1024, message: '文件超过 10 MiB，请分批处理' }): Promise<string> {
+	if (file.size > capacity.bytes) throw new Error(capacity.message);
 	const text = await file.text();
 	if (!text.trim()) throw new Error('文件为空');
 	return text;

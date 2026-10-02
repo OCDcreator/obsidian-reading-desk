@@ -10,6 +10,8 @@ export type ReaderScrollMode = 'continuous' | 'single';
 export interface ReaderToolbarOptions {
 	page: number;
 	pages: number;
+	pageLabel?(page: number): string;
+	resolvePage?(value: string): number | null;
 	scale: number;
 	selectedTarget: TargetType;
 	scrollMode: ReaderScrollMode;
@@ -127,7 +129,7 @@ export function createReaderToolbar(parent: HTMLElement, options: ReaderToolbarO
 	const display = overflow(createReaderButton(fitGroup, '显示选项', () => showMenu(display, displayActions), 'sliders-horizontal'), 'tight');
 
 	const pageGroup = group(parent, 'page', '页码');
-	const pageControl = createReaderPageControl(pageGroup, { page: options.page, pages: options.pages, goTo: options.onGoToPage });
+	const pageControl = createReaderPageControl(pageGroup, { page: options.page, pages: options.pages, goTo: options.onGoToPage, label: options.pageLabel, resolve: options.resolvePage });
 	const copyPage = overflow(createReaderButton(pageGroup, '复制本页链接', options.onCopyPage, 'link'), 'secondary');
 	const copySelection = overflow(createReaderButton(pageGroup, '复制选中文本', options.onCopySelection, 'copy'), 'secondary');
 

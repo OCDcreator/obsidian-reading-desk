@@ -1,6 +1,6 @@
 {
   "name": "obsidian-reading-desk",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "releaseCodename": "Margin",
   "description": "Obsidian PDF reading desk with shelf and anchored annotations",
   "main": "main.js",

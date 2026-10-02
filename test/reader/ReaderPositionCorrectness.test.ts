@@ -16,6 +16,19 @@ describe('precise reader positions and cold highlights', () => {
 		await controller.goTo(9, { jump: true, location: { page: 9, x: 0.1, y: 0.1 } }); expect(history.canBack()).toBe(true);
 		await controller.history(-1); expect(stage.scrollTop).toBe(865);
 	});
+	it('keeps signed offsets when the center page begins below the viewport top', async () => {
+		const stage = { scrollTop: 80, scrollLeft: 0, getBoundingClientRect: () => ({ left: 0, top: 0, width: 200, height: 100 }) };
+		let page = 2;
+		const tops = [0, 116, 432, 498, 914, 1030, 1146, 1262];
+		const heights = [100, 300, 50, 400, 100, 100, 100, 100];
+		const hostForPage = (requested: number) => ({ getBoundingClientRect: () => ({ left: 0, top: tops[requested - 1] - stage.scrollTop, width: 200, height: heights[requested - 1] }) });
+		const surface = { stage, hostForPage, goToPage: async (requested: number) => { stage.scrollTop = tops[requested - 1]; }, ensurePageRendered: async (requested: number) => hostForPage(requested) };
+		const controller = new ReaderPositionController({ surface: () => surface as never, pdf: () => ({}) as never, page: () => page, pageCount: () => 8, setPage: next => { page = next; }, history: new ReaderHistory(), changed: vi.fn(), showTarget: vi.fn(), onError: vi.fn() });
+		expect(controller.capture().y).toBeCloseTo(-0.12);
+		await controller.goTo(8, { jump: true });
+		await controller.history(-1); expect(stage.scrollTop).toBe(80);
+		await controller.history(1); expect(stage.scrollTop).toBe(1262);
+	});
 	it('two cold highlight jumps only focus/show the latest and wait for its render', async () => {
 		const doc = new ReaderTestDocument(); const stage = doc.body.createDiv(); const old = deferred<HTMLElement | null>(); const next = deferred<HTMLElement | null>();
 		const oldHost = doc.createElement('div'); const newHost = doc.createElement('div'); const oldMark = oldHost.createDiv(); oldMark.dataset.highlightId = 'old'; const newMark = newHost.createDiv(); newMark.dataset.highlightId = 'new';

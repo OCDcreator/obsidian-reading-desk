@@ -18,6 +18,7 @@ export function presentBackupPreview(plan: BackupRestorePreview, mappings: Recor
 			return { key: original, originalPath: original, mappedPath: mappings[original] ?? path, kind };
 		}),
 		warnings: [...plan.warnings, ...plan.issues.filter(issue => issue.severity === 'error').map(issue => issue.message)],
+		objects: plan.objects,
 		canApply: plan.canApply, plan
 	};
 }

@@ -1,6 +1,6 @@
-# Margin 0.4 模块与恢复契约
+# Margin 0.5 模块与恢复契约
 
-本页记录 2026-10-02 调研后实现的模块边界；详细决策见 ADR 0008–0013。所有持久坐标继续为归一化 PDF `rects[]`。`PdfHighlight.page` 为 0 起始，阅读器 UI/搜索页码为 1 起始。
+本页记录 2026-10-02 调研后实现的模块边界；详细决策见 ADR 0008–0014 与 0016。标注几何继续为归一化 PDF `rects[]`；阅读位置另存允许负值的显示空间页内偏移，不能混用于标注几何。`PdfHighlight.page` 与持久阅读位置为 0 起始物理页，阅读器内部 UI/搜索页码为 1 起始；印刷页码标签只是显示映射。
 
 | 模块 | 所有权与边界 |
 | --- | --- |
@@ -17,13 +17,20 @@
 | PdfRenderer / PdfCanvasBudget / PdfLinks / PdfTextIndex | PDF.js 生命周期、画布预算、PDF 链接/文本层。PDF 内链不执行动作脚本，外部 URL 只提供显式点击。 |
 | ShelfView / ui/shelf | 过滤排序、分页 DOM、批量交互、紧凑继续阅读、列表和检索入口；书籍修改通过 LibraryIndex host，重关联由宿主协调跨真源路径。 |
 | ReadingDeskSettingTab / SettingSaveFeedback / ui/portability | 设置控件、保存状态与恢复/导入/导出预览；UI 不直接写 vault。 |
+| WorkspaceState / WorkspaceStateValidation | 可选旧格式兼容的书架现场、零基物理页阅读位置、命名书签与校验；字段仍存于唯一 Repository/LibraryIndex。 |
+| ReaderPersistenceController / ReaderBookmarksPanel / ReaderPageLabels | 每 leaf 保存调度与稳定书目 ID 绑定、书签操作、印刷页码与物理页的显示/跳转分离。 |
+| ReaderThumbnailLifecycle / PdfCanvasBudget | 可见缩略图回收/重绘、并发限制、暂存与复制预算、取消后底层完成前不释放运行中画布。 |
+| ShelfBookDrafts / ShelfBookEditor / ShelfStatePersistence / ShelfListManager | 临时字段草稿、版本化保存反馈、书架现场保存、列表管理；正式书籍值仍经 LibraryIndex。 |
+| BackupCapacity / BackupObjectDecisions / RecoverySnapshotService | 公开备份容量、逐对象差异与标注 family 原子决策、受管自动快照索引和需确认的清理计划；过期计划拒绝。 |
+| RecoverySnapshotFiles | 插件 recovery 目录直属文件的宿主适配器；私有完整原件保存与路径边界检查，不递归删除目录。 |
+| SourceAnchorDiagnostics / SourceAnchorDiagnosticsPanel | 源文件 stat 对照、只读锚点核验提示与引文查找；不修改几何或创建第二套标注源。 |
 | main.ts / host helpers | Vault 事件、命令、协议、Obsidian 文件操作和回调接线。VaultChangeBatch 合并重复事件；SourcePathRemap 是原子迁移回调的纯计算；DataPanelPresentation 只生成 UI 摘要。 |
 
 ## 保存、删除与恢复
 
 - 提交前对比最新 data 值，防止检测到的旧快照覆盖；比较到写入之间依然可能发生跨进程竞争，不能宣称分布式 CAS 或自动合并。
 - 保存失败的有效快照保留为 pending，不重放原 mutator；用户可重试。重载前保存 pending 的备份，UI 需要明确二次确认。
-- 覆盖前将原值写入插件目录 `recovery/` 的唯一 JSON 文件；备份失败阻止覆盖。私有原件快照可能包含本机凭据，应随插件数据保管；分享用完整数据导出默认去掉凭据。
+- 覆盖前将原值写入插件目录 `recovery/` 的唯一 JSON 文件；备份失败阻止覆盖。私有原件快照可能包含本机凭据，应随插件数据保管；分享用完整数据导出默认去掉凭据。恢复清单只能清理已识别自动快照，并以原计划/文件身份/内容摘要复验及二次确认保护原件，始终保留最新可用自动快照。
 - 完整数据备份包含书籍、分类、列表、高亮、评论、卡片、删除恢复、目标待写意图与必要配置。`filesIncluded: false` 明确不含 PDF/EPUB、封面或原生笔记；这些文件需要 vault 备份。
 - 源文件与整个目标文件暂缺时保留书目和标注，不反向删除。合法删除目标卡片的反向同步仍符合 ADR 0004，同时保存可恢复记录。
 - 重命名或明确重新关联在同一提交中迁移书籍与当前/待写/已删除标注路径，再通过目标意图重写回链。已被另一书目占用的路径不自动合并。

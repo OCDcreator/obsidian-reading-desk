@@ -1,3 +1,6 @@
+import type { ReaderBookmark, ReaderSavedPosition, ShelfViewState } from './WorkspaceState';
+export type { ReaderBookmark, ReaderSavedPosition, ReaderBookState, ShelfViewState } from './WorkspaceState';
+
 export type BookFormat = 'pdf' | 'epub';
 export type TargetType = 'canvas' | 'excalidraw' | 'markdown';
 export type HighlightColor = 'moss' | 'amber' | 'brick' | 'indigo' | 'plum';
@@ -31,6 +34,8 @@ export interface LibraryBook {
 	rating?: number;
 	progress: number;
 	lastReadAt?: number;
+	lastReadPosition?: ReaderSavedPosition;
+	bookmarks?: ReaderBookmark[];
 	fingerprint: SourceFingerprint;
 	metadataError?: string;
 	/** True only when a PDF cover render failed and an unchanged manual rescan may recover it. */
@@ -70,6 +75,10 @@ export interface PdfHighlight {
 	id: string;
 	pdfPath: string;
 	page: number;
+	/** Printed PDF label, for presentation only; page remains the physical index. */
+	pageLabel?: string;
+	/** File stat at capture; mismatch requests anchor review, never automatic coordinate remapping. */
+	sourceFingerprint?: SourceFingerprint;
 	rotation: number;
 	rects: NormalizedPdfRect[];
 	text: string;
@@ -124,6 +133,7 @@ export interface ReadingDeskSettings {
 	storage: ObjectStorageSettings;
 	viewer: ViewerSettings;
 	importedBookshelf: boolean;
+	shelf?: ShelfViewState;
 	/** Fixed placeholders only; empty uses the built-in excerpt template. */
 	excerptTemplate?: string;
 }

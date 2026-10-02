@@ -54,11 +54,11 @@ export class PdfNavigationView extends ItemView {
 		this.restorePreferredMode(reader);
 		reader.attachNavigation(this.navigationRoot);
 	}
-	/** Restores the last-used thumbnail/outline tab across sessions. */
+	/** Restores the last-used thumbnail, outline or bookmark tab across sessions. */
 	private restorePreferredMode(reader: ReaderView): void {
 		try {
 			const saved = window.localStorage.getItem('reading-desk-nav-mode');
-			if (saved === 'thumbnails' || saved === 'outline') reader.setPreferredNavigationMode(saved);
+			if (saved === 'thumbnails' || saved === 'outline' || saved === 'bookmarks') reader.setPreferredNavigationMode(saved);
 		} catch { /* Storage can be unavailable in private windows. */ }
 	}
 	refresh(): void { this.render(); }

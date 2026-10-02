@@ -6,6 +6,12 @@ import type { PdfHighlight } from '../../src/types/contracts';
 const highlight: PdfHighlight = { id: 'h', pdfPath: 'books/paper.pdf', page: 2, rotation: 0, rects: [], text: '{{page}} ${globalThis.templateExecuted = true}', color: 'moss', chapterPath: ['章', '节'], tags: ['标签'], createdAt: 1, updatedAt: 1 };
 
 describe('fixed excerpt templates', () => {
+	it('uses PDF page labels in display without changing physical page placeholders or links', () => {
+		const values = excerptTemplateValues({ ...highlight, pageLabel: 'iv' }, 'Title', 'obsidian://source?page=3');
+		expect(renderExcerptTemplate('{{pageLabel}} / {{page}} / {{sourceLink}}', values)).toBe('iv / 3 / obsidian://source?page=3');
+		expect(renderExcerptTemplate(undefined, values)).toContain('[原文第 iv 页]');
+		expect(renderExcerptTemplate('{{pageLabel}}', excerptTemplateValues(highlight, 'Title', 'link'))).toBe('3');
+	});
 	it('previews all supported values and never interprets inserted placeholders or JavaScript', () => {
 		const values = excerptTemplateValues(highlight, '手写标题', 'obsidian://source');
 		const preview = previewExcerptTemplate('{{title}} | {{text}} | {{page}} | {{pdfPath}} | {{sourceLink}} | {{color}} | {{chapterPath}} | {{tags}}', values);

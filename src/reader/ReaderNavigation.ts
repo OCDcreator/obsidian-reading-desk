@@ -14,39 +14,11 @@ import {
 	type OutlineStyle
 } from './ReaderOutlineModel';
 import { createId } from '../utils/ids';
+import { createThumbnailObserver, ThumbnailObserverLifecycle } from './ReaderThumbnailLifecycle';
+export { ThumbnailObserverLifecycle } from './ReaderThumbnailLifecycle';
 
-export type ReaderNavigationMode = 'thumbnails' | 'outline';
+export type ReaderNavigationMode = 'thumbnails' | 'outline' | 'bookmarks';
 export type OutlineLoadState = 'loading' | 'ready' | 'error';
-type ThumbnailRender = (canvas: HTMLCanvasElement, page: number) => void;
-
-export class ThumbnailObserverLifecycle {
-	private observer: IntersectionObserver | null = null;
-	private disposed = false;
-
-	constructor(private readonly createObserver: (callback: IntersectionObserverCallback, root: HTMLElement) => IntersectionObserver) { }
-
-	observe(canvas: HTMLCanvasElement, page: number, root: HTMLElement, render: ThumbnailRender): void {
-		if (this.disposed) return;
-		this.observer ??= this.createObserver(entries => {
-			if (this.disposed) return;
-			for (const entry of entries) {
-				if (!entry.isIntersecting || entry.target.tagName !== 'CANVAS') continue;
-				const visibleCanvas = entry.target as HTMLCanvasElement;
-				this.observer?.unobserve(visibleCanvas);
-				render(visibleCanvas, Number(visibleCanvas.dataset.page));
-			}
-		}, root);
-		canvas.dataset.page = String(page);
-		this.observer.observe(canvas);
-	}
-
-	destroy(): void {
-		this.disposed = true;
-		this.observer?.disconnect();
-		this.observer = null;
-	}
-}
-
 interface OutlineHandles {
 	item: HTMLElement;
 	group: HTMLElement | null;
@@ -70,9 +42,9 @@ export class ReaderNavigation {
 	private restoreFocusKey: string | null = null;
 	private thumbnailLifecycle: ThumbnailObserverLifecycle | null = null;
 	private readonly panelId = createId('rd-pdf-navigation-panel');
-	private readonly tabIds = { thumbnails: createId('rd-pdf-thumbnails-tab'), outline: createId('rd-pdf-outline-tab') };
+	private readonly tabIds = { thumbnails: createId('rd-pdf-thumbnails-tab'), outline: createId('rd-pdf-outline-tab'), bookmarks: createId('rd-pdf-bookmarks-tab') };
 
-	constructor(private readonly pdf: PdfRenderer, private readonly pages: number, private readonly currentPage: () => number, private readonly goTo: (page: number) => Promise<void>, mode: ReaderNavigationMode = 'thumbnails', private readonly onModeChange?: (mode: ReaderNavigationMode) => void, outlineStyle: OutlineStyle = 'tree') {
+	constructor(private readonly pdf: PdfRenderer, private readonly pages: number, private readonly currentPage: () => number, private readonly goTo: (page: number) => Promise<void>, mode: ReaderNavigationMode = 'thumbnails', private readonly onModeChange?: (mode: ReaderNavigationMode) => void, outlineStyle: OutlineStyle = 'tree', private readonly extras?: { label(page: number): string; bookmarks(parent: HTMLElement): void }) {
 		this.mode = mode;
 		this.outlineStyle = outlineStyle;
 	}
@@ -93,6 +65,7 @@ export class ReaderNavigation {
 	render(container: HTMLElement): void {
 		this.thumbnailLifecycle?.destroy();
 		this.thumbnailLifecycle = null;
+		if (this.container) this.pdf.releaseTarget(this.container);
 		this.container = container;
 		this.restoreFocusKey = this.focusedNodeKey(container);
 		container.replaceChildren();
@@ -101,8 +74,10 @@ export class ReaderNavigation {
 		const tabs = container.createDiv({ cls: 'rd-reader-navigation__tabs', attr: { role: 'tablist', 'aria-label': 'PDF 导航方式' } });
 		this.tab(tabs, 'thumbnails', '缩略图');
 		this.tab(tabs, 'outline', '目录');
+		if (this.extras) this.tab(tabs, 'bookmarks', '书签');
 		const panel = container.createDiv({ cls: 'rd-reader-navigation__panel', attr: { id: this.panelId, role: 'tabpanel', tabindex: '0', 'aria-labelledby': this.tabIds[this.mode] } });
 		if (this.mode === 'thumbnails') this.renderThumbnails(panel);
+		else if (this.mode === 'bookmarks' && this.extras) this.extras.bookmarks(panel);
 		else this.renderOutline(panel);
 		this.restoreFocusKey = null;
 	}
@@ -134,6 +109,7 @@ export class ReaderNavigation {
 	destroy(): void {
 		this.thumbnailLifecycle?.destroy();
 		this.thumbnailLifecycle = null;
+		if (this.container) this.pdf.releaseTarget(this.container);
 		this.handles = new Map();
 		this.displayTree = [];
 		this.treeRoot = null;
@@ -149,7 +125,8 @@ export class ReaderNavigation {
 		button.addEventListener('keydown', event => {
 			if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
 			event.preventDefault();
-			this.switchMode(mode === 'outline' ? 'thumbnails' : 'outline');
+			const modes: ReaderNavigationMode[] = this.extras ? ['thumbnails', 'outline', 'bookmarks'] : ['thumbnails', 'outline'];
+			this.switchMode(modes[(modes.indexOf(mode) + (event.key === 'ArrowRight' ? 1 : modes.length - 1)) % modes.length]);
 			if (this.container) { this.render(this.container); this.container.querySelector<HTMLButtonElement>('[role="tab"][aria-selected="true"]')?.focus(); }
 		});
 	}
@@ -157,23 +134,15 @@ export class ReaderNavigation {
 	private renderThumbnails(panel: HTMLElement): void {
 		if (!this.pages) { this.status(panel, '暂无可预览页面。'); return; }
 		const list = panel.createEl('ol', { cls: 'rd-reader-thumbnails' });
-		const render = (canvas: HTMLCanvasElement, page: number): void => {
-			void this.pdf.renderThumbnail(page, canvas, ReaderNavigation.THUMBNAIL_WIDTH).then(() => {
-				canvas.dataset.rendered = '1';
-			}).catch(() => {
-				canvas.replaceWith(Object.assign(document.createElement('span'), { className: 'rd-reader-thumbnail__error', textContent: '预览失败' }));
-			});
-		};
-		const Observer = panel.ownerDocument.defaultView?.IntersectionObserver;
-		if (Observer) this.thumbnailLifecycle = new ThumbnailObserverLifecycle((callback, root) => new Observer(callback, { root, rootMargin: '160px 0px' }));
+		const render = (canvas: HTMLCanvasElement, page: number, signal: AbortSignal): Promise<boolean> => this.pdf.renderThumbnail(page, canvas, ReaderNavigation.THUMBNAIL_WIDTH, signal);
+		this.thumbnailLifecycle = new ThumbnailObserverLifecycle(createThumbnailObserver);
 		for (let page = 1; page <= this.pages; page += 1) {
 			const item = list.createEl('li');
-			const button = item.createEl('button', { cls: 'rd-reader-thumbnail', attr: { 'aria-label': `跳到第 ${page} 页`, 'aria-current': page === this.currentPage() ? 'page' : 'false', 'data-nav-page': String(page - 1), 'data-page-label': String(page) } });
+			const button = item.createEl('button', { cls: 'rd-reader-thumbnail', attr: { 'aria-label': `跳到第 ${this.extras?.label(page) ?? page} 页（PDF 第 ${page} 页）`, 'aria-current': page === this.currentPage() ? 'page' : 'false', 'data-nav-page': String(page - 1), 'data-page-label': this.extras?.label(page) ?? String(page) } });
 			button.type = 'button';
 			const canvas = button.createEl('canvas', { attr: { 'aria-hidden': 'true', 'data-page': String(page) } });
 			button.addEventListener('click', () => void this.goTo(page));
-			if (this.thumbnailLifecycle) this.thumbnailLifecycle.observe(canvas, page, panel, render);
-			else render(canvas, page);
+			this.thumbnailLifecycle.observe(canvas, page, panel, render, target => this.pdf.releaseTarget(target));
 		}
 		const current = list.querySelector('.rd-reader-thumbnail[aria-current="page"]');
 		current?.scrollIntoView({ block: 'nearest' });
@@ -205,7 +174,7 @@ export class ReaderNavigation {
 			const key = outlineKey(node);
 			const hasChildren = node.children.length > 0;
 			const expanded = hasChildren && (this.outlineStyle !== 'tree' || !this.collapsed.has(key));
-			const label = `${node.title}，第 ${node.page + 1} 页`;
+			const label = `${node.title}，第 ${this.extras?.label(node.page + 1) ?? node.page + 1} 页`;
 			const item = parent.createEl('li', {
 				cls: 'rd-outline-node',
 				attr: { role: 'treeitem', tabindex: '-1', 'aria-current': 'false', 'aria-label': label, title: label, 'data-outline-key': key, 'data-nav-page': String(node.page) }
@@ -229,7 +198,7 @@ export class ReaderNavigation {
 				});
 			}
 			row.createSpan({ cls: 'rd-outline-title', text: node.title });
-			row.createEl('span', { cls: 'rd-reader-outline__page', text: `p.${node.page + 1}` });
+			row.createEl('span', { cls: 'rd-reader-outline__page', text: `p.${this.extras?.label(node.page + 1) ?? node.page + 1}` });
 			let group: HTMLElement | null = null;
 			if (hasChildren) {
 				group = item.createEl('ul', { cls: 'rd-outline-group', attr: { role: 'group' } });

@@ -10,12 +10,13 @@ export class BibliographicImportPanel extends PanelSection {
 	private mappings: Record<string, string> = Object.create(null) as Record<string, string>;
 	private plan: BibliographicImportPlan | null = null;
 	private dirty = false;
+	private readonly choices = new Map<string, boolean>();
 	private readonly preview = panelElement('div');
 	private readonly summary = panelElement('p');
 
 	constructor(private readonly host: DataPanelHost) {
 		super('本地文献来源导入', 'rd-bibliographic-panel');
-		this.body.append(panelElement('p', '选择 CSL JSON、BibTeX 或 Zotero 导出 JSON。先预览，再确认库内 PDF/EPUB 路径；无附件和冲突条目会跳过。手写题名与作者保留。'));
+		this.body.append(panelElement('p', '选择 CSL JSON、BibTeX 或 Zotero 导出 JSON。先预览，再确认库内 PDF/EPUB 路径；仅应用已确认且无冲突的条目，无附件、未确认和冲突条目会跳过。手写题名与作者保留。'));
 		const label = panelElement('label', '文献来源格式');
 		const select = this.control(panelElement('select'));
 		select.setAttribute('aria-label', '文献来源格式');
@@ -25,20 +26,24 @@ export class BibliographicImportPanel extends PanelSection {
 		select.value = 'csl';
 		select.addEventListener('change', () => {
 			this.provider = select.value as BibliographicProvider;
-			this.plan = null; this.mappings = Object.create(null) as Record<string, string>;
+			this.plan = null; this.choices.clear(); this.mappings = Object.create(null) as Record<string, string>;
 			this.clearContents(this.preview); this.summary.textContent = '';
 			if (this.text) void this.prepare();
 		});
 		label.append(select); this.body.append(label);
 		this.filePicker('选择文献导出文件', '.json,.bib,.bibtex,application/json,text/plain', file => this.loadFile(file));
-		this.body.append(this.summary, this.preview,
+		this.body.append(this.summary,
+			this.button('选择全部可应用文献', () => this.chooseAll(true), () => !!this.plan && !this.dirty),
+			this.button('取消全部文献选择', () => this.chooseAll(false), () => !!this.plan && !this.dirty),
+			this.button('批量确认唯一候选附件', () => this.confirmCandidates(), () => !!this.plan && !this.dirty && !this.plan.hasErrors),
+			this.preview,
 			this.button('确认路径并重新预览', () => void this.prepare(), () => !!this.text && !!this.host.prepareBibliographicImport),
-			this.button('确认导入文献', () => void this.apply(), () => !!this.host.applyBibliographicImport && !this.dirty && !!this.plan?.resultBooks.length && !this.plan.hasErrors));
+			this.button('确认导入文献', () => void this.apply(), () => !!this.host.applyBibliographicImport && !this.dirty && !!this.selectedKeys().length && !!this.plan && !this.plan.hasErrors));
 		this.message('请选择本地文献导出文件。'); this.refreshControls();
 	}
 
 	private loadFile(file: File): Promise<void> {
-		this.plan = null; this.text = ''; this.mappings = Object.create(null) as Record<string, string>;
+		this.plan = null; this.text = ''; this.choices.clear(); this.mappings = Object.create(null) as Record<string, string>;
 		this.clearContents(this.preview); this.summary.textContent = ''; this.dirty = false;
 		return this.run('正在读取文献文件…', async () => {
 			const text = await readPanelFile(file);
@@ -59,7 +64,7 @@ export class BibliographicImportPanel extends PanelSection {
 		if (this.disposed) return;
 		this.plan = plan; this.dirty = false;
 		this.renderPreview(plan);
-		this.message(plan.hasErrors ? '文献输入无效，请修正后重新选择文件。' : `可应用 ${plan.resultBooks.length} 条；请核对差异与路径后确认导入。`, plan.hasErrors);
+		this.selectionMessage();
 	}
 
 	private renderPreview(plan: BibliographicImportPlan): void {
@@ -70,6 +75,11 @@ export class BibliographicImportPanel extends PanelSection {
 		this.pagedRows(entries, plan.entries, '文献预览', entry => {
 			const row = panelElement('div'); row.className = 'rd-data-preview-row';
 			row.append(panelElement('p', `${KIND_LABEL[entry.kind]} · ${entry.record.title} · ${entry.key}`));
+			const eligible = entry.pathConfirmed && ['new', 'update'].includes(entry.kind) && !plan.hasErrors;
+			const label = panelElement('label', '选择导入'); const checkbox = this.control(panelElement('input'), () => eligible && !this.dirty);
+			checkbox.type = 'checkbox'; checkbox.setAttribute('aria-label', `选择导入：${entry.record.title}`); checkbox.checked = eligible && this.choices.get(entry.key) !== false;
+			checkbox.addEventListener('change', () => { this.choices.set(entry.key, checkbox.checked); this.selectionMessage(); this.refreshControls(); });
+			label.append(checkbox); row.append(label);
 			if (entry.reason) row.append(panelElement('p', entry.reason));
 			if (entry.changes.length) row.append(panelElement('p', `更新字段：${entry.changes.join('、')}`));
 			if (entry.protectedFields.length) row.append(panelElement('p', `保留手写字段：${entry.protectedFields.join('、')}`));
@@ -92,14 +102,38 @@ export class BibliographicImportPanel extends PanelSection {
 		});
 	}
 
+	private selectedKeys(): string[] {
+		return this.plan?.entries.filter(entry => entry.pathConfirmed && ['new', 'update'].includes(entry.kind) && this.choices.get(entry.key) !== false).map(entry => entry.key) ?? [];
+	}
+	private selectionMessage(): void {
+		const plan = this.plan; if (!plan) return;
+		const count = this.selectedKeys().length;
+		this.message(plan.hasErrors ? '文献输入无效，请修正后重新选择文件。' : `可应用 ${count} 条；跳过 ${plan.entries.length - count} 条（含未选择、无变化、未确认附件及冲突）。请核对后确认导入。`, plan.hasErrors);
+	}
+	private chooseAll(selected: boolean): void {
+		if (!this.plan) return;
+		for (const entry of this.plan.entries) if (entry.pathConfirmed && ['new', 'update'].includes(entry.kind)) this.choices.set(entry.key, selected);
+		this.renderPreview(this.plan); this.selectionMessage(); this.refreshControls();
+	}
+	private confirmCandidates(): void {
+		if (!this.plan) return;
+		let count = 0;
+		for (const entry of this.plan.entries) {
+			if (entry.kind === 'conflict' || entry.pathConfirmed || entry.suggestedPaths.length !== 1 || Object.prototype.hasOwnProperty.call(this.mappings, entry.key)) continue;
+			this.mappings[entry.key] = entry.suggestedPaths[0]; count++;
+		}
+		if (count) void this.prepare(); else this.message('没有可批量确认的唯一候选；多个候选或无匹配文件的条目需要逐项核对。');
+	}
+
 	private apply(): Promise<void> {
 		const plan = this.plan;
-		if (!plan || this.dirty || plan.hasErrors || !plan.resultBooks.length || !this.host.applyBibliographicImport) return Promise.resolve();
+		const selected = this.selectedKeys();
+		if (!plan || this.dirty || plan.hasErrors || !selected.length || !this.host.applyBibliographicImport) return Promise.resolve();
 		return this.run('正在导入文献…', async () => {
-			await this.host.applyBibliographicImport?.(plan);
+			await this.host.applyBibliographicImport?.(plan, selected);
 			if (this.disposed) return;
 			this.plan = null;
-			this.message(`已应用 ${plan.resultBooks.length} 条文献。再次预览会核对重复导入。`);
+			this.message(`已应用 ${selected.length} 条文献，跳过 ${plan.entries.length - selected.length} 条。再次预览会核对重复导入。`);
 		});
 	}
 }

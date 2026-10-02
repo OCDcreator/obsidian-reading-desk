@@ -1,6 +1,6 @@
 import { ItemView, type WorkspaceLeaf } from 'obsidian';
 import type { LibraryIndex } from '../library/LibraryIndex';
-import type { LibraryBook } from '../types/contracts';
+import type { LibraryBook, ShelfViewState } from '../types/contracts';
 import type { Awaitable, ShelfCandidateFile, ShelfAnnotationQuery, ShelfAnnotationHit } from '../ui/shelf/ShelfHost';
 import { ShelfView } from './ShelfView';
 
@@ -10,6 +10,8 @@ export interface ShelfNavigation {
 	scan(): Promise<void>;
 	resourceUrl(path: string): string | null;
 	openSettings?(): Awaitable<void>;
+	readShelfState?(): Awaitable<ShelfViewState | undefined>;
+	saveShelfState?(state: ShelfViewState): Awaitable<void>;
 	searchAnnotations?(query: ShelfAnnotationQuery): Awaitable<ShelfAnnotationHit[]>;
 	openHighlight?(path: string, id: string): Awaitable<void>;
 	listSourcePaths?(): Awaitable<string[]>;
@@ -26,6 +28,8 @@ export class ShelfItemView extends ItemView {
 			addCategory: name => index.addCategory(name), reorderCategories: ids => index.reorderCategories(ids),
 			updateBook: (id, patch) => index.updateBook(id, patch),
 			getLists: () => index.listLists(), createList: name => index.createList(name),
+			renameList: (id, name) => index.renameList(id, name), deleteList: id => index.deleteList(id),
+			readShelfState: navigation.readShelfState, saveShelfState: navigation.saveShelfState,
 			batchUpdate: (ids, patch) => index.batchUpdate(ids, patch),
 			clearMetadataOverride: (id, fields) => index.clearMetadataOverride(id, fields),
 			openBook: (book: LibraryBook) => navigation.open(book.path), scan: () => navigation.scan(),
@@ -37,5 +41,5 @@ export class ShelfItemView extends ItemView {
 	getViewType(): string { return SHELF_VIEW_TYPE; }
 	getDisplayText(): string { return 'Reading Desk 书架'; }
 	async onOpen(): Promise<void> { await this.shelf.render(this.containerEl.children[1] as HTMLElement); }
-	async onClose(): Promise<void> { this.shelf.destroy(); }
+	async onClose(): Promise<void> { await this.shelf.destroy(); }
 }

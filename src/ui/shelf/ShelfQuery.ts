@@ -1,17 +1,7 @@
-import type { BookFormat, LibraryBook, ReadingStatus } from '../../types/contracts';
+import type { LibraryBook, ReadingStatus, ShelfViewState } from '../../types/contracts';
 import { filterBooks } from '../../views/shelf/ShelfViewModel';
-export type ShelfSort = 'title' | 'author' | 'recent' | 'rating' | 'progress';
-export interface ShelfQuery {
-	query: string;
-	categoryId?: string;
-	format?: BookFormat;
-	tag?: string;
-	minRating?: number;
-	readingStatus?: ReadingStatus;
-	listId?: string;
-	missingOnly?: boolean;
-	sort: ShelfSort;
-}
+export type ShelfQuery = ShelfViewState['query'];
+export type ShelfSort = ShelfQuery['sort'];
 export const SHELF_PAGE_SIZE = 40;
 export const CONTINUE_LIMIT = 6;
 export const STATUS_LABELS: Record<ReadingStatus, string> = { unread: '未读', reading: '在读', finished: '读完', abandoned: '暂搁' };
