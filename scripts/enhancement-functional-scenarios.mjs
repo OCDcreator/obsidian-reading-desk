@@ -293,7 +293,9 @@ async function cleanupRemote(key) {
 	const state = globalThis[key]; if (!state) return { ok: true, skipped: 'No remote state was created' };
 	const errors = [], removed = [];
 	try {
-		state.check(); const leaf = state.leaf;
+		state.check();
+		if (state.scenarioCleanupBlocker) throw new Error(state.scenarioCleanupBlocker);
+		const leaf = state.leaf;
 		if (leaf && state.findLeaf(leaf.id)) {
 			if (state.originalLeaves.has(leaf.id)) throw new Error('Refusing to close an original leaf');
 			const type = leaf.view.getViewType(), source = leaf.view.getState().pdfPath;

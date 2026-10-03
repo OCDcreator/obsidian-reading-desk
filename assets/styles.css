@@ -685,7 +685,7 @@
 /* Reader saved-position controls: compact native sidebar forms. */
 .rd-reader-bookmark-entry { display: flex; flex-wrap: wrap; align-items: center; gap: var(--rd-space-2, 8px); margin-block: var(--rd-space-2, 8px); }
 .rd-reader-bookmark-entry .rd-input { flex: 1 1 100%; min-width: 0; max-width: 100%; }
-.rd-reader-bookmark-entry .rd-button { max-width: 100%; overflow-wrap: anywhere; white-space: normal; }
+.rd-reader-bookmark-entry .rd-button { height: auto; min-height: 30px; max-width: 100%; overflow-wrap: anywhere; white-space: normal; }
 
 /* Source diagnostics stay within the annotation drawer and use host tokens. */
 .rd-source-anchor-diagnostics { border-block: 1px solid var(--rd-line); padding-block: 8px; }

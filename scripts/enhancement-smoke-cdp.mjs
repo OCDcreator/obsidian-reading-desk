@@ -37,7 +37,11 @@ try {
 await send('Runtime.enable');
 const actualVault = await evaluate('app.vault.adapter.getBasePath()');
 if (actualVault !== expectedVault) throw new Error(`Unexpected vault: ${actualVault}`);
-if (phase === 'ui' || phase === 'functional' || phase === 'margin-reader') { await send('Runtime.discardConsoleEntries'); events.length = 0; }
+if (process.env.RD_NATIVE_SELECT_QUEUE) {
+	const { nativeSelectBridge } = await import('./margin-native-select-bridge.mjs');
+	send.nativeSelect = nativeSelectBridge({ directory: path.resolve(process.env.RD_NATIVE_SELECT_QUEUE), evaluate, endpoint, target: targets[0], expectedVault });
+}
+if (['ui', 'functional', 'margin-reader', 'margin-workflow', 'margin-source'].includes(phase)) { await send('Runtime.discardConsoleEntries'); events.length = 0; }
 if (phase === 'preflight') {
 	const { build } = await import('esbuild');
 	const bundle = await build({ entryPoints: ['src/data/DataValidation.ts'], bundle: true, platform: 'browser', format: 'iife', globalName: 'RdValidation', write: false });
@@ -57,6 +61,10 @@ if (phase === 'ui') {
 if (phase === 'margin-reader') {
 	const { runReaderScenarios } = await import('./margin-reader-scenarios.mjs');
 	console.log(JSON.stringify(await runReaderScenarios({ evaluate, send, output }), null, 2));
+}
+if (phase === 'margin-workflow' || phase === 'margin-source') {
+	const { runWorkflowScenarios } = await import('./margin-workflow-ui-scenarios.mjs');
+	console.log(JSON.stringify(await runWorkflowScenarios({ evaluate, send, output, sourceOnly: phase === 'margin-source' }), null, 2));
 }
 if (phase === 'functional-cleanup') {
 	const { retryFunctionalCleanup } = await import('./enhancement-functional-scenarios.mjs');
@@ -78,7 +86,7 @@ const expectedBuild = fs.readFileSync('main.js', 'utf8').match(/["']([0-9]+\.[0-
 const result = { phase, checkedAt: new Date().toISOString(), expectedBuild, inspection, startup, scopedErrors };
 fs.writeFileSync(path.join(output, `${phase}.json`), JSON.stringify(result, null, 2));
 if (phase === 'reload' && (!expectedBuild || !startup.some(text => text.includes(expectedBuild)) || inspection.repositoryStatus?.phase !== 'ready' || inspection.version !== JSON.parse(fs.readFileSync('manifest.json', 'utf8')).version)) throw new Error(`Reading Desk startup verification failed: ${JSON.stringify(result)}`);
-if (['reload', 'ui', 'functional', 'margin-reader'].includes(phase) && scopedErrors.length) throw new Error(`Reading Desk scoped runtime errors: ${JSON.stringify(scopedErrors)}`);
+if (['reload', 'ui', 'functional', 'margin-reader', 'margin-workflow', 'margin-source'].includes(phase) && scopedErrors.length) throw new Error(`Reading Desk scoped runtime errors: ${JSON.stringify(scopedErrors)}`);
 if (phase === 'reload') {
 	const baselinePath = path.join(output, 'preflight-validation.json');
 	if (fs.existsSync(baselinePath) && inspection.dataShape.highlights !== JSON.parse(fs.readFileSync(baselinePath, 'utf8')).highlights) throw new Error('Existing annotations changed during deployment');

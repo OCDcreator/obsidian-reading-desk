@@ -18,7 +18,7 @@
 | ShelfView / ui/shelf | 过滤排序、分页 DOM、批量交互、紧凑继续阅读、列表和检索入口；书籍修改通过 LibraryIndex host，重关联由宿主协调跨真源路径。 |
 | ReadingDeskSettingTab / SettingSaveFeedback / ui/portability | 设置控件、保存状态与恢复/导入/导出预览；UI 不直接写 vault。 |
 | WorkspaceState / WorkspaceStateValidation | 可选旧格式兼容的书架现场、零基物理页阅读位置、命名书签与校验；字段仍存于唯一 Repository/LibraryIndex。 |
-| ReaderPersistenceController / ReaderBookmarksPanel / ReaderPageLabels | 每 leaf 保存调度与稳定书目 ID 绑定、书签操作、印刷页码与物理页的显示/跳转分离。 |
+| ReaderPersistenceController / ReaderBookmarksPanel / ReaderPageLabels | 每 leaf 保存调度与稳定书目 ID 绑定、书签操作、印刷页码与物理页的显示/跳转分离；书签操作按钮按文字自动增高，窄导航栏的名称和页码换行不溢出固定控件高度。 |
 | ReaderThumbnailLifecycle / PdfCanvasBudget | 可见缩略图回收/重绘、并发限制、暂存与复制预算、取消后底层完成前不释放运行中画布。 |
 | ShelfBookDrafts / ShelfBookEditor / ShelfStatePersistence / ShelfListManager | 临时字段草稿、版本化保存反馈、书架现场保存、列表管理；正式书籍值仍经 LibraryIndex。 |
 | BackupCapacity / BackupObjectDecisions / RecoverySnapshotService | 公开备份容量、逐对象差异与标注 family 原子决策、受管自动快照索引和需确认的清理计划；过期计划拒绝。 |

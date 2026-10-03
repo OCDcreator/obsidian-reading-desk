@@ -1,60 +1,64 @@
-# 在 Mac 继续 Margin 0.5.0
+# Margin 0.5.0 当前续接入口
 
-用户要求：修复 0.4 审查全部问题，再增加功能；最后要求当前收尾提交/推送/同步 Mac，剩余工作在 Mac 继续。当前产品实现已完成，继续任务重点是收完实机验收和验收中发现的问题，不要从头实现。
+2026-10-03：功能分支已经按门禁快进合入 `main` 并推送，Mac 的书签、书架、隔离设置与源锚点剩余验收已执行。最新证据、构建身份、有限验收边界和清理阻塞见 [验收记录](acceptance-0.5.0-2026-10-03.md)。实现历史见 [10 月 2 日记录](implementation-0.5.0-2026-10-02.md)。
 
-## 仓库与基线
+## 当前仓库与工作方式
 
-- Mac 仓库：`/Volumes/SDD2T/obsidian-vault-write/custom-project/obsidian-reading-desk`
-- Windows 仓库：`C:/Users/lt/Desktop/Write/custom-project/obsidian-reading-desk`
-- 分支：`codex/margin-0-5-reliability-workflows`；远程 `https://github.com/OCDcreator/obsidian-reading-desk.git`。
-- 当前版本 Margin 0.5.0，base commit 为 6cba7d4。先检查 Git 状态和远程提交，保留任何用户新增修改。不要默认合并 main。
-- 读 AGENTS.md、`docs/review-0.4.0-2026-10-02.md`、`docs/implementation-0.5.0-2026-10-02.md`、`docs/enhancement-modules.md` 和 ADR 0008–0014、0016。
-- 没有使用 OpenCode，用户没有要求时不要调用。
+- Mac：`/Volumes/SDD2T/obsidian-vault-write/custom-project/obsidian-reading-desk`。
+- 用户后续指定 Windows 机器 FA880，实际专用克隆：`C:\Users\letain\custom-projects\obsidian-reading-desk`，SSH 机器名已读回。
+- 原 Windows `C:\Users\lt\Desktop\Write\custom-project\obsidian-reading-desk` 不在 FA880 证据覆盖内；不要声称核验了该原路径。
+- 当前工作分支为 `main`。后续修复直接提交 main，不再创建或保留旧功能分支用于验收。
+- 保留任何新用户修改，先核对两端 status/HEAD/upstream/origin。没有使用 OpenCode，继续时不要调用。
+- 仍需阅读 AGENTS.md、审查/实现记录、`docs/enhancement-modules.md` 与所引 ADR，按已有实现继续，不要重新实现完成的功能。
 
-## 已完成实现与验证
+## 已完成的剩余验收
 
-原审查 S1–S6、T1–T3 和既有表格草稿丢失均已修复。新增快照管理/显式清理、逐对象恢复、逐条文献导入/唯一附件批量确认、列表管理/书架现场、精确读位/书签、印刷页码、源文件 stat/锚点诊断。
+书签输入 helper 已改为平台全选 → 选区读回 → Backspace 清空读回 → 精确 insertText 读回，预期仍为 `Pointer renamed`。最新真实创建/改名/删除均有磁盘读回，和内部 API 核心测试分开记录。
 
-完整 `npm run verify` 最终通过 106 文件 / 570 项；源码、模块所有权、版本、ESLint、TypeScript 与生产构建通过。三个代理交叉审查通过，期间补修了书签恢复失败后的持久化暂停、导航首选标签覆盖，以及读位/旧进度双写。所有相关源码均已保存。
+`margin-workflow-settings.mjs` 已补齐，书架/设置 workflow 在审查隔离与清理后接入 smoke runner。列表按稳定 ID 管理并读回磁盘，搜索 + PDF 格式 + table 模式保存后重开，夹具 leaf 的延迟保存保留作者草稿与焦点。恢复、文献和快照执行只使用实际领域模块背后的隔离内存 Repository/Gateway，用户 recovery 文件未删除。
 
-Mac Obsidian 1.13.7，目标 vault：`/Volumes/SDD2T/obsidian-vault-write/testvault`。部署插件仅 `obsidian-reading-desk`。最后已核实运行 BUILD_ID `0.5.0+2026-10-02T14:52:59.636Z`；源四文件与插件 SHA-256 一致。不要把磁盘版本当成实际已加载构建，继续时重新确认。
+macOS 原生 select 菜单不能靠本轮 CDP 键盘事件完成。workflow 需 `RD_NATIVE_SELECT_QUEUE` 和 CUA 原生菜单控制器；每项校验唯一 CDP 目标及 vault，再匹配 request id，输入后读回真实 select 值。不允许 DOM 赋值替代。
 
-最终构建产物 SHA-256：
+有限视觉检查发现窄书签按钮固定高度溢出，产品修复仅为对应规则的内容自适应高度。修复前 30px 按钮容不下 37.5px 两行文字；修复后实际 49px，文字边界完全包含，真实书签链重跑通过。全量 verify 为 106 文件 / 571 项。
 
-- main.js `9e04db25de09ab5ac08f70410d29dbb179b5596200fbc6f297ed58153d7c8022`
-- manifest.json `3278a607204ff58526455463192fde6d5362b56ec240175b2965af9d41f82d8f`
-- styles.css `f2c894b4d7053698ed8e240c861a68f49cd4b10e277b1fdf323a34dfaace00ac`
-- pdf.worker.mjs `7c237f83fa56bce645d8af51d183c9c56ba7b2d2928ff42754dc7020bea36323`
+最新部署 BUILD_ID：`0.5.0+2026-10-03T06:25:17.394Z`，四产物顺序部署与 SHA、仅 Reading Desk reload/fresh startup 证据在验收记录。不能把部署哈希、源码门禁或隔离领域检查替代桌面验收。
 
-部署前原四文件和 data.json 备份：插件 `recovery/pre-0.5.0-20261002-224323/`。仅用于显式恢复参考，不要覆盖当前数据。
+## 尚未完成：安全分支清理
 
-## 剩余实机工作（按顺序）
-
-1. **修正并重跑书签真实输入测试。** `scripts/margin-reader-scenarios.mjs` 的 350 页核心路径已经通过：全部缩略图往返、正文、印刷标签、重复消歧、旋转90/scale1.5、精确重开、内部 API 书签增删改跳转。真实 CDP 输入步骤重命名预期 `Pointer renamed`，实际保存 `Pointer bookmarkPointer renamed`，说明全选替换未生效；先调整 Mac 键盘选择/清空动作，检查输入框实际值后再点击保存。不要为了让测试绿而改写预期为拼接名称。重跑真实输入创建/改名/删除及磁盘读回。
-2. **完成书架/设置 QA 草稿。** `scripts/margin-workflow-ui-scenarios.mjs` 已有列表 CRUD、筛选重开、人工延迟保存下草稿保护和源诊断流程，但未执行，且依赖未完成的 `margin-workflow-settings.mjs`，不能直接运行。先完成或拆成更小场景、审查 cleanup，再把 `runWorkflowScenarios` 接入 smoke runner。覆盖恢复清单/清理预览（不删用户快照）、文献选择与附件确认、逐对象恢复预览（不替换用户全库）、源诊断展开/引文搜索。确实需要执行恢复或清理的场景用隔离 Repository/Gateway/专属夹具。
-3. **实际 UI 视觉核验。** 书签、列表管理、设置预览在窄窗口及当前主题的可见性/焦点/长文字换行；使用有限一轮检查与修正，不扩大成重设计。
-4. **如发现产品问题再修、回归、构建、顺序部署四文件、SHA 核对、重载并确认新 fresh BUILD_ID。** 仅脚本修改无需重建产品；证据不能把旧构建冒充新构建。
-5. 更新实现记录、列出已验/未验边界，提交并推送当前分支。用户后续是否合并 main 再按当时指令处理。
-
-## 工具与命令
-
-Mac 上 CDP 在 `http://127.0.0.1:9222`，Windows 曾用 SSH tunnel `19222`；Mac 继续不需要该隧道。先检查 `/json/list`，必须唯一匹配 `app://obsidian.md/index.html` 且标题包含 testvault，再核对运行时 vault 完整路径。不要选第一个窗口，不要重启整个 Obsidian。
+必须抓取实际所有 heads，不能只相信原 Mac 的有限 fetch refspec：
 
 ```bash
-npm run verify
-RD_CDP_URL=http://127.0.0.1:9222 RD_EVIDENCE_DIR=.obsidian-debug/margin-0.5/mac-continuation node scripts/enhancement-smoke-cdp.mjs inspect
-RD_CDP_URL=http://127.0.0.1:9222 RD_EVIDENCE_DIR=.obsidian-debug/margin-0.5/mac-reader-r3 node scripts/enhancement-smoke-cdp.mjs margin-reader
+git fetch --prune origin 'refs/heads/*:refs/remotes/origin/*'
+git branch -a --merged origin/main
+git branch -a --no-merged origin/main
 ```
 
-`margin-reader` 会创建真实 PDF 夹具，运行前读 `withFunctionalFixture` 和 cleanup；脚本超时可能仍在执行，先看状态/ledger，不要直接重跑。真实输入测试与内部 API 测试必须分开报告。当前最后运行的 fixture 已全部清理，原活动 leaf 已恢复；收尾核验为 7 本书、5 条标注、2 组评论、pending=0。
+`origin/zcode/shelf-abc-rework` 尚未被 main 包含，有六个独有提交。按用户要求，一旦发现未合并分支，**停止整个清理流程**。目前未删除任何候选，不强删、不擅自合并该旧分支，永远保留 main/origin/main/origin/HEAD。需先明确旧分支处理，再重新逐个检查包含关系；源码/UI 验收通过不能授权绕过此门禁。
 
-## 本机证据（单独同步，不入 Git）
+最终三方 HEAD 与干净状态以实时 Git 及本机 `final-parity.json` 为准。存在此未合并分支时，不能宣布“无遗留非 main 分支”或整体目标完成。
 
-- `.obsidian-debug/margin-0.5/deploy.json`：最后构建/部署/hash。
-- `.obsidian-debug/margin-0.5/final-runtime/reload.json`：fresh startup。
-- `.obsidian-debug/margin-0.5/handoff-runtime/inspect.json`：收尾 runtime 状态。
-- `.obsidian-debug/margin-0.5/reader-runtime-r2/functional-scenarios.json`：核心成功数值、真实输入失败、cleanup 全部通过。
-- `.obsidian-debug/review-20261002-followup/`：原审查复现、阶段单测 JSON 等。
-- `.slim/deepwork/margin-0.5.md`：本轮分工、gate、实施进度。
+## Test Vault 与重跑安全
 
-自动恢复备份里会保留夹具运行时的历史快照，这是原件保护行为；不要为了清理测试而擅自删用户 recovery 文件。只清理夹具稳定 ID 和专属路径，不把旧整个 snapshot 恢复回去。不要触碰其他插件。
+Mac Test Vault：`/Volumes/SDD2T/obsidian-vault-write/testvault`。必须唯一匹配标题包含 testvault 的 `app://obsidian.md/index.html`，再读取实际 vault 完整路径。不要选择第一个窗口，不重启运行中的 Obsidian，不切 Restricted Mode。仅部署/重载 Reading Desk。
+
+```bash
+RD_EVIDENCE_DIR=.obsidian-debug/margin-0.5/domain node scripts/margin-workflow-isolation-check.mjs
+RD_CDP_URL=http://127.0.0.1:9222 RD_VAULT_PATH=/Volumes/SDD2T/obsidian-vault-write/testvault RD_EVIDENCE_DIR=.obsidian-debug/margin-0.5/reader node scripts/enhancement-smoke-cdp.mjs margin-reader
+RD_CDP_URL=http://127.0.0.1:9222 RD_VAULT_PATH=/Volumes/SDD2T/obsidian-vault-write/testvault RD_EVIDENCE_DIR=.obsidian-debug/margin-0.5/source node scripts/enhancement-smoke-cdp.mjs margin-source
+```
+
+重跑前确认没有上次仍运行的脚本、pending native 请求或 retained fixture。失败先看 live handle、ledger 和确切范围，不用整库 restore 隐藏失败。按捕获 ID/专属路径清理，用户 recovery 与覆盖前快照原件继续保留，不触碰其他插件。
+
+## 本机证据
+
+根目录：`.obsidian-debug/margin-0.5/fa880-continuation-20261003/`，不加入 Git。
+
+- `source-gate-approved.json`、`mac-ff-merge.json`、`fa880-main-sync.json`：门禁与基线合并同步。
+- `verify-mac-bookmark-layout.log`：修复后的完整验证。
+- `workflow-isolation-domain.json`：隔离领域检查。
+- `workflow-final/`：连续 workflow 行为、内存隔离范围、窄预览、精确 cleanup 与 native 请求记录。
+- `bookmark-layout-before/`、`bookmark-layout-after/`：真实布局失败/修复对照，后者含书签输入与磁盘链。
+- `deploy-bookmark-layout.json`、`layout-runtime/reload.json`：最终部署与 fresh startup。
+- `final-parity.json`：最终 Mac/FA880/origin 提交与清理候选证据。
+
+当前证据不覆盖 Windows 原生 UI、OS 文件对话框、真实用户库恢复/快照删除、所有主题/PDF/DPI 或跨进程同步竞争；原 Windows 路径也未借 FA880 的结果冒充核验。

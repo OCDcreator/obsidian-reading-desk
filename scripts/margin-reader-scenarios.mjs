@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { withFunctionalFixture } from './enhancement-functional-scenarios.mjs';
+import { controls } from './margin-cdp-controls.mjs';
 const PAGE_COUNT = 350;
 const remote = (evaluate, fn, ...args) => evaluate('(' + fn.toString() + ')(' + args.map(value => JSON.stringify(value)).join(',') + ')');
 /** Real PDF: Roman introduction, Arabic body, repeated label for disambiguation. */
@@ -87,15 +88,28 @@ async function runBookmarkInputScenario({ evaluate, send, key, output }) {
 	const click = async value => { const point = await remote(evaluate, bookmarkUiRemote, key, 'point', value); for (const type of ['mousePressed', 'mouseReleased']) await send('Input.dispatchMouseEvent', { type, ...point, button: 'left', clickCount: 1 }); };
 	const wait = async check => { const until = Date.now() + 10000; let sample; do { sample = await remote(evaluate, bookmarkUiRemote, key, 'read'); if (check(sample)) return sample; await new Promise(resolve => setTimeout(resolve, 50)); } while (Date.now() < until); throw new Error('Bookmark UI readback timed out: ' + JSON.stringify(sample)); };
 	try {
-		await remote(evaluate, bookmarkUiRemote, key, 'mount'); await click('书签'); await click('new-input');
-		await send('Input.insertText', { text: 'Pointer bookmark' }); await click('添加书签');
-		const added = await wait(sample => sample.bookmarks.some(item => item.name === 'Pointer bookmark'));
-		await click('rename-input'); await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'a', code: 'KeyA', modifiers: 4 }); await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'a', code: 'KeyA', modifiers: 4 });
-		await send('Input.insertText', { text: 'Pointer renamed' }); await click('保存名称');
+		await remote(evaluate, bookmarkUiRemote, key, 'mount'); await click('书签');
+		const ui = controls({ evaluate, send }, 'globalThis[' + JSON.stringify(key) + '].bookmarkUi.navigation');
+		const creationInput = await ui.type('新书签名称', 'Pointer bookmark'); await click('添加书签');
+		const added = await wait(sample => sample.bookmarks.some(item => item.name === 'Pointer bookmark') && sample.disk.some(item => item.name === 'Pointer bookmark'));
+		const replacementInput = await ui.type('重命名书签 Pointer bookmark', 'Pointer renamed'); await click('保存名称');
 		const renamed = await wait(sample => sample.bookmarks.some(item => item.name === 'Pointer renamed') && sample.disk.some(item => item.name === 'Pointer renamed'));
 		const screenshot = await send('Page.captureScreenshot', { format: 'png' }); fs.writeFileSync(path.join(output, 'margin-bookmark-input.png'), Buffer.from(screenshot.data, 'base64'));
+		const jumpLayout = await remote(evaluate, key => {
+			const root = globalThis[key].bookmarkUi.navigation;
+			const button = [...root.querySelectorAll('.rd-reader-bookmark-entry button')].find(node => node.title.startsWith('Pointer renamed'));
+			if (!button) throw new Error('Renamed jump control missing');
+			const bounds = button.getBoundingClientRect(), range = document.createRange(); range.selectNodeContents(button);
+			const text = [...range.getClientRects()].filter(rect => rect.width && rect.height);
+			return { width: bounds.width, height: bounds.height, computedHeight: getComputedStyle(button).height,
+				textHeight: Math.max(...text.map(rect => rect.bottom)) - Math.min(...text.map(rect => rect.top)), lines: text.length,
+				contained: text.every(rect => rect.top >= bounds.top - 1 && rect.bottom <= bounds.bottom + 1 && rect.left >= bounds.left - 1 && rect.right <= bounds.right + 1) };
+		}, key);
+		if (!jumpLayout.contained) throw new Error('Bookmark jump label overflows its button: ' + JSON.stringify(jumpLayout));
 		await click('删除书签'); const removed = await wait(sample => !sample.bookmarks.length && !sample.disk.length);
-		return { input: 'CDP Input.dispatchMouseEvent / Input.insertText / Meta+A; fixture navigation surface is DOM mounted', added: added.bookmarks.length, renamed: renamed.bookmarks[0].name, removed: removed.bookmarks.length, diskVerified: true };
+		return { input: 'CDP mouse/key/insertText; platform selectAll, selection readback, Backspace and exact input readback; product navigation in fixture DOM surface', creationInput, replacementInput,
+			added: added.bookmarks.length, renamed: renamed.bookmarks[0].name, removed: removed.bookmarks.length, jumpLayout,
+			diskReadbacks: { created: added.disk.map(item => item.name), renamed: renamed.disk.map(item => item.name), deleted: removed.disk.length }, diskVerified: true };
 	} finally { await remote(evaluate, bookmarkUiRemote, key, 'close'); }
 }
 /** Called by the existing CDP harness; import alone performs no vault writes. */
