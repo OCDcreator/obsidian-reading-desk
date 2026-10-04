@@ -9,7 +9,9 @@ export interface ShelfNavigation {
 	open(path: string): Promise<void>;
 	scan(): Promise<void>;
 	resourceUrl(path: string): string | null;
-	openSettings?(): Awaitable<void>;
+	openSettings?(tab?: string): Awaitable<void>;
+	countHighlights?(): number;
+	lastReadPage?(bookId: string): number | undefined;
 	readShelfState?(): Awaitable<ShelfViewState | undefined>;
 	saveShelfState?(state: ShelfViewState): Awaitable<void>;
 	searchAnnotations?(query: ShelfAnnotationQuery): Awaitable<ShelfAnnotationHit[]>;
@@ -25,7 +27,7 @@ export class ShelfItemView extends ItemView {
 		super(leaf);
 		this.shelf = new ShelfView({
 			getBooks: () => index.list(), getCategories: () => index.listCategories(),
-			addCategory: name => index.addCategory(name), reorderCategories: ids => index.reorderCategories(ids),
+			addCategory: name => index.addCategory(name), renameCategory: (id, name) => index.renameCategory(id, name), removeCategory: id => index.removeCategory(id), reorderCategories: ids => index.reorderCategories(ids),
 			updateBook: (id, patch) => index.updateBook(id, patch),
 			getLists: () => index.listLists(), createList: name => index.createList(name),
 			renameList: (id, name) => index.renameList(id, name), deleteList: id => index.deleteList(id),
@@ -33,7 +35,7 @@ export class ShelfItemView extends ItemView {
 			batchUpdate: (ids, patch) => index.batchUpdate(ids, patch),
 			clearMetadataOverride: (id, fields) => index.clearMetadataOverride(id, fields),
 			openBook: (book: LibraryBook) => navigation.open(book.path), scan: () => navigation.scan(),
-			resolveCoverUrl: path => navigation.resourceUrl(path), openSettings: navigation.openSettings,
+			resolveCoverUrl: path => navigation.resourceUrl(path), openSettings: navigation.openSettings, countHighlights: navigation.countHighlights, lastReadPage: navigation.lastReadPage,
 			searchAnnotations: navigation.searchAnnotations, openHighlight: navigation.openHighlight,
 			candidateFiles: navigation.candidateFiles, listSourcePaths: navigation.listSourcePaths, relinkBook: navigation.relinkBook
 		});

@@ -25,7 +25,7 @@ export interface ReaderBookState {
 	bookmarks: ReaderBookmark[];
 }
 export interface ShelfViewState {
-	mode: 'cards' | 'table' | 'annotations';
+	mode: 'cards' | 'table' | 'navigation' | 'annotations';
 	page: number;
 	query: {
 		query: string;
@@ -37,5 +37,6 @@ export interface ShelfViewState {
 		readingStatus?: ReadingStatus;
 		listId?: string;
 		missingOnly?: boolean;
+		historyOnly?: boolean;
 	};
 }

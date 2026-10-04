@@ -15,9 +15,9 @@
 | AnnotationSearchService | 每次从 AnnotationStore 读取的只读检索视图，搜索结果使用稳定 highlightId；不产生第二可编辑标注库。 |
 | ReaderView / reader 与 crop 模块 | 每个 leaf 的 PDF 交互、摘录几何、页内定位、搜索请求生命周期、内链预览和历史；ReaderView 负责协调，分离的控制器仍属阅读器。 |
 | PdfRenderer / PdfCanvasBudget / PdfLinks / PdfTextIndex | PDF.js 生命周期、画布预算、PDF 链接/文本层。PDF 内链不执行动作脚本，外部 URL 只提供显式点击。 |
-| ShelfView / ui/shelf | 过滤排序、分页 DOM、批量交互、紧凑继续阅读、列表和检索入口；书籍修改通过 LibraryIndex host，重关联由宿主协调跨真源路径。 |
+| ShelfView / ui/shelf | A/B/C 卡片、台账与分类导航；过滤排序、分页 DOM、批量交互、三张继续阅读、列表和独立摘录检索入口；书籍修改通过 LibraryIndex host，重关联由宿主协调跨真源路径。 |
 | ReadingDeskSettingTab / SettingSaveFeedback / ui/portability | 设置控件、保存状态与恢复/导入/导出预览；UI 不直接写 vault。 |
-| WorkspaceState / WorkspaceStateValidation | 可选旧格式兼容的书架现场、零基物理页阅读位置、命名书签与校验；字段仍存于唯一 Repository/LibraryIndex。 |
+| WorkspaceState / WorkspaceStateValidation | 可选旧格式兼容的书架现场、零基物理页阅读位置、命名书签与校验；字段仍存于唯一 Repository/LibraryIndex；旧全局布局/排序只作一次迁移，导航模式与阅读记录筛选存于 vault 设置。 |
 | ReaderPersistenceController / ReaderBookmarksPanel / ReaderPageLabels | 每 leaf 保存调度与稳定书目 ID 绑定、书签操作、印刷页码与物理页的显示/跳转分离；书签操作按钮按文字自动增高，窄导航栏的名称和页码换行不溢出固定控件高度。 |
 | ReaderThumbnailLifecycle / PdfCanvasBudget | 可见缩略图回收/重绘、并发限制、暂存与复制预算、取消后底层完成前不释放运行中画布。 |
 | ShelfBookDrafts / ShelfBookEditor / ShelfStatePersistence / ShelfListManager | 临时字段草稿、版本化保存反馈、书架现场保存、列表管理；正式书籍值仍经 LibraryIndex。 |
@@ -38,3 +38,9 @@
 ## 验证范围
 
 单元/集成测试覆盖错误保存、损坏数据、旧快照、恢复前备份失败、导入旧预览、模板安全、人工值保护、单页/裁剪几何、取消与延迟渲染，以及键盘和分页交互。Mac `testvault` 的产物哈希、fresh startup、实机界面及功能 smoke 另保留在 `.obsidian-debug/enhancement-20261002/`；不能把固定夹具验收当成所有 PDF、主题、设备或同步服务的保证。
+
+## A/B/C 与 Margin 0.5 整合（2026-10-04）
+
+`views/shelf/BookCard`、`LedgerView`、`ShelfLedgerRow`、`ShelfCategoryMenu`、`NavigationLayout` 与 `ContinueReadingRail` 渲染 ADR 0007 的三种布局。编辑统一经 `ShelfBookEditor` / `ShelfBookDrafts`，正式写入经 LibraryIndex；台账更多信息保留 0.5 标题、状态、阅读列表、自动元数据恢复及缺失文件重关联。主界面的筛选与整理是可展开的操作区。分类改名/删除仍由 LibraryIndex 的写队列与 Repository 提交，删除只解除分类关系。导航阅读位置由 main 注入唯一 LibraryIndex 的真实保存位置。
+
+旧分支验收截图为设计参考，整合候选的门禁、Test Vault、跨机同步与分支清理证据见 `docs/shelf-recovery-2026-10-04.md`。

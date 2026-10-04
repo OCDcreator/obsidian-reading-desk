@@ -178,6 +178,25 @@ export class LibraryIndex {
 		});
 	}
 
+	renameCategory(id: string, name: string): Promise<void> {
+		return this.enqueue(() => this.persistence.commit(() => {
+			const category = this.persistence.readCategories().find(item => item.id === id);
+			if (!category) throw new Error(`未找到分类：${id}`);
+			const trimmed = name.trim(); if (!trimmed) throw new Error('分类名称不能为空。');
+			category.name = trimmed;
+		}));
+	}
+
+	/** Removing a category changes its relationships only; every book record survives. */
+	removeCategory(id: string): Promise<void> {
+		return this.enqueue(() => this.persistence.commit(() => {
+			const categories = this.persistence.readCategories(); const index = categories.findIndex(category => category.id === id);
+			if (index < 0) throw new Error(`未找到分类：${id}`);
+			categories.splice(index, 1); categories.forEach((category, order) => { category.order = order; });
+			for (const book of Object.values(this.persistence.readBooks())) if (book.categoryId === id) book.categoryId = undefined;
+		}));
+	}
+
 	reorderCategories(ids: string[]): Promise<void> {
 		return this.enqueue(async () => {
 			await this.persistence.commit(() => {

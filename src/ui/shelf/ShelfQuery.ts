@@ -3,10 +3,10 @@ import { filterBooks } from '../../views/shelf/ShelfViewModel';
 export type ShelfQuery = ShelfViewState['query'];
 export type ShelfSort = ShelfQuery['sort'];
 export const SHELF_PAGE_SIZE = 40;
-export const CONTINUE_LIMIT = 6;
+export const CONTINUE_LIMIT = 3;
 export const STATUS_LABELS: Record<ReadingStatus, string> = { unread: '未读', reading: '在读', finished: '读完', abandoned: '暂搁' };
 export function hasShelfFilters(query: ShelfQuery): boolean {
-	return !!(query.query.trim() || query.categoryId || query.format || query.tag || query.minRating || query.readingStatus || query.listId || query.missingOnly);
+	return !!(query.query.trim() || query.categoryId || query.format || query.tag || query.minRating || query.readingStatus || query.listId || query.missingOnly || query.historyOnly);
 }
 export function queryBooks(books: LibraryBook[], query: ShelfQuery): LibraryBook[] {
 	const filtered = filterBooks(books, query).filter(book =>
@@ -17,7 +17,7 @@ export function queryBooks(books: LibraryBook[], query: ShelfQuery): LibraryBook
 		(!query.listId || book.listIds?.includes(query.listId)) &&
 		(!query.missingOnly || book.missing)
 	);
-	return filtered.sort((a, b) => compareBooks(a, b, query.sort) || a.title.localeCompare(b.title, 'zh-CN') || a.id.localeCompare(b.id));
+	return filtered.sort((a, b) => compareBooks(a, b, query.historyOnly ? 'recent' : query.sort) || a.title.localeCompare(b.title, 'zh-CN') || a.id.localeCompare(b.id));
 }
 function compareBooks(a: LibraryBook, b: LibraryBook, sort: ShelfSort): number {
 	switch (sort) {

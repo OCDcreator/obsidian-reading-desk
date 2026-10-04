@@ -22,9 +22,9 @@ export const bookmarksCheck: ValueCheck = (value, path, validator) => {
 	}
 };
 export const shelfStateCheck = shape({
-	mode: choice('cards', 'table', 'annotations'), page: numeric(1, Infinity, true),
+	mode: choice('cards', 'table', 'navigation', 'annotations'), page: numeric(1, Infinity, true),
 	query: shape({ query: text, sort: choice('title', 'author', 'recent', 'rating', 'progress') }, {
-		categoryId: text, format: choice('pdf', 'epub'), tag: text, minRating: numeric(0, 5),
-		readingStatus: choice('unread', 'reading', 'finished', 'abandoned'), listId: text, missingOnly: flag
+		categoryId: text, format: choice('pdf', 'epub'), tag: text, minRating: numeric(0, 10),
+		readingStatus: choice('unread', 'reading', 'finished', 'abandoned'), listId: text, missingOnly: flag, historyOnly: flag
 	})
 });

@@ -1,0 +1,454 @@
+{
+  "checkedAt": "2026-10-04T16:54:31.888738+00:00",
+  "sourceGate": {
+    "command": "npm run verify",
+    "testFiles": 109,
+    "tests": 605,
+    "log": "verify-menu-layout.log in task local evidence"
+  },
+  "deployment": {
+    "checkedAt": "2026-10-04T16:27:59.210849+00:00",
+    "hashes": {
+      "main.js": "ab1354b27240b6544780bdd1c01bfb02a316d9f91a4f1ed969f814b0328590dd",
+      "manifest.json": "3278a607204ff58526455463192fde6d5362b56ec240175b2965af9d41f82d8f",
+      "styles.css": "bc76b4a022ea1df78bac2a764e9aab997065a247386c6082c28e8546c8417837",
+      "pdf.worker.mjs": "7c237f83fa56bce645d8af51d183c9c56ba7b2d2928ff42754dc7020bea36323"
+    },
+    "runtime": "=> {\"logs\":[\"[Reading Desk] Margin v0.5.0 build 0.5.0+2026-10-04T16:16:57.110Z\"],\"status\":{\"phase\":\"ready\",\"initialized\":true,\"pending\":false,\"revision\":1,\"diagnostics\":[],\"persistedFingerprint\":\"9e4a50f7:8940\"},\"books\":7}\n"
+  },
+  "vault": "/Volumes/SDD2T/obsidian-vault-write/testvault",
+  "nativeInput": "CUA mouse, keyboard and paste; Obsidian CLI identity checks, fixture lifecycle and readback",
+  "checks": {
+    "native-fixture-cleanup-final": {
+      "ok": true,
+      "restored": true,
+      "originalShelf": {
+        "mode": "cards",
+        "query": {
+          "query": "",
+          "sort": "title"
+        },
+        "page": 1
+      },
+      "afterShelf": {
+        "mode": "cards",
+        "query": {
+          "query": "",
+          "sort": "title"
+        },
+        "page": 1
+      },
+      "removed": [
+        "RD-Shelf-Recovery-20261004-2cee0051c7/FIXTURE.md",
+        "RD-Shelf-Recovery-20261004-2cee0051c7/a.pdf",
+        "RD-Shelf-Recovery-20261004-2cee0051c7/b.pdf",
+        ".obsidian/plugins/obsidian-reading-desk/covers/d51c76cd1a39c7484176b070ff0099bb5ca0646399dad9152ae788947512febc.png",
+        ".obsidian/plugins/obsidian-reading-desk/covers/495c661afc7afdd3138a6b1c0774b9c03e4b717aeab30ea4d743c583ff03874d.png"
+      ],
+      "books": 7,
+      "actions": [
+        {
+          "ok": true,
+          "actionSource": "CUA native paste and Return; exact pre-submit AX readback",
+          "author": "作者验收 · 林",
+          "diskAuthor": "作者验收 · 林",
+          "shelf": {
+            "mode": "cards",
+            "query": {
+              "query": "Margin QA 20261004-2cee0051c7",
+              "sort": "title"
+            },
+            "page": 1
+          },
+          "mode": "cards",
+          "coverControls": 0
+        },
+        {
+          "ok": true,
+          "source": "CUA checkbox click",
+          "selected": [
+            "book-00ba6539-16c8-42bc-a3f2-e62db85f0392"
+          ],
+          "checks": [
+            {
+              "id": "book-00ba6539-16c8-42bc-a3f2-e62db85f0392",
+              "checked": true,
+              "width": 16,
+              "height": 16
+            },
+            {
+              "id": "book-40146fcb-4be8-4f71-91a1-05b175d42259",
+              "checked": false,
+              "width": 16,
+              "height": 16
+            }
+          ],
+          "coverSelectCount": 0
+        },
+        {
+          "ok": true,
+          "source": "CUA native list create and rename",
+          "lists": [
+            {
+              "id": "list-4f6b3764-060b-4358-8788-ad08a7ce5f8b",
+              "mem": "Margin QA 20261004-2cee0051c7 renamed",
+              "disk": "Margin QA 20261004-2cee0051c7 renamed"
+            }
+          ]
+        },
+        {
+          "ok": true,
+          "source": "CUA batch tag and list delete",
+          "tags": [
+            {
+              "id": "book-00ba6539-16c8-42bc-a3f2-e62db85f0392",
+              "mem": [
+                "视觉验收"
+              ],
+              "disk": [
+                "视觉验收"
+              ]
+            },
+            {
+              "id": "book-40146fcb-4be8-4f71-91a1-05b175d42259",
+              "mem": [],
+              "disk": []
+            }
+          ],
+          "listRemain": []
+        },
+        {
+          "ok": true,
+          "source": "CUA table mode click",
+          "mode": "table",
+          "query": {
+            "query": "Margin QA 20261004-2cee0051c7",
+            "sort": "title"
+          },
+          "columns": [
+            "书名",
+            "作者",
+            "分类",
+            "标签",
+            "评分",
+            "进度",
+            "页数",
+            "大小"
+          ],
+          "inputFonts": [
+            "12px",
+            "12px",
+            "12px",
+            "12px",
+            "12px",
+            "12px"
+          ]
+        },
+        {
+          "ok": true,
+          "source": "CUA navigation mode click",
+          "saved": {
+            "mode": "navigation",
+            "query": {
+              "query": "Margin QA 20261004-2cee0051c7",
+              "sort": "title"
+            },
+            "page": 1
+          },
+          "focusPage": "上次读到第 1 页",
+          "position": {
+            "page": 0,
+            "x": 0,
+            "y": 0,
+            "rotation": 0,
+            "scale": 1,
+            "fitMode": "width",
+            "updatedAt": 1791129439909
+          },
+          "sidebar": true,
+          "coverControls": 0
+        },
+        {
+          "ok": true,
+          "source": "CUA category creation and rename",
+          "categories": [
+            {
+              "id": "category-a3d22d11-2e56-40b2-803a-2687094247fe",
+              "mem": "Margin QA 20261004-2cee0051c7 renamed",
+              "disk": "Margin QA 20261004-2cee0051c7 renamed"
+            }
+          ]
+        },
+        {
+          "ok": true,
+          "source": "CUA native category select and right-click menu",
+          "bookId": "book-00ba6539-16c8-42bc-a3f2-e62db85f0392",
+          "categoryId": "category-a3d22d11-2e56-40b2-803a-2687094247fe",
+          "badge": "Margin QA 20261004-2cee0051c7 renamed",
+          "coverForms": 0,
+          "menuParent": "BODY"
+        },
+        {
+          "ok": true,
+          "source": "CUA category double confirm delete",
+          "book": {
+            "id": "book-00ba6539-16c8-42bc-a3f2-e62db85f0392",
+            "author": "作者验收 · 林",
+            "tags": [
+              "视觉验收"
+            ]
+          },
+          "remaining": []
+        }
+      ],
+      "status": {
+        "phase": "ready",
+        "initialized": true,
+        "pending": false,
+        "revision": 23,
+        "diagnostics": [],
+        "persistedFingerprint": "9e4a50f7:8940"
+      }
+    },
+    "native-menu-ledger-readback": {
+      "ok": true,
+      "mode": "table",
+      "width": 1086,
+      "scrollWidth": 1086,
+      "tableWidth": 1100,
+      "units": [
+        {
+          "text": "2 页",
+          "height": 103.296875,
+          "whiteSpace": "nowrap"
+        },
+        {
+          "text": "2.1 KB",
+          "height": 103.296875,
+          "whiteSpace": "nowrap"
+        },
+        {
+          "text": "2 页",
+          "height": 103.296875,
+          "whiteSpace": "nowrap"
+        },
+        {
+          "text": "2.1 KB",
+          "height": 103.296875,
+          "whiteSpace": "nowrap"
+        }
+      ],
+      "shelf": {
+        "mode": "table",
+        "query": {
+          "query": "Margin QA 20261005-fe31f60206",
+          "sort": "title"
+        },
+        "page": 1
+      }
+    },
+    "native-menu-manager-readback": {
+      "ok": true,
+      "width": 484,
+      "height": 400,
+      "rootWidth": 532,
+      "dialogScrollWidth": 482,
+      "dialogClientWidth": 482,
+      "categoryDisk": [
+        {
+          "id": "category-ebfbc2c3-8adf-439a-9929-f5516d122de7",
+          "name": "Margin QA 20261005-fe31f60206",
+          "order": 2
+        }
+      ]
+    },
+    "native-menu-keyboard-readback": {
+      "ok": true,
+      "parent": "BODY",
+      "focused": "上移分类 Margin QA 20261005-fe31f60206",
+      "buttons": [
+        {
+          "role": "menuitem",
+          "background": "rgba(0, 0, 0, 0)",
+          "shadow": "none"
+        },
+        {
+          "role": "menuitem",
+          "background": "color(srgb 1 0.984627 0.984627)",
+          "shadow": "none"
+        },
+        {
+          "role": "menuitem",
+          "background": "rgba(0, 0, 0, 0)",
+          "shadow": "none"
+        },
+        {
+          "role": "menuitem",
+          "background": "rgba(0, 0, 0, 0)",
+          "shadow": "none"
+        },
+        {
+          "role": "menuitem",
+          "background": "rgba(0, 0, 0, 0)",
+          "shadow": "none"
+        }
+      ]
+    },
+    "native-menu-narrow-a-readback": {
+      "ok": true,
+      "mode": "cards",
+      "width": 532,
+      "scrollWidth": 532,
+      "coverForms": 0,
+      "cards": [
+        {
+          "width": 242,
+          "coverWidth": 240
+        },
+        {
+          "width": 242,
+          "coverWidth": 240
+        }
+      ]
+    },
+    "native-menu-narrow-c-readback": {
+      "ok": true,
+      "rootWidth": 532,
+      "rootScrollWidth": 532,
+      "tableWidth": 1100,
+      "scrollContainer": {
+        "width": 500,
+        "scrollWidth": 1100,
+        "overflowX": "auto"
+      }
+    },
+    "native-menu-narrow-b-readback": {
+      "ok": true,
+      "width": 532,
+      "scrollWidth": 532,
+      "mode": "navigation",
+      "saved": {
+        "mode": "navigation",
+        "query": {
+          "query": "Margin QA 20261005-fe31f60206",
+          "sort": "title"
+        },
+        "page": 1
+      }
+    },
+    "native-delayed-draft-readback": {
+      "ok": true,
+      "draft": {
+        "input": "延迟保存验收",
+        "text": true,
+        "before": "",
+        "calls": 1
+      },
+      "diskAuthor": "延迟保存验收",
+      "mode": "table",
+      "status": {
+        "phase": "ready",
+        "initialized": true,
+        "pending": false,
+        "revision": 17,
+        "diagnostics": [],
+        "persistedFingerprint": "62f82d54:10795"
+      }
+    },
+    "native-navigation-reopen-readback": {
+      "ok": true,
+      "expected": {
+        "mode": "navigation",
+        "query": {
+          "query": "Margin QA 20261005-fe31f60206",
+          "sort": "title"
+        },
+        "page": 1
+      },
+      "mode": "navigation",
+      "query": {
+        "query": "Margin QA 20261005-fe31f60206",
+        "sort": "title"
+      },
+      "saved": {
+        "mode": "navigation",
+        "query": {
+          "query": "Margin QA 20261005-fe31f60206",
+          "sort": "title"
+        },
+        "page": 1
+      },
+      "width": 1086
+    },
+    "native-settings-preview-readback": {
+      "ok": true,
+      "scope": "Native settings open; real snapshot refresh + cleanup preview, no cleanup apply",
+      "preview": "7-909Z-snapshot-d018d582-ce12-4be0-8aaf-a3f0f9ac602c-commit.json · 13 KiB2026-10-03T05-53-36-992Z-snapshot-27faadb1-787c-45e7-a67f-7c95edfc7f76-commit.json · 13 KiB待清理快照上一页待清理快照：第 1 / 2 页，共 189 项待清理快照下一页确认清理旧自动快照取消快照清理请核对文件清单；确认后还需再次点击才会删除。",
+      "settings": {
+        "mode": "table",
+        "query": {
+          "query": "Margin QA 20261005-fe31f60206",
+          "sort": "title"
+        },
+        "page": 1
+      }
+    },
+    "native-fixture-cleanup-menu": {
+      "ok": true,
+      "restored": true,
+      "originalShelf": {
+        "mode": "cards",
+        "query": {
+          "query": "",
+          "sort": "title"
+        },
+        "page": 1
+      },
+      "afterShelf": {
+        "mode": "cards",
+        "query": {
+          "query": "",
+          "sort": "title"
+        },
+        "page": 1
+      },
+      "removed": [
+        "RD-Shelf-Recovery-20261005-fe31f60206/FIXTURE.md",
+        "RD-Shelf-Recovery-20261005-fe31f60206/a.pdf",
+        "RD-Shelf-Recovery-20261005-fe31f60206/b.pdf",
+        ".obsidian/plugins/obsidian-reading-desk/covers/8f4a1e885d3ea25ede3351bf165b16517b380288ca9d2d133f24bb6e4a5f71c3.png",
+        ".obsidian/plugins/obsidian-reading-desk/covers/ccfea31cf5d96ab40e8ae8c7c7f855e3014c86adc62e5dcea5fa49a3739056d7.png"
+      ],
+      "books": 7,
+      "actions": [],
+      "status": {
+        "phase": "ready",
+        "initialized": true,
+        "pending": false,
+        "revision": 19,
+        "diagnostics": [],
+        "persistedFingerprint": "9e4a50f7:8940"
+      }
+    }
+  },
+  "fa880": [
+    {
+      "ip": "192.168.31.252",
+      "returncode": 255,
+      "stdout": "",
+      "stderr": "Connection timed out during banner exchange\nConnection to 192.168.31.252 port 22 timed out\n"
+    },
+    {
+      "ip": "192.168.31.49",
+      "returncode": 255,
+      "stdout": "",
+      "stderr": "ssh: connect to host 192.168.31.49 port 22: Operation timed out\n"
+    }
+  ],
+  "limits": [
+    "Current Obsidian theme and 1086px/532px leaves were verified; final candidate was not switched to another global theme.",
+    "Restore apply, bibliography apply and actual snapshot deletion were not repeated against the user repository; unchanged 0.5 services retain the existing isolation and source tests.",
+    "FA880 timeout blocks main merge, remote main publication and branch cleanup.",
+    "Old shelf-rework screenshots belong to b998888 and are reference evidence only."
+  ]
+}

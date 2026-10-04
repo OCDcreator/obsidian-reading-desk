@@ -5,13 +5,14 @@ import type { BookPatch } from './ShelfHost';
 import { button, element } from './ShelfDom';
 
 /** Restores the draft before binding a replacement control after shelf repaint. */
-export function bindBookEditor(control: HTMLInputElement | HTMLSelectElement, wrapper: HTMLElement, book: LibraryBook, field: ShelfBookField, context: ShelfBookContext, patch: (value: string) => BookPatch): void {
-	const original = control.value;
+export function bindBookEditor(control: HTMLInputElement | HTMLSelectElement, wrapper: HTMLElement, book: LibraryBook, field: ShelfBookField, context: ShelfBookContext, patch: (value: string) => BookPatch, onCancel?: () => void): void {
+	const original = control.value; let cancelled = false;
 	control.value = context.drafts.value(book.id, field, original);
 	control.dataset.editor = context.drafts.key(book.id, field);
 	const feedback = element('span', 'rd-setting-save-status');
 	feedback.setAttribute('role', 'status'); feedback.setAttribute('aria-live', 'polite');
 	const save = (): void => {
+		if (cancelled) return;
 		const draft = context.drafts.read(book.id, field);
 		if (!draft && control.value === original) return;
 		if (draft?.error && control.value === draft.value) { void context.drafts.retry(book.id, field, context.onChanged); return; }
@@ -23,7 +24,11 @@ export function bindBookEditor(control: HTMLInputElement | HTMLSelectElement, wr
 	control.addEventListener('input', () => context.drafts.edit(book.id, field, control.value));
 	if (control instanceof HTMLInputElement) {
 		control.addEventListener('blur', save);
-		control.addEventListener('keydown', event => { if (event.key === 'Enter' && !event.isComposing) { event.preventDefault(); control.blur(); } });
+		control.addEventListener('keydown', event => {
+			if (event.isComposing) return;
+			if (event.key === 'Enter') { event.preventDefault(); control.blur(); }
+			if (event.key === 'Escape' && context.drafts.discard(book.id, field)) { event.preventDefault(); cancelled = true; control.value = original; control.blur(); onCancel?.(); }
+		});
 	} else control.addEventListener('change', save);
 	context.drafts.watch(book.id, field, () => {
 		const draft = context.drafts.read(book.id, field);

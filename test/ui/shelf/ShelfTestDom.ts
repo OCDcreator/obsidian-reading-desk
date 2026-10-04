@@ -31,6 +31,7 @@ export class UiNode {
 	private attributes = new Map<string, string>();
 	private listeners = new Map<string, Array<(event: FakeEvent) => void>>();
 	constructor(tag: string, readonly ownerDocument: UiDocument) { this.tagName = tag.toUpperCase(); }
+	get lastElementChild(): UiNode | null { return this.children[this.children.length - 1] ?? null; }
 	get isConnected(): boolean { return this === this.ownerDocument.body || !!this.parentElement?.isConnected; }
 	get classList(): { add: (...names: string[]) => void; toggle: (name: string, on?: boolean) => void; contains: (name: string) => boolean } {
 		return {

@@ -1,10 +1,10 @@
 import type { LibraryBook, LibraryCategory, LibraryList, ShelfViewState } from '../types/contracts';
-import { ShelfSearchController, sortCategories } from './shelf/ShelfViewModel';
+import { ShelfSearchController, sortCategories, ledgerStats, readLegacyShelfState } from './shelf/ShelfViewModel';
 import { button, element, errorMessage, input } from '../ui/shelf/ShelfDom';
 import type { ShelfViewHost } from '../ui/shelf/ShelfHost';
-import { CONTINUE_LIMIT, hasShelfFilters, pageBooks, queryBooks, type ShelfQuery } from '../ui/shelf/ShelfQuery';
+import { hasShelfFilters, pageBooks, queryBooks, type ShelfQuery } from '../ui/shelf/ShelfQuery';
 import { createShelfFilters } from '../ui/shelf/ShelfFilters';
-import { createBookCard, createBookTable, type ShelfBookContext } from '../ui/shelf/ShelfBooks';
+import { type ShelfBookContext } from '../ui/shelf/ShelfBooks';
 import { ShelfDialog } from '../ui/shelf/ShelfDialog';
 import { openBatchEditor } from '../ui/shelf/ShelfBatchEditor';
 import { openRelinkDialog } from '../ui/shelf/ShelfRelink';
@@ -12,6 +12,11 @@ import { ShelfAnnotationSearch } from '../ui/shelf/ShelfAnnotationSearch';
 import { ShelfBookDrafts } from '../ui/shelf/ShelfBookDrafts';
 import { ShelfStatePersistence } from '../ui/shelf/ShelfStatePersistence';
 import { openListManager } from '../ui/shelf/ShelfListManager';
+import { createShelfCard } from './shelf/BookCard';
+import { openShelfCategoryMenu } from './shelf/ShelfCategoryMenu';
+import { createLedgerSummary, createLedgerTable } from './shelf/LedgerView';
+import { createNavigationLayout } from './shelf/NavigationLayout';
+import { createContinueReadingRail } from './shelf/ContinueReadingRail';
 export type { ShelfViewHost } from '../ui/shelf/ShelfHost';
 
 /** A framework-free shelf surface. LibraryIndex/AnnotationStore remain the sources. */
@@ -20,8 +25,8 @@ export class ShelfView {
 	private books: LibraryBook[] = [];
 	private categories: LibraryCategory[] = [];
 	private lists: LibraryList[] = [];
-	private query: ShelfQuery = { query: '', sort: 'title' };
-	private mode: 'cards' | 'table' | 'annotations' = 'cards';
+	private query: ShelfQuery = { query: '', sort: 'recent' };
+	private mode: ShelfViewState['mode'] = 'cards';
 	private page = 1;
 	private selected = new Set<string>();
 	private loading = false;
@@ -39,32 +44,39 @@ export class ShelfView {
 	private readonly preferences: ShelfStatePersistence;
 	private preferencesReady = false;
 	private userStateChanged = false;
+	private workflowExpanded = false;
+	private selectionMode = false;
+	private closeCategoryMenu?: () => void;
+	private subtitle?: HTMLElement;
 	constructor(private readonly host: ShelfViewHost) { this.annotationSearch = new ShelfAnnotationSearch(host); this.preferences = new ShelfStatePersistence(host); }
 
 	async render(container: HTMLElement): Promise<void> { this.container = container; this.ensureShell(); await this.reload(); }
 	destroy(): Promise<void> {
 		if (this.preferencesReady || this.userStateChanged) this.preferences.record(this.viewState());
-		this.generation++; this.dialog?.close(false); this.annotationSearch.destroy(); this.drafts.clear();
+		this.generation++; this.closeCategoryMenu?.(); this.dialog?.close(false); this.annotationSearch.destroy(); this.drafts.clear();
 		this.container?.replaceChildren(); this.container = undefined; this.content = undefined; this.toolbar = undefined;
 		return this.preferences.flush();
 	}
 	private ensureShell(): void {
 		const root = this.container; if (!root || this.content) return;
 		root.replaceChildren(); root.className = 'rd-shelf';
-		const header = element('header', 'rd-shelf-header'); header.append(element('h1', 'rd-shelf-heading', '书架'));
-		const actions = element('div', 'rd-shelf-actions'); actions.append(button('扫描书库', '重新扫描书库', () => void this.scan()));
-		if (this.host.openSettings) actions.append(button('设置', '打开 Reading Desk 设置', () => void this.host.openSettings?.())); header.append(actions);
+		const frame = element('div', 'rd-shelf-frame'); const header = element('header', 'rd-shelf-header');
+		const title = element('div', 'rd-shelf-title-wrap'); this.subtitle = element('p', 'rd-shelf-subtitle', '原文、摘录与进度在同一处'); title.append(element('h1', 'rd-shelf-heading', '书架'), this.subtitle); header.append(title);
+		const actions = element('div', 'rd-shelf-actions'); const scan = button('扫描书库', '重新扫描书库', () => void this.scan()); scan.classList.add('rd-button--primary'); actions.append(scan);
+		if (this.host.openSettings) actions.append(button('导入书籍', '导入书籍', () => void this.host.openSettings?.('data')), button('设置', '打开 Reading Desk 设置', () => void this.host.openSettings?.()));
+		const annotations = button('摘录搜索', '摘录与评论', () => this.switchMode('annotations')); annotations.dataset.shelfMode = 'annotations'; actions.append(annotations); header.append(actions);
 		this.search = input('search', '搜索书架'); this.search.placeholder = '搜索标题、作者或标签'; this.search.className = 'rd-shelf-search';
 		this.search.addEventListener('compositionstart', () => this.searchController.beginComposition());
 		this.search.addEventListener('compositionend', () => this.applySearch(true)); this.search.addEventListener('input', () => this.applySearch(false));
 		this.toolbar = element('div', 'rd-shelf-toolbar'); this.toolbar.append(this.search);
 		const modes = element('div', 'rd-view-switch'); modes.setAttribute('role', 'group'); modes.setAttribute('aria-label', '书架视图');
-		for (const [mode, label] of [['cards', '卡片视图'], ['table', '表格视图'], ['annotations', '摘录与评论']] as const) {
-			const control = button(label, label, () => { this.mode = mode; this.annotationSearch.destroy(); this.paintChanged(); });
+		for (const [mode, label] of [['cards', '卡片视图'], ['table', '表格视图'], ['navigation', '导航视图']] as const) {
+			const control = button(mode === 'table' ? '台账' : mode === 'cards' ? '卡片' : '导航', label, () => this.switchMode(mode));
 			control.classList.add('rd-view-switch-button'); control.dataset.shelfMode = mode; modes.append(control);
 		}
-		this.toolbar.append(modes); this.content = element('div', 'rd-shelf-results'); root.append(header, this.toolbar, this.preferences.root, this.content);
+		this.toolbar.append(modes); this.content = element('div', 'rd-shelf-results'); frame.append(header, this.toolbar, this.preferences.root, this.content); root.append(frame);
 	}
+	private switchMode(mode: ShelfViewState['mode']): void { this.mode = mode; this.annotationSearch.destroy(); this.paintChanged(); }
 	private applySearch(completed: boolean): void {
 		const value = this.search?.value ?? '';
 		const next = completed ? this.searchController.endComposition(value) : this.searchController.input(value);
@@ -93,7 +105,7 @@ export class ShelfView {
 		const editor = active && root.contains(active) ? active.dataset.editor : undefined;
 		const selection = active instanceof HTMLInputElement ? [active.selectionStart, active.selectionEnd] : undefined;
 		this.drafts.clearBindings(); root.replaceChildren();
-		for (const control of Array.from(this.toolbar?.querySelectorAll<HTMLElement>('[data-shelf-mode]') ?? [])) {
+		for (const control of Array.from(this.container?.querySelectorAll<HTMLElement>('[data-shelf-mode]') ?? [])) {
 			const selected = control.dataset.shelfMode === this.mode;
 			control.setAttribute('aria-pressed', String(selected)); control.classList.toggle('is-selected', selected);
 		}
@@ -110,12 +122,13 @@ export class ShelfView {
 	}
 	private async readPreferences(): Promise<ShelfViewState | undefined> {
 		if (this.preferencesReady) return undefined;
-		try { return await this.host.readShelfState?.(); }
+		try { const saved = await this.host.readShelfState?.(); if (saved) return saved;
+			const legacy = typeof localStorage === 'undefined' ? undefined : readLegacyShelfState(localStorage); if (legacy) { this.preferences.record(legacy); } return legacy; }
 		catch (error) { this.preferences.message('无法读取书架视图：' + errorMessage(error)); return undefined; }
 	}
 	private restorePreferences(saved?: ShelfViewState): void {
 		if (this.preferencesReady) return;
-		const state: ShelfViewState = saved ?? { mode: 'cards', query: { query: '', sort: 'title' }, page: 1 };
+		const state: ShelfViewState = saved ?? { mode: 'cards', query: { query: '', sort: 'recent' }, page: 1 };
 		this.preferences.initialize(state);
 		if (!this.userStateChanged) { this.mode = state.mode; this.query = { ...state.query }; this.page = state.page; if (this.search) this.search.value = this.query.query; }
 		this.preferencesReady = true;
@@ -129,32 +142,47 @@ export class ShelfView {
 	}
 	private createContent(): HTMLElement {
 		const content = element('div', 'rd-shelf-content'); const context = this.bookContext();
-		if (!hasShelfFilters(this.query)) {
-			const books = this.books.filter(book => !book.missing && book.progress > 0 && book.progress < 1).sort((a, b) => (b.lastReadAt ?? 0) - (a.lastReadAt ?? 0)).slice(0, CONTINUE_LIMIT);
-			if (books.length) {
-				const rail = element('section', 'rd-continue-reading'); rail.setAttribute('aria-label', '继续阅读'); rail.append(element('h2', 'rd-section-title', '继续阅读'));
-				const items = element('div', 'rd-continue-reading-list'); for (const book of books) items.append(createBookCard(book, context, true)); rail.append(items); content.append(rail);
-			}
-		}
-		content.append(this.createCategoryPanel(), createShelfFilters(this.books, this.lists, this.query, patch => { Object.assign(this.query, patch); this.page = 1; this.paintChanged(); }));
+		const showRail = !hasShelfFilters({ ...this.query, historyOnly: false });
+		const rail = showRail ? createContinueReadingRail(this.books.filter(book => !book.missing), !!this.query.historyOnly, { ...context, onToggleHistory: () => { this.query.historyOnly = !this.query.historyOnly; this.page = 1; this.paintChanged(); } }) : undefined;
+		if (rail) content.append(rail);
 		const books = queryBooks(this.books, this.query); const window = pageBooks(books, this.page); this.page = window.page;
-		const summary = element('div', 'rd-shelf-summary'); summary.append(element('span', '', '显示 ' + window.items.length + ' / ' + window.total + ' 本'));
-		if (hasShelfFilters(this.query)) summary.append(button('清除筛选', '清除所有书架筛选', () => this.clearFilters())); content.append(summary, this.createSelectionBar(window.items, books));
-		if (!books.length) {
-			const empty = this.state(this.books.length ? '没有符合当前筛选的图书。' : '书库尚无图书。设置文件夹后扫描书库。', 'status');
-			if (!this.books.length) empty.append(button('扫描书库', '扫描空书库', () => void this.scan())); content.append(empty);
-		} else if (this.mode === 'table') content.append(createBookTable(window.items, context));
-		else { const grid = element('div', 'rd-shelf-grid'); grid.setAttribute('aria-label', '图书卡片'); for (const book of window.items) grid.append(createBookCard(book, context)); content.append(grid); }
+		const heading = element('div', 'rd-section-heading'); const title = element('div', 'rd-section-title');
+		title.append(element('h2', 'rd-section-heading-main', this.query.historyOnly ? '阅读记录' : this.mode === 'table' ? '书目台账' : '全部图书'), button(window.total + ' 本 · 按' + ({ recent: '最近阅读', title: '书名', author: '作者', rating: '评分', progress: '进度' }[this.query.historyOnly ? 'recent' : this.query.sort]) + '排序', '切换书架排序', () => { this.query.sort = this.query.sort === 'recent' ? 'title' : 'recent'; this.page = 1; this.paintChanged(); }));
+		const sortControl = title.querySelector<HTMLButtonElement>('button'); sortControl?.classList.add('rd-section-note-button'); if (sortControl) sortControl.disabled = !!this.query.historyOnly;
+		const actions = element('div', 'rd-shelf-actions'); const workflow = button('筛选与整理', '筛选与整理', () => { this.workflowExpanded = !this.workflowExpanded; this.paint(); }); workflow.setAttribute('aria-expanded', String(this.workflowExpanded)); actions.append(workflow, button(this.selectionMode ? '完成选择' : '批量选择', '切换批量选择', () => { this.selectionMode = !this.selectionMode; if (!this.selectionMode) this.selected.clear(); this.paint(); }));
+		if (hasShelfFilters(this.query)) actions.append(button('清除筛选', '清除所有书架筛选', () => this.clearFilters())); heading.append(title, actions);
+		const manage = button('管理分类', '管理分类', () => this.manageCategories(manage)); actions.append(manage);
+		if (this.mode !== 'navigation') content.append(this.createCategoryPanel());
+		const controls = element('div', 'rd-shelf-workflow'); controls.hidden = !this.workflowExpanded && !this.selectionMode;
+		const filters = createShelfFilters(this.books, this.lists, this.query, patch => { Object.assign(this.query, patch); this.page = 1; this.paintChanged(); }); filters.hidden = !this.workflowExpanded; controls.append(filters, this.createSelectionBar(window.items, books)); content.append(controls);
+		const empty = this.state(this.books.length ? '没有符合当前筛选的图书。' : '书库尚无图书。设置文件夹后扫描书库。', 'status');
+		if (!this.books.length) empty.append(button('扫描书库', '扫描空书库', () => void this.scan()));
+		if (this.mode === 'navigation') {
+			content.append(createNavigationLayout({ books: window.items, allBooks: this.books, categories: this.categories, selectedCategoryId: this.query.categoryId, mainHeading: heading, emptyState: empty,
+				host: { ...context, onSelectCategory: id => { this.query.categoryId = id; this.page = 1; this.paintChanged(); } } }));
+		} else {
+			if (this.mode === 'table') content.append(createLedgerSummary(ledgerStats(this.books, this.host.countHighlights?.() ?? 0)));
+			content.append(heading);
+			if (!books.length) content.append(empty);
+			else if (this.mode === 'table') content.append(createLedgerTable(window.items, context));
+			else { const grid = element('div', 'rd-shelf-grid'); grid.setAttribute('aria-label', '图书卡片'); for (const book of window.items) grid.append(createShelfCard(book, this.categories.find(item => item.id === book.categoryId), context)); content.append(grid); }
+		}
 		content.append(this.createPagination(window.pages)); return content;
 	}
 	private createCategoryPanel(): HTMLElement {
-		const panel = element('section', 'rd-category-panel'); panel.setAttribute('aria-label', '图书分类');
+		const panel = element('section', 'rd-category-panel rd-category-chips'); panel.setAttribute('aria-label', '图书分类');
 		const category = (id: string | undefined, name: string): void => {
 			const control = button(name, name, () => { this.query.categoryId = id; this.page = 1; this.paintChanged(); });
 			control.classList.add('rd-category-chip'); control.setAttribute('aria-pressed', String(this.query.categoryId === id)); control.classList.toggle('is-selected', this.query.categoryId === id); panel.append(control);
 		}; category(undefined, '全部 ' + this.books.length);
-		for (const item of this.categories) category(item.id, item.name + ' ' + this.books.filter(book => book.categoryId === item.id).length);
-		const manage = button('管理分类', '管理分类', () => this.manageCategories(manage)); panel.append(manage); return panel;
+		for (const item of this.categories) {
+			category(item.id, item.name + ' ' + this.books.filter(book => book.categoryId === item.id).length);
+			const chip = panel.lastElementChild as HTMLElement;
+			const menu = (event: Event): void => { event.preventDefault(); if (!this.container) return; this.closeCategoryMenu?.(); this.closeCategoryMenu = openShelfCategoryMenu(this.container, chip, item, this.categories, this.host, () => this.reload(false)); };
+			chip.addEventListener('contextmenu', menu); chip.addEventListener('keydown', event => { if (event.key === 'ContextMenu' || (event.key === 'F10' && event.shiftKey)) menu(event); });
+		}
+
+		const create = button('+', '新建分类', () => this.manageCategories(create)); create.classList.add('rd-category-chip', 'rd-category-chip-add'); panel.append(create); return panel;
 	}
 	private createSelectionBar(visible: LibraryBook[], filtered: LibraryBook[]): HTMLElement {
 		const bar = element('div', 'rd-shelf-selection-bar');
@@ -163,7 +191,7 @@ export class ShelfView {
 			if (!this.container || !this.batchButton) return;
 			this.dialog?.close(false); this.dialog = openBatchEditor(this.container, this.batchButton, this.books.filter(book => this.selected.has(book.id)), this.categories, this.lists, this.host, () => this.reload(false));
 		}); this.batchButton.disabled = !this.selected.size || !this.host.batchUpdate;
-		const choose = (items: LibraryBook[]): void => { for (const book of items) this.selected.add(book.id); this.syncSelection(); };
+		const choose = (items: LibraryBook[]): void => { this.selectionMode = true; for (const book of items) this.selected.add(book.id); this.paint(); };
 		bar.append(this.batchCount, button('选择本页', '批量选择本页', () => choose(visible)), button('选择筛选结果', '批量选择全部 ' + filtered.length + ' 本筛选结果', () => choose(filtered)), button('取消选择', '取消全部批量选择', () => { this.selected.clear(); this.syncSelection(); }), this.batchButton);
 		if (this.host.createList) {
 			const create = button('新建阅读列表', '新建阅读列表', () => this.createList(create)); bar.append(create);
@@ -183,7 +211,7 @@ export class ShelfView {
 		for (const node of Array.from(this.content?.querySelectorAll<HTMLInputElement>('[data-select-book]') ?? [])) node.checked = this.selected.has(node.dataset.selectBook ?? '');
 	}
 	private bookContext(): ShelfBookContext {
-		return { host: this.host, categories: this.categories, lists: this.lists, selected: this.selected, drafts: this.drafts,
+		return { host: this.host, categories: this.categories, lists: this.lists, selected: this.selected, selectionMode: this.selectionMode, drafts: this.drafts,
 			onSelect: (id, checked) => { if (checked) this.selected.add(id); else this.selected.delete(id); this.syncSelection(); },
 			onOpen: book => void this.openBook(book), onRelink: (book, trigger) => this.relink(book, trigger), onChanged: () => void this.reload(false) };
 	}
@@ -201,14 +229,28 @@ export class ShelfView {
 		const drawOrder = (): void => {
 			order.replaceChildren();
 			this.categories.forEach((category, index) => {
-				const row = element('li', 'rd-category-order-row', category.name);
+				const row = element('li', 'rd-category-order-row'); const title = element('span', '', category.name + ' · ' + this.books.filter(book => book.categoryId === category.id).length + ' 本'); row.append(title);
 				for (const [delta, label] of [[-1, '上移'], [1, '下移']] as const) {
 					const move = button(label, category.name + label, async () => {
 						const reordered = [...this.categories]; const [moved] = reordered.splice(index, 1); reordered.splice(index + delta, 0, moved);
 						try { await this.host.reorderCategories(reordered.map(item => item.id)); await this.reload(false); drawOrder(); Array.from(order.querySelectorAll<HTMLButtonElement>('button')).find(control => control.getAttribute('aria-label') === category.name + label)?.focus(); }
 						catch (error) { status.textContent = errorMessage(error); }
 					}); move.disabled = index + delta < 0 || index + delta >= this.categories.length; row.append(move);
-				} order.append(row);
+				}
+				if (this.host.renameCategory) row.append(button('改名', '重命名分类 ' + category.name, () => {
+					const edit = input('text', '分类名称 ' + category.name, category.name); const save = button('保存', '保存分类名称 ' + category.name, async () => {
+						try { await this.host.renameCategory?.(category.id, edit.value.trim()); await this.reload(false); drawOrder(); status.textContent = '分类已改名'; }
+						catch (error) { status.textContent = errorMessage(error); }
+					}); row.append(edit, save); edit.focus();
+				}));
+				if (this.host.removeCategory) {
+					let armed = false; const remove = button('删除', '删除分类 ' + category.name, async () => {
+						if (!armed) { armed = true; remove.textContent = '确认删除'; status.textContent = '删除后此分类的图书将变为未分类，图书会保留。'; return; }
+						try { await this.host.removeCategory?.(category.id); await this.reload(false); drawOrder(); status.textContent = '分类已删除，图书已保留'; }
+						catch (error) { status.textContent = errorMessage(error); }
+					}); row.append(remove);
+				}
+				order.append(row);
 			});
 		}; drawOrder();
 		const add = async (): Promise<void> => {

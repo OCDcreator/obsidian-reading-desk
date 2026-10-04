@@ -19,7 +19,11 @@ export interface ShelfViewHost {
 	openBook(book: LibraryBook): Awaitable<void>;
 	scan(): Awaitable<void>;
 	resolveCoverUrl?(coverPath: string): string | null;
-	openSettings?(): Awaitable<void>;
+	openSettings?(tab?: string): Awaitable<void>;
+	countHighlights?(): number;
+	lastReadPage?(bookId: string): number | undefined;
+	renameCategory?(id: string, name: string): Awaitable<void>;
+	removeCategory?(id: string): Awaitable<void>;
 	getLists?(): Awaitable<LibraryList[]>;
 	createList?(name: string): Awaitable<LibraryList>;
 	renameList?(id: string, name: string): Awaitable<void>;

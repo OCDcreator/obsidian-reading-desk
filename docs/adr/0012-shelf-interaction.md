@@ -38,3 +38,10 @@ ShelfItemView 将 LibraryIndex 的 listLists/createList/renameList/deleteList/ba
 ## 验证与限制
 
 交互回归覆盖卡片与 select 冒泡、IME、分类面板焦点、40节点分页、跨页批量选择、列表替换/标签追加、重关联确认、480/640/900px 工具栏折叠/disabled/实际入口，以及设置失败重试与旧请求竞态。测试用隔离 DOM 验证事件与宿主契约；实际主题、高 DPI 和 Obsidian leaf 视觉验收需要宿主集成环境，本工作不部署。
+
+
+## 2026-10-04 A/B/C 整合补充
+
+ADR 0007 的卡片、台账、导航布局恢复为界面标准，0.5 工作流保留在同一 ShelfView：摘录搜索是独立入口；筛选、列表和批量整理在可展开操作区。旧 `table` 持久化枚举继续对应台账，新增 `navigation` 与 `historyOnly`，旧 localStorage 布局/排序仅在 vault 尚无 shelf 设置时迁入 Repository。书籍草稿不因三种布局切换而变成另一真源，失败可重试，未提交的作者输入可 Escape 放弃。
+
+用户于 2026-10-04 明确拒绝封面上的「选择 / 分类 / 未分类」控件。浏览态封面保持纯图像与只读分类角标，批量选择由明确按钮进入，只有选择态显示小尺寸复选框；分类编辑经台账或批量整理。此调整遵循 ADR 0007 的「卡内常驻 select 移除」原则，恢复 `impeccable` Operate 的任务层级与控件一致性。

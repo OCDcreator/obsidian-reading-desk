@@ -37,7 +37,7 @@ describe('shelf saved workflow state', () => {
 		search(root, '书 0'); search(root, '书'); labeled(root, '表格视图').click(); labeled(root, '下一页图书').click();
 		await vi.advanceTimersByTimeAsync(499); expect(f.save).not.toHaveBeenCalled();
 		await vi.advanceTimersByTimeAsync(1); expect(f.save).toHaveBeenCalledTimes(1);
-		expect(f.state()).toMatchObject({ mode: 'table', query: { query: '书', sort: 'title' }, page: 2 });
+		expect(f.state()).toMatchObject({ mode: 'table', query: { query: '书', sort: 'recent' }, page: 2 });
 		await shelf.destroy(); const reopened = document.body.createDiv(); await new ShelfView(f.host).render(reopened as unknown as HTMLElement);
 		expect(labeled(reopened, '表格视图').getAttribute('aria-pressed')).toBe('true'); expect(labeled(reopened, '搜索书架').value).toBe('书');
 		expect(reopened.querySelector('.rd-library-table tbody tr')?.dataset.bookId).toBe('40');

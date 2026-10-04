@@ -1,6 +1,6 @@
 # ADR 0007:书架对齐原型稿(A 紧凑研究书架 + B 分类导航工作台 + C 书目台账)
 
-状态:Proposed(2026-09-20 grilling 会话产出;同日依 `reading-desk-bookshelf-prototype.md` 契约与 html-a/b/c 原型修订,用户裁决 B、C 均纳入本轮;待实施后改 Accepted)
+状态:Accepted(2026-09-20 grilling 会话产出;同日依 `reading-desk-bookshelf-prototype.md` 契约与 html-a/b/c 原型修订,用户裁决 B、C 均纳入本轮;2026-09-21 于 `zcode/shelf-abc-rework` 分支实施完毕并通过三阶段验收——verify 48 文件 181 测试全绿、四件套部署+SHA-256 核对、impeccable detect 清零、两轮独立设计评审+终验「通过」、行为人肉模拟全绿;证据见 `docs/self-check/shelf-rework/`)
 
 ## 背景
 
@@ -65,3 +65,8 @@
 - 原型:`docs/prototypes/reading-desk-bookshelf-prototype.html`、`reading-desk-bookshelf-prototype.md`(样式契约)、`reading-desk-bookshelf-html-a/-b/-c.png`、`reading-desk-bookshelf-gimg-v1.png`(+`.prompt.md`)、`reading-desk-bookshelf-contact-sheet.png`
 - PDF Flow 书架观察:`docs/self-check/reference-a.md`、`reference-b.md`
 - 过程稿(双变体对比,已被原型稿取代):`docs/prototypes/shelf-pdf-flow-alignment-mockup-v1.html`
+
+
+## 2026-10-04 整合验收
+
+用户确认本 ADR 的 A/B/C 是目标书架效果。旧分支的 Accepted 与旧截图只证明当时版本；与 Margin 0.5 的整合候选须重新完成源码门禁、真实 Test Vault 输入及磁盘读回，详见 `docs/shelf-recovery-2026-10-04.md`。

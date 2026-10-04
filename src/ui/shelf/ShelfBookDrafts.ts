@@ -31,6 +31,10 @@ export class ShelfBookDrafts {
 		const listeners = this.listeners.get(key) ?? new Set<() => void>();
 		listeners.add(listener); this.listeners.set(key, listeners); listener();
 	}
+	discard(bookId: string, field: ShelfBookField): boolean {
+		const key = this.key(bookId, field); if (this.entries.get(key)?.saving) return false;
+		this.entries.delete(key); this.notify(key); return true;
+	}
 	clearBindings(): void { this.listeners.clear(); }
 	retainBooks(ids: Set<string>): void {
 		for (const [key, entry] of this.entries) if (!ids.has(entry.bookId)) this.entries.delete(key);

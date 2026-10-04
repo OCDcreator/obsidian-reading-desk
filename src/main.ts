@@ -49,7 +49,6 @@ export default class ReadingDeskPlugin extends Plugin {
 	private recoverySnapshots!: RecoverySnapshotService;
 	private dataManagement!: ReadingDeskDataManagement;
 	private annotationSearch!: AnnotationSearchService;
-
 	async onload(): Promise<void> {
 		this.recoveryFiles = new RecoverySnapshotFiles(this.app.vault.adapter, `${this.manifest.dir}/recovery`);
 		this.recoverySnapshots = new RecoverySnapshotService(this.recoveryFiles);
@@ -121,7 +120,8 @@ export default class ReadingDeskPlugin extends Plugin {
 			open: path => this.openReader(path),
 			scan: () => this.scanLibrary(),
 			resourceUrl: path => this.app.vault.adapter.getResourcePath(path),
-			openSettings: () => this.openPluginSettings('library'),
+			openSettings: tab => this.openPluginSettings(tab ?? 'library'),
+			countHighlights: () => this.annotations.listAll().length, lastReadPage: id => { const book = this.library.get(id); const p = book && this.library.readReaderState(book.path)?.position; return p ? p.page + 1 : undefined; },
 			readShelfState: () => structuredClone(this.repository.readSettings().shelf), saveShelfState: shelf => this.repository.updateSettings({ shelf }),
 			searchAnnotations: query => this.annotationSearch.search(query), openHighlight: (path, id) => this.openLinkedReader(path, id),
 			listSourcePaths: () => this.app.vault.getFiles().filter(file => isLibraryPath(file.path)).map(file => file.path),
