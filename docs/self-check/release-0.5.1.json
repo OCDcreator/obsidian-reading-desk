@@ -1,0 +1,66 @@
+{
+  "version": "0.5.1",
+  "codename": "Margin",
+  "date": "2026-10-05",
+  "baseCommit": "af7b36d9a4fd1797372a6585058a6b917a9857a4",
+  "change": "Patch version update for merged A/B/C shelf and Margin 0.5 workflows; no application source change in this version commit.",
+  "verification": {
+    "command": "npm run verify",
+    "testFiles": 109,
+    "tests": 605,
+    "gates": [
+      "project docs",
+      "owner guard",
+      "version synchronization",
+      "lint",
+      "TypeScript",
+      "production build"
+    ]
+  },
+  "deployment": {
+    "checkedAt": "2026-10-05T06:49:58.299508+00:00",
+    "version": "0.5.1",
+    "buildId": "0.5.1+2026-10-05T06:46:00.036Z",
+    "bundleComparison": {
+      "sameCodeAfterNormalization": true,
+      "normalizedDifferences": [
+        "APP_VERSION",
+        "BUILD_ID",
+        "4 esbuild dependency module path labels due to primary checkout instead of worktree"
+      ]
+    },
+    "hashes": {
+      "main.js": "4ff252884b203318b22edde34850971441372259a50e49d9ae83248891c31683",
+      "manifest.json": "4d2a342c63eb3720e5695e7a02f8e78e4c5ad1b6a8e85fa4626337043d14c4f9",
+      "styles.css": "bc76b4a022ea1df78bac2a764e9aab997065a247386c6082c28e8546c8417837",
+      "pdf.worker.mjs": "7c237f83fa56bce645d8af51d183c9c56ba7b2d2928ff42754dc7020bea36323"
+    },
+    "runtime": {
+      "logs": [
+        "[Reading Desk] Margin v0.5.1 build 0.5.1+2026-10-05T06:46:00.036Z"
+      ],
+      "version": "0.5.1",
+      "status": {
+        "phase": "ready",
+        "initialized": true,
+        "pending": false,
+        "revision": 1,
+        "diagnostics": [],
+        "persistedFingerprint": "f12c4b5b:9149"
+      },
+      "books": 7,
+      "shelf": {
+        "mode": "cards",
+        "query": {
+          "query": "",
+          "sort": "title"
+        },
+        "page": 1
+      },
+      "dataUnchanged": true,
+      "shelfUnchanged": true
+    }
+  },
+  "nativeObservation": "Obsidian testvault window shows cards/table/navigation controls after plugin reload.",
+  "runtimeScope": "Prior native workflow acceptance remains scoped to the merged source. This patch verifies version synchronization, deployment hashes, fresh scoped startup and unchanged current data; restore/import apply and global theme scope are unchanged."
+}
