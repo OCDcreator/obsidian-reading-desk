@@ -1,0 +1,140 @@
+{
+  "checkedAt": "2026-10-05T03:47:05.876000+00:00",
+  "integrationCommit": "6e040c21ec76312569d324c1c13b94b91b145c48",
+  "status": "Integration, Test Vault, FA880 sync and branch cleanup completed; this evidence is followed by a documentation-only commit",
+  "sourceGate": {
+    "command": "npm run verify",
+    "files": 109,
+    "tests": 605,
+    "log": "verify-premerge.log"
+  },
+  "deployment": {
+    "checkedAt": "2026-10-05T03:38:15.556062+00:00",
+    "sourceCommit": "6e040c21ec76312569d324c1c13b94b91b145c48",
+    "buildId": "0.5.0+2026-10-05T03:29:06.195Z",
+    "sameCodeAsNativeAcceptedBuildExceptBuildId": true,
+    "hashes": {
+      "main.js": "84ba8e0fe4ea4cdf25368895aa32ca5fc96e130824aa0e2f103a0791fb1413fe",
+      "manifest.json": "3278a607204ff58526455463192fde6d5362b56ec240175b2965af9d41f82d8f",
+      "styles.css": "bc76b4a022ea1df78bac2a764e9aab997065a247386c6082c28e8546c8417837",
+      "pdf.worker.mjs": "7c237f83fa56bce645d8af51d183c9c56ba7b2d2928ff42754dc7020bea36323"
+    },
+    "runtime": {
+      "logs": [
+        "[Reading Desk] Margin v0.5.0 build 0.5.0+2026-10-05T03:29:06.195Z"
+      ],
+      "status": {
+        "phase": "ready",
+        "initialized": true,
+        "pending": false,
+        "revision": 1,
+        "diagnostics": [],
+        "persistedFingerprint": "9e4a50f7:8940"
+      },
+      "books": 7,
+      "shelf": {
+        "mode": "cards",
+        "query": {
+          "query": "",
+          "sort": "title"
+        },
+        "page": 1
+      },
+      "shelves": [
+        {
+          "leafId": "1b78f02142a1bac6",
+          "width": 0,
+          "scrollWidth": 0,
+          "coverForms": 0,
+          "modes": [
+            "annotations",
+            "cards",
+            "table",
+            "navigation"
+          ]
+        },
+        {
+          "leafId": "f60f3704f8a1a4c0",
+          "width": 1086,
+          "scrollWidth": 1086,
+          "coverForms": 0,
+          "modes": [
+            "annotations",
+            "cards",
+            "table",
+            "navigation"
+          ]
+        }
+      ]
+    }
+  },
+  "parityBeforeDocumentationCommit": {
+    "macHead": "6e040c21ec76312569d324c1c13b94b91b145c48",
+    "fa880": {
+      "machine": "FA880",
+      "head": "6e040c21ec76312569d324c1c13b94b91b145c48",
+      "originMain": "6e040c21ec76312569d324c1c13b94b91b145c48",
+      "refs": [
+        "refs/heads/main",
+        "refs/remotes/origin/HEAD",
+        "refs/remotes/origin/main"
+      ],
+      "status": []
+    },
+    "originMain": "6e040c21ec76312569d324c1c13b94b91b145c48",
+    "macStatus": ""
+  },
+  "branchCleanup": {
+    "checkedAt": "2026-10-05T03:45:34.572700+00:00",
+    "deletedLocal": [
+      {
+        "name": "codex/margin-0-5-reliability-workflows",
+        "sha": "463503643608788d55e1dd15596f28545e289e1f"
+      },
+      {
+        "name": "codex/margin-shelf-recovery",
+        "sha": "6e040c21ec76312569d324c1c13b94b91b145c48"
+      },
+      {
+        "name": "codex/pdf-plus-design-integration",
+        "sha": "8d8cc4173b341c1e8238cdaf8ac26528877bd7f8"
+      },
+      {
+        "name": "zcode/reader-ux-overhaul",
+        "sha": "01140e4c277cc35b0145d5be8cff9de7e73ff5d5"
+      }
+    ],
+    "deletedRemote": [
+      {
+        "ref": "refs/heads/codex/margin-0-5-reliability-workflows",
+        "sha": "463503643608788d55e1dd15596f28545e289e1f"
+      },
+      {
+        "ref": "refs/heads/codex/margin-shelf-recovery",
+        "sha": "6e040c21ec76312569d324c1c13b94b91b145c48"
+      },
+      {
+        "ref": "refs/heads/codex/pdf-plus-design-integration",
+        "sha": "8d8cc4173b341c1e8238cdaf8ac26528877bd7f8"
+      },
+      {
+        "ref": "refs/heads/zcode/nav-native-thumbnail-style",
+        "sha": "334c3caa8f5e86b9ca99dbfe8ab855247fa38177"
+      },
+      {
+        "ref": "refs/heads/zcode/shelf-abc-rework",
+        "sha": "b998888c449ea2c61046dbb16040ab65a269e1a7"
+      }
+    ],
+    "remainingRefs": [
+      "refs/heads/main",
+      "refs/remotes/origin/HEAD",
+      "refs/remotes/origin/main"
+    ],
+    "remoteAfter": "6e040c21ec76312569d324c1c13b94b91b145c48\trefs/heads/main",
+    "head": "6e040c21ec76312569d324c1c13b94b91b145c48",
+    "status": ""
+  },
+  "archivedWorktree": "/Users/dht/.codex/worktrees/margin-shelf-recovery/obsidian-reading-desk",
+  "scope": "Native A/B/C and 0.5 shelf workflows per acceptance.json; unchanged restore/import apply and theme limits remain as recorded."
+}

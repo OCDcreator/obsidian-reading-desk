@@ -15,7 +15,7 @@
 
 完成结论区分源码门禁、真实桌面验收、跨机同步及尚未验证边界。
 
-## 当前证据
+## 整合起点证据（历史）
 
 - 整合起点：main 与 origin/main 均为 `aedd5a2bf2d5aa334e8ec55ce7d657e6dbcf4da4`；A/B/C 分支为 `b998888c449ea2c61046dbb16040ab65a269e1a7`。
 - 两边独有提交数为 8 / 6。隔离工作树中的未提交合并保留父提交关系。
@@ -34,7 +34,7 @@
 
 最终候选已完成下述真实书架 UI 验收；不将检测输出、单元测试或一次截图当作全部样式的保证。
 
-## 2026-10-05 本机验收与剩余边界
+## 2026-10-05 凌晨本机验收与当时边界
 
 最终候选 `0.5.0+2026-10-04T16:16:57.110Z`：`npm run verify` 通过全部门禁、109 文件 / 605 测试。顺序部署 4 文件并验证 SHA-256，Test Vault 出现本次 Reading Desk scoped 启动标识，Repository ready 且 pending=false。完整读回在 [验收记录](self-check/shelf-recovery-2026-10-05/acceptance.json)。
 
@@ -47,3 +47,13 @@
 所有本轮夹具图书、分类、书单、文件、生成封面和临时分屏已清理，磁盘仍为原有 7 本书，shelf 恢复原值，Repository ready/pending=false。正常产生的自动恢复快照保持插件默认保留策略，未删除恢复目录中的用户文件。
 
 FA880 在 2026-10-05 再次实测：.252 在 SSH banner exchange 超时，.49 连接超时。跨机 SHA 和干净状态不能确认。整合候选保留真实两个父提交；主工作树、origin/main 与各待清理分支继续保留，待 FA880 可达后再完成 main 合并、两端 fast-forward、精确读回及安全分支清理。
+
+## 2026-10-05 收尾完成
+
+FA880 的 SSH 在当天 11:25 恢复，指定克隆 `C:\Users\letain\custom-projects\obsidian-reading-desk` 的机器名、main 和干净状态均重新核实。重新完整执行 `npm run verify` 通过 109 文件 / 605 测试。Mac main 快进到整合提交 `6e040c21ec76312569d324c1c13b94b91b145c48` 并推送，FA880 main 从 origin/main 快进；两端 HEAD、origin/main 精确相等且工作树分别干净。
+
+最终构建 `0.5.0+2026-10-05T03:29:06.195Z` 的代码经字节比较与已完成原生验收的构建仅 BUILD_ID 不同，样式、manifest 和 worker 字节一致。4 文件再次按指定顺序部署及 SHA-256 验证，记录新的 Reading Desk 启动标识；实际打开原有 Test Vault 书架，根宽度/scrollWidth 均 1086px，默认封面控件为 0，仍为原有 7 本书且 ready/pending=false。此前原生输入、磁盘读回和窄布局证据继续适用，未扩大恢复应用或主题验证的范围。
+
+确认每条待删分支均为 origin/main 的祖先后，使用普通 `git branch -d` 删除 Mac 4 条与 FA880 1 条旧本地分支；原子删除远端 5 条已合入分支，再在两端 prune。两端仅保留 main、origin/main、origin/HEAD；远端仅保留 main。整合工作树已由 Codex 归档，任务日志与忽略文件中的验收数据已先复制回主工作树保存。
+
+收尾数据见 [closeout.json](self-check/shelf-recovery-2026-10-05/closeout.json)，完整门禁输出见 [verify-premerge.log](self-check/shelf-recovery-2026-10-05/verify-premerge.log)，最终原生截图见 [native-final-main.png](self-check/shelf-recovery-2026-10-05/native-final-main.png)。本段与上述收尾记录只更新文档；随后同步文档提交时再次核对两端最终 HEAD 与干净状态。

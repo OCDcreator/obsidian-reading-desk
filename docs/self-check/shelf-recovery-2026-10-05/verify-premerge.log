@@ -1,0 +1,181 @@
+[background:shell_ad8065abf709cb96 completed]
+
+> obsidian-reading-desk@0.5.0 verify
+> npm run styles:sync && npm run check:project-docs && npm run check:owner-guard && npm run version:check && npm run lint && npm test && npm run build
+
+
+> obsidian-reading-desk@0.5.0 styles:sync
+> node scripts/sync-styles.mjs
+
+
+> obsidian-reading-desk@0.5.0 check:project-docs
+> node scripts/check-project-docs.mjs
+
+Project documentation gate passed.
+
+> obsidian-reading-desk@0.5.0 check:owner-guard
+> node scripts/check-owner-guard.mjs
+
+Owner guard review band notices:
+- src/library/LibraryIndex.ts has 423 lines; confirm it still owns one behavior slice
+- src/main.ts has 649 lines; confirm it still owns one behavior slice
+- src/portability/BookshelfPortabilityService.ts has 450 lines; confirm it still owns one behavior slice
+- src/storage/ObjectStorageService.ts has 410 lines; confirm it still owns one behavior slice
+- src/ui/crop/CropSelectionOverlay.ts has 493 lines; confirm it still owns one behavior slice
+- src/views/ReaderView.ts has 647 lines; confirm it still owns one behavior slice
+Owner guard passed.
+
+> obsidian-reading-desk@0.5.0 version:check
+> node scripts/bump-version.mjs check
+
+Version check passed: 0.5.0
+
+> obsidian-reading-desk@0.5.0 lint
+> eslint --ext .ts src test --max-warnings=0
+
+
+> obsidian-reading-desk@0.5.0 test
+> vitest run
+
+
+ RUN  v0.34.6 /Users/dht/.codex/worktrees/margin-shelf-recovery/obsidian-reading-desk
+
+ ✓ test/library/MetadataExtractor.test.ts  (4 tests) 27ms
+ ✓ test/portability/BackupObjectDecisions.test.ts  (5 tests) 29ms
+ ✓ test/portability/RecoverySnapshotService.test.ts  (8 tests) 36ms
+ ✓ test/ui/shelf/ShelfDraftProtection.test.ts  (7 tests) 99ms
+ ✓ test/ui/shelf/ShelfAbcIntegration.test.ts  (9 tests) 118ms
+ ✓ test/ui/shelf/ShelfInteractions.test.ts  (6 tests) 202ms
+ ✓ test/ui/portability/IndividualDecisions.test.ts  (3 tests) 75ms
+ ✓ test/data/ReadingDeskRepositoryRecovery.test.ts  (16 tests) 30ms
+ ✓ test/library/LibraryScan.test.ts  (6 tests) 104ms
+ ✓ test/targets/TargetWriteConcurrency.test.ts  (12 tests) 81ms
+ ✓ test/ui/comments/CommentComponents.test.ts  (7 tests) 41ms
+ ✓ test/ui/shelf/ShelfSavedState.test.ts  (10 tests) 496ms
+ ✓ test/reader/ReaderThumbnailBudget.test.ts  (6 tests) 54ms
+ ✓ test/library/WorkspacePersistence.test.ts  (6 tests) 18ms
+ ✓ test/portability/ReadingDeskBackupService.test.ts  (15 tests) 48ms
+ ✓ test/portability/BibliographicImportService.test.ts  (26 tests) 39ms
+ ✓ test/reader/ReaderPageDeckCorrectness.test.ts  (4 tests) 87ms
+ ✓ test/portability/BackupCapacity.test.ts  (2 tests) 1109ms
+ ✓ test/targets/ExcerptTemplate.test.ts  (4 tests) 20ms
+ ✓ test/ui/portability/DataPanels.test.ts  (11 tests) 38ms
+ ✓ test/portability/ReadingDeskDataManagement.test.ts  (10 tests) 114ms
+ ✓ test/reader/ReaderPageControl.test.ts  (1 test) 4ms
+ ✓ test/ui/targets/ExcerptTargetPanel.test.ts  (2 tests) 31ms
+ ✓ test/ui/portability/DataPanelPagination.test.ts  (3 tests) 87ms
+ ✓ test/ui/portability/LargeBackupRoundtrip.test.ts  (1 test) 1344ms
+ ✓ test/data/ReadingDeskRepositoryReplacement.test.ts  (3 tests) 76ms
+ ✓ test/reader/ReaderTargetHandoff.test.ts  (3 tests) 5ms
+ ✓ test/reader/ReaderResponsive.test.ts  (2 tests) 11ms
+ ✓ test/targets/TargetProtection.test.ts  (29 tests) 38ms
+ ✓ test/annotations/AnnotationRecovery.test.ts  (6 tests) 12ms
+ ✓ test/reader/PdfSelectionGeometry.test.ts  (3 tests) 9ms
+ ✓ test/ui/portability/BackupRestoreModes.test.ts  (4 tests) 200ms
+ ✓ test/reader/ReaderExcerptCorrectness.test.ts  (11 tests) 54ms
+ ✓ test/reader/ReaderPersistenceController.test.ts  (5 tests) 76ms
+ ✓ test/views/shelf/ShelfStyles.test.ts  (12 tests) 29ms
+ ✓ test/ui/shelf/ShelfAnnotationSearch.test.ts  (2 tests) 28ms
+ ✓ test/targets/TargetQueuedGuards.test.ts  (4 tests) 49ms
+ ✓ test/views/shelf/ShelfViewModel.test.ts  (13 tests) 34ms
+ ✓ test/portability/ReadingDeskBackupQueue.test.ts  (1 test) 29ms
+ ✓ test/reader/ReaderToolbar.test.ts  (6 tests) 36ms
+stdout | unknown test
+Warning: Please use the `legacy` build in Node.js environments.
+
+ ✓ test/storage/ObjectStorageService.test.ts  (7 tests) 19ms
+ ✓ test/targets/TargetService.test.ts  (12 tests) 30ms
+stdout | unknown test
+Warning: Please use the `legacy` build in Node.js environments.
+
+ ✓ test/targets/TargetRepositoryRecovery.test.ts  (3 tests) 44ms
+ ✓ test/reader/PdfLinksAndPreview.test.ts  (5 tests) 22ms
+ ✓ test/reader/ReaderSearchService.test.ts  (8 tests) 18ms
+ ✓ test/library/LibraryRelink.test.ts  (7 tests) 35ms
+ ✓ test/library/LibraryOrganization.test.ts  (5 tests) 31ms
+ ✓ test/reader/ReaderCopyCommand.test.ts  (3 tests) 10ms
+ ✓ test/reader/ReaderNavigation.test.ts  (36 tests) 199ms
+ ✓ test/reader/ReaderSavedNavigation.test.ts  (7 tests) 12ms
+ ✓ test/ui/SettingSaveFeedback.test.ts  (2 tests) 6ms
+ ✓ test/storage/MarkdownImagePasteService.test.ts  (3 tests) 15ms
+ ✓ test/ui/ReadingDeskIcons.test.ts  (4 tests) 9ms
+stdout | unknown test
+Warning: Please use the `legacy` build in Node.js environments.
+
+ ✓ test/data/LegacyReadingDeskData.test.ts  (1 test) 30ms
+ ✓ test/views/ReaderViewOpenRace.test.ts  (3 tests) 10ms
+ ✓ test/host/RecoverySnapshotFiles.test.ts  (3 tests) 36ms
+ ✓ test/reader/ReaderViewLifecycle.test.ts  (5 tests) 24ms
+ ✓ test/data/WorkspaceStateValidation.test.ts  (9 tests) 25ms
+ ✓ test/annotations/AnnotationQueuedRecovery.test.ts  (4 tests) 39ms
+ ✓ test/data/ReadingDeskRepository.test.ts  (3 tests) 35ms
+ ✓ test/reader/ReaderPositionCorrectness.test.ts  (4 tests) 6ms
+ ✓ test/portability/BookshelfPortabilityService.test.ts  (5 tests) 11ms
+ ✓ test/ui/ReaderToolbarStyles.test.ts  (2 tests) 8ms
+ ✓ test/targets/TargetWriteRecovery.test.ts  (6 tests) 36ms
+ ✓ test/ui/crop/CropDragTransport.test.ts  (6 tests) 7ms
+ ✓ test/ai/AiIntegrationService.test.ts  (2 tests) 22ms
+ ✓ test/ui/ReaderSearchPanel.test.ts  (4 tests) 124ms
+ ✓ test/library/LibraryMetadata.test.ts  (3 tests) 7ms
+ ✓ test/reader/PdfRendererCorrectness.test.ts  (6 tests) 134ms
+ ✓ test/library/LibraryImport.test.ts  (5 tests) 54ms
+ ✓ test/reader/ReaderOutlineModel.test.ts  (18 tests) 15ms
+ ✓ test/reader/ReaderKeyboard.test.ts  (5 tests) 7ms
+ ✓ test/reader/ReadingDeskLinks.test.ts  (4 tests) 64ms
+ ✓ test/ui/annotations/SourceAnchorDiagnosticsPanel.test.ts  (4 tests) 34ms
+ ✓ test/ui/shelf/ShelfQuery.test.ts  (3 tests) 10ms
+ ✓ test/ui/portability/RecoverySnapshotPanel.test.ts  (2 tests) 13ms
+ ✓ test/reader/ReaderPageLabels.test.ts  (3 tests) 5ms
+ ✓ test/annotations/AnnotationSearchService.test.ts  (5 tests) 11ms
+ ✓ test/annotations/SourceAnchorDiagnostics.test.ts  (3 tests) 20ms
+ ✓ test/data/DataValidation.test.ts  (14 tests) 20ms
+stdout | unknown test
+Warning: Please use the `legacy` build in Node.js environments.
+
+ ✓ test/crop/ReaderCropCorrectness.test.ts  (6 tests) 23ms
+ ✓ test/views/ReaderViewLifecycleOrder.test.ts  (2 tests) 15ms
+ ✓ test/reader/HighlightPreviewController.test.ts  (2 tests) 16ms
+ ✓ test/library/ProgressFlusher.test.ts  (3 tests) 34ms
+ ✓ test/reader/ReaderHistory.test.ts  (4 tests) 9ms
+stdout | unknown test
+Warning: Please use the `legacy` build in Node.js environments.
+
+ ✓ test/ui/ReaderThumbnailStyles.test.ts  (8 tests) 17ms
+ ✓ test/views/shelf/ShelfSorting.test.ts  (3 tests) 9ms
+ ✓ test/reader/PdfRendererFit.test.ts  (4 tests) 9ms
+ ✓ test/reader/ReaderBookmarksPanel.test.ts  (1 test) 8ms
+ ✓ test/reader/ReaderSearchMarks.test.ts  (1 test) 10ms
+ ✓ test/reader/ReadingDeskLinkRouter.test.ts  (3 tests) 4ms
+ ✓ test/ui/TargetPanelDisclosure.test.ts  (1 test) 8ms
+ ✓ test/reader/ReaderDragTransport.test.ts  (3 tests) 6ms
+ ✓ test/reader/ReaderNavigationLifecycle.test.ts  (1 test) 6ms
+ ✓ test/ui/comments/HighlightListStyles.test.ts  (2 tests) 6ms
+ ✓ test/reader/ReaderOutlineLoader.test.ts  (2 tests) 14ms
+ ✓ test/ui/crop/CropGeometry.test.ts  (5 tests) 9ms
+ ✓ test/host/VaultChangeBatch.test.ts  (2 tests) 9ms
+ ✓ test/library/LibraryIndex.test.ts  (4 tests) 7ms
+stdout | unknown test
+Warning: Please use the `legacy` build in Node.js environments.
+
+ ✓ test/reader/ReaderFit.test.ts  (2 tests) 35ms
+ ✓ test/host/SourcePathRemap.test.ts  (1 test) 3ms
+ ✓ test/ui/ReaderOutlineStyles.test.ts  (7 tests) 28ms
+ ✓ test/reader/ReaderSessionState.test.ts  (3 tests) 3ms
+ ✓ test/annotations/AnnotationStore.test.ts  (1 test) 4ms
+ ✓ test/reader/ReaderHighlightCoordinator.test.ts  (2 tests) 6ms
+stdout | unknown test
+Warning: Please use the `legacy` build in Node.js environments.
+
+ ✓ test/reader/ReaderFitPage.test.ts  (2 tests) 12ms
+ ✓ test/views/PdfNavigationView.test.ts  (2 tests) 7ms
+ ✓ test/ui/portability/ImportExportPanelState.test.ts  (4 tests) 8ms
+ ✓ test/reader/ReaderViewerOptions.test.ts  (2 tests) 4ms
+
+ Test Files  109 passed (109)
+      Tests  605 passed (605)
+   Start at  11:28:56
+   Duration  7.50s (transform 2.25s, setup 22ms, collect 13.09s, tests 6.60s, environment 35ms, prepare 13.98s)
+
+
+> obsidian-reading-desk@0.5.0 build
+> tsc -noEmit -skipLibCheck && node esbuild.config.mjs production
