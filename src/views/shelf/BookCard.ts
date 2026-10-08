@@ -31,6 +31,7 @@ export function createCover(book: LibraryBook, category: LibraryCategory | undef
 	const url = book.coverPath ? context.host.resolveCoverUrl?.(book.coverPath) ?? book.coverPath : null;
 	if (url) { const image = element('img'); image.src = url; image.alt = book.title + ' 封面'; image.loading = 'lazy'; image.decoding = 'async'; image.addEventListener('error', fallback, { once: true }); cover.append(image); } else fallback();
 	if (category && variant === 'card') { const badge = element('span', 'rd-cover-category-badge', category.name); badge.title = '分类：' + category.name; cover.append(badge); }
+	if (book.needsReview && variant === 'card') { const badge = element('span', 'rd-cover-review-badge', '待确认'); badge.title = '在线刮削的低置信结果，请核对书名与作者'; cover.append(badge); }
 	return cover;
 }
 export function createProgressRow(book: LibraryBook): HTMLElement {

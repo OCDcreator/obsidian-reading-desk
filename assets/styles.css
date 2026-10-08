@@ -462,6 +462,8 @@
 .rd-book-cover img { width: 100%; height: 100%; object-fit: cover; }
 .rd-book-cover-unavailable { padding: 0 8px; text-align: center; overflow-wrap: anywhere; }
 .rd-cover-category-badge { position: absolute; left: 10px; top: 10px; height: 21px; display: inline-flex; align-items: center; padding: 1px 7px; border: 1px solid rgb(255 255 255 / 34%); border-radius: 999px; background: rgb(18 21 27 / 82%); color: #fff; font-size: var(--font-ui-smaller, 11px); line-height: 1.4; max-width: calc(100% - 20px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Low-confidence online enrichment marker; right-top so it never overlaps the category badge. */
+.rd-cover-review-badge { position: absolute; right: 10px; top: 10px; height: 21px; display: inline-flex; align-items: center; padding: 1px 7px; border: 1px solid rgb(255 255 255 / 34%); border-radius: 999px; background: rgb(120 72 18 / 88%); color: #fff; font-size: var(--font-ui-smaller, 11px); line-height: 1.4; }
 .rd-book-details { min-width: 0; display: grid; gap: 7px; padding: 12px; align-content: start; }
 .rd-book-title { margin: 0; font-size: 16px; font-weight: 500; line-height: 1.3; min-height: 2.6em; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
 .rd-book-author { display: block; color: var(--rd-ink); font-size: 12px; min-width: 0; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

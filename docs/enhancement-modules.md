@@ -10,7 +10,9 @@
 | AnnotationStore | 唯一标注真源，持久目标写入意图、删除恢复记录、高亮/评论/卡片恢复。 |
 | TargetService / 原生 adapters | 唯一目标写入、异常诊断与核验。先保存意图再更新目标，成功后清意图；合法删除卡片保持反向同步，损坏标记或暂缺文件进入待修复。 |
 | ExcerptTemplate | 固定占位符的一次替换，不执行脚本；管理文本更新保留用户编辑区域。 |
-| LibraryIndex / LibraryMetadata / LibraryImport | 唯一书籍元数据索引。人工覆盖、自动提取来源、路径映射、增量批次、列表和阅读状态、幂等来源导入及显式重关联。 |
+| LibraryIndex / LibraryMetadata / LibraryImport | 唯一书籍元数据索引。人工覆盖、自动提取来源、路径映射、增量批次、列表和阅读状态、幂等来源导入及显式重关联；在线丰富经 `enrichBooks` 单队列提交，`applyEnrichment` 只补空白（ADR 0017）。 |
+| DoubanClient / MetadataEnricher | 豆瓣公开页面协议与刮削策略：suggest 搜索、条目页 JSON-LD/#info 双通道解析、带 Referer 封面下载；置信度、串行 4–8s 随机间隔、403 当日熔断、低置信 `needsReview`；不合并书目记录，不改写已有 `source`。 |
+| DoubanRequestTransport / VaultFiles | 宿主侧 requestUrl 传输与 vault 文件 IO 适配；不含刮削策略。 |
 | BibliographicImportService / parsers | CSL JSON、BibTeX、Zotero 导出 JSON 的纯解析与计划，不读取外部附件，不调用云 API；写入仍走 LibraryIndex。 |
 | AnnotationSearchService | 每次从 AnnotationStore 读取的只读检索视图，搜索结果使用稳定 highlightId；不产生第二可编辑标注库。 |
 | ReaderView / reader 与 crop 模块 | 每个 leaf 的 PDF 交互、摘录几何、页内定位、搜索请求生命周期、内链预览和历史；ReaderView 负责协调，分离的控制器仍属阅读器。 |

@@ -42,7 +42,8 @@ export function validateReadingDeskData(value: unknown, options: DataValidationO
 		settings: {
 			...defaults.settings, ...loaded.settings,
 			storage: { ...defaults.settings.storage, ...loaded.settings?.storage },
-			viewer: { ...defaults.settings.viewer, ...loaded.settings?.viewer }
+			viewer: { ...defaults.settings.viewer, ...loaded.settings?.viewer },
+			metadataEnrichment: { ...defaults.settings.metadataEnrichment, ...loaded.settings?.metadataEnrichment }
 		}
 	};
 }

@@ -10,11 +10,12 @@ export const bookCheck = shape({
 	fileSize: numeric(0), tags: texts, progress: numeric(0, 1),
 	fingerprint: shape({ mtime: timestamp, size: numeric(0) })
 }, {
-	pageCount: numeric(1, Infinity, true), coverPath: text, categoryId: text, rating: numeric(0, 5), lastReadAt: timestamp,
-	metadataError: text, coverRetryable: flag, coverError: text, missing: flag,
+	pageCount: numeric(1, Infinity, true), coverPath: text, categoryId: text, rating: numeric(0, 10), lastReadAt: timestamp,
+	metadataError: text, coverRetryable: flag, coverError: text, missing: flag, needsReview: flag,
+	enrichment: shape({ at: timestamp, status: choice('matched', 'missed', 'failed') }, { confidence: choice('high', 'low') }),
 	lastReadPosition: readerPositionCheck, bookmarks: bookmarksCheck,
 	metadataOverrides: shape({}, { title: text, author: text }), autoMetadata: shape({ title: text, author: text }),
-	source: shape({ provider: choice('csl', 'bibtex', 'zotero'), id: nonEmptyText }, { doi: text, isbn: text, citationKey: text }),
+	source: shape({ provider: choice('csl', 'bibtex', 'zotero', 'douban'), id: nonEmptyText }, { doi: text, isbn: text, citationKey: text }),
 	listIds: texts, readingStatus: choice('unread', 'reading', 'finished', 'abandoned')
 });
 
@@ -52,6 +53,7 @@ export const deletedAnnotationCheck: ValueCheck = (value, path, check) => {
 
 export const settingsCheck = shape({}, {
 	libraryFolders: texts, importedBookshelf: flag, excerptTemplate: text, shelf: shelfStateCheck,
+	metadataEnrichment: shape({}, { enabled: flag, autoNewBooks: flag, reviewAll: flag, blockedUntil: numeric(0) }),
 	storage: shape({}, {
 		enabled: flag, imageHostEnabled: flag, provider: choice('oss', 'cos'), endpoint: text, region: text,
 		bucket: text, prefix: text, accessKeyId: text, secretAccessKey: text

@@ -18,6 +18,11 @@ export const DEFAULT_SETTINGS: ReadingDeskSettings = {
 		invertPdf: 'auto',
 		outlineStyle: 'tree'
 	},
+	metadataEnrichment: {
+		enabled: true,
+		autoNewBooks: true,
+		reviewAll: false
+	},
 	importedBookshelf: false
 };
 

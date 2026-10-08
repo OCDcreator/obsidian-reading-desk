@@ -32,7 +32,7 @@ Reading Desk 是一个插件内完成的书架与阅读工作台：它自动发�
 - UI 必须是中文、Obsidian 原生 vanilla DOM，不引入 React、Svelte、Vue 或外部 UI 库。
 - 坐标只存归一化 PDF 空间 `rects[]`；文本可跨行。
 - 插件 id 为 `obsidian-reading-desk`，从 0.1.0 开始，`isDesktopOnly` 为 true。
-- 元数据默认自动提取；不可提取时可编辑补齐，不阻塞入库。
+- 元数据默认自动提取；不可提取时可编辑补齐，不阻塞入库。可选的豆瓣在线刮削只补空白字段、低置信标记待确认，绝不覆盖人工修改。
 - 对象存储真实上传需要用户凭据；无凭据时功能可配置、签名可测试，但真实上传不能被宣称已验证。
 
 ## Brand Commitments

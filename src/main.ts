@@ -8,7 +8,11 @@ import { AiIntegrationService, type AiBridge } from './ai/AiIntegrationService';
 import { exportBookshelf, importLegacyBookshelf, type BookshelfImportResult } from './portability/BookshelfPortabilityService';
 import { MarkdownImagePasteService } from './storage/MarkdownImagePasteService';
 import { readLegacyBookshelfSource } from './portability/LegacyBookshelfSourceReader';
-import { createExcalidrawDocument, describeImageUploadFailure, isAlreadyExistingFolderError, prefersReducedMotion, readingDeskHighlightId, targetMatches } from './host/HostUtilities';
+import { createExcalidrawDocument, describeImageUploadFailure, prefersReducedMotion, readingDeskHighlightId, targetMatches } from './host/HostUtilities';
+import { VaultFiles } from './host/VaultFiles';
+import { DoubanRequestTransport } from './host/DoubanRequestTransport';
+import { DoubanClient } from './library/metadata/DoubanClient';
+import { MetadataEnricher, type EnrichmentSummary } from './library/metadata/MetadataEnricher';
 import { VaultChangeBatch } from './host/VaultChangeBatch';
 import { remapAnnotationPaths } from './host/SourcePathRemap';
 import { RecoverySnapshotFiles } from './host/RecoverySnapshotFiles';
@@ -21,7 +25,7 @@ import { AnnotationSearchService } from './annotations/AnnotationSearchService';
 import { ObjectStorageService } from './storage/ObjectStorageService';
 import { ReadingDeskSettingTab } from './settings/ReadingDeskSettingTab';
 import { TargetService } from './targets';
-import type { ObjectStorageSettings, PdfHighlight, TargetType, ViewerSettings } from './types/contracts';
+import type { MetadataEnrichmentSettings, ObjectStorageSettings, PdfHighlight, TargetType, ViewerSettings } from './types/contracts';
 import { ReaderView, READER_VIEW_TYPE } from './views/ReaderView';
 import { CropImageService } from './storage/CropImageService';
 import { ProgressFlusher } from './library/ProgressFlusher';
@@ -38,10 +42,12 @@ type PluginRegistry = { enabledPlugins: Set<string>; getPlugin(id: string): unkn
 export default class ReadingDeskPlugin extends Plugin {
 	repository!: ReadingDeskRepository;
 	ai!: AiIntegrationService;
+	enrichment!: MetadataEnricher;
 	private annotations!: AnnotationStore;
 	private library!: LibraryIndex;
 	private targets!: TargetService;
 	private crops!: CropImageService;
+	private vaultFiles!: VaultFiles;
 	private progressFlusher!: ProgressFlusher;
 	private settingsTabHint: string | null = null;
 	private vaultChanges!: VaultChangeBatch;
@@ -50,6 +56,7 @@ export default class ReadingDeskPlugin extends Plugin {
 	private dataManagement!: ReadingDeskDataManagement;
 	private annotationSearch!: AnnotationSearchService;
 	async onload(): Promise<void> {
+		this.vaultFiles = new VaultFiles(this.app);
 		this.recoveryFiles = new RecoverySnapshotFiles(this.app.vault.adapter, `${this.manifest.dir}/recovery`);
 		this.recoverySnapshots = new RecoverySnapshotService(this.recoveryFiles);
 		this.repository = new ReadingDeskRepository({ load: () => this.loadData(), save: data => this.saveData(data) }, {
@@ -59,10 +66,19 @@ export default class ReadingDeskPlugin extends Plugin {
 		this.annotations = new AnnotationStore(this.repository);
 		this.library = new LibraryIndex(this.repository, new MetadataExtractor({
 			readBinary: path => this.app.vault.adapter.readBinary(path),
-			writeBinary: (path, value) => this.writeBinary(path, value)
+			writeBinary: (path, value) => this.vaultFiles.writeBinary(path, value)
 		}, { load: data => this.loadPdfMetadata(data) }));
+		this.enrichment = new MetadataEnricher({
+			library: this.library,
+			client: new DoubanClient(new DoubanRequestTransport()),
+			settings: () => ({ enabled: true, autoNewBooks: true, reviewAll: false, ...this.repository.readSettings().metadataEnrichment }),
+			saveBlockedUntil: blockedUntil => this.updateEnrichmentSettings({ blockedUntil }),
+			writeCover: (id, data) => this.writeDoubanCover(id, data),
+			notice: message => this.notice(message),
+			onChanged: () => void this.refreshShelves()
+		});
 		this.targets = new TargetService({
-			atomicTransform: (path, transform) => this.atomicTransform(path, transform),
+			atomicTransform: (path, transform) => this.vaultFiles.atomicTransform(path, transform),
 			read: path => this.app.vault.getAbstractFileByPath(path) instanceof TFile ? this.app.vault.adapter.read(path) : Promise.resolve(undefined)
 		}, { template: () => this.repository.readSettings().excerptTemplate });
 		this.annotationSearch = new AnnotationSearchService(this.annotations, this.library);
@@ -73,7 +89,7 @@ export default class ReadingDeskPlugin extends Plugin {
 		});
 		this.vaultChanges = new VaultChangeBatch(paths => this.applyVaultChanges(paths), error => this.notice(`书库更新失败：${error instanceof Error ? error.message : String(error)}`));
 		this.register(() => this.vaultChanges.dispose());
-		this.crops = new CropImageService({ app: this.app, ensureFile: (path, content) => this.ensureFile(path, content), atomicTransform: (path, transform) => this.atomicTransform(path, transform), writeBinary: (path, value) => this.writeBinary(path, value) }, () => this.repository.readSettings().storage);
+		this.crops = new CropImageService({ app: this.app, ensureFile: (path, content) => this.vaultFiles.ensureFile(path, content), atomicTransform: (path, transform) => this.vaultFiles.atomicTransform(path, transform), writeBinary: (path, value) => this.vaultFiles.writeBinary(path, value) }, () => this.repository.readSettings().storage);
 		this.progressFlusher = new ProgressFlusher({ write: async ({ path, progress }) => {
 			const book = this.library.getByPath(path);
 			if (book) {
@@ -205,6 +221,21 @@ export default class ReadingDeskPlugin extends Plugin {
 		await this.repository.updateSettings({ storage: { ...this.repository.readSettings().storage, ...patch } });
 	}
 
+	async updateEnrichmentSettings(patch: Partial<MetadataEnrichmentSettings>): Promise<void> {
+		const current = this.repository.readSettings().metadataEnrichment;
+		await this.repository.updateSettings({ metadataEnrichment: { enabled: true, autoNewBooks: true, reviewAll: false, ...current, ...patch } });
+	}
+
+	enrichMissingMetadata(): Promise<EnrichmentSummary> {
+		return this.enrichment.enrichMissing(Object.keys(this.repository.readBooks()));
+	}
+
+	private async writeDoubanCover(subjectId: string, data: ArrayBuffer): Promise<string> {
+		const path = `${this.manifest.dir}/covers/douban-${subjectId}.jpg`;
+		await this.vaultFiles.writeBinary(path, data);
+		return path;
+	}
+
 	async testStorageConnection(): Promise<{ status: number; endpoint: string }> {
 		const result = await new ObjectStorageService(this.repository.readSettings().storage).testConnection();
 		return { status: result.status, endpoint: result.endpoint };
@@ -214,6 +245,7 @@ export default class ReadingDeskPlugin extends Plugin {
 		const folders = this.repository.readSettings().libraryFolders;
 		const files = this.app.vault.getFiles().map(file => toLibraryFile(file));
 		await this.library.scan(files, folders, showNotice);
+		void this.enrichment.autoEnrichNewBooks(this.library.list().map(book => book.id));
 		await this.refreshShelves();
 		if (showNotice) this.notice(`书库已更新：${this.library.list().length} 本。`);
 	}
@@ -440,7 +472,7 @@ export default class ReadingDeskPlugin extends Plugin {
 		const path = type === 'canvas' ? `${base}.canvas` : type === 'excalidraw' ? `${base}.excalidraw.md` : `${base}.md`;
 		const content = type === 'canvas' ? '{\n  "nodes": [],\n  "edges": []\n}' : type === 'excalidraw'
 			? createExcalidrawDocument() : '';
-		await this.ensureFile(path, content);
+		await this.vaultFiles.ensureFile(path, content);
 		return { type, path };
 	}
 
@@ -450,6 +482,7 @@ export default class ReadingDeskPlugin extends Plugin {
 		const files = paths.filter(isLibraryPath).map(path => this.app.vault.getAbstractFileByPath(path)).filter((file): file is TFile => file instanceof TFile);
 		if (files.length) {
 			await this.library.scanFiles(files.map(toLibraryFile), this.repository.readSettings().libraryFolders);
+			void this.enrichment.autoEnrichNewBooks(this.library.list().map(book => book.id));
 			await this.refreshShelves();
 		}
 		for (const path of paths.filter(isTargetPath)) await this.syncTargetDeletion(path);
@@ -550,7 +583,7 @@ export default class ReadingDeskPlugin extends Plugin {
 	private async openOpenCodianWithSelection(text: string, sourcePath: string): Promise<void> {
 		const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 		const path = `${AI_CONTEXT_FOLDER}/选区-${id}.md`;
-		await this.ensureFile(path, `# Reading Desk AI 上下文\n\n来源：${sourcePath}\n\n${text}\n`);
+		await this.vaultFiles.ensureFile(path, `# Reading Desk AI 上下文\n\n来源：${sourcePath}\n\n${text}\n`);
 		await this.app.workspace.openLinkText(path, '', false);
 		await this.commandRegistry().executeCommandById('opencodian:add-current-note-to-context');
 		await this.commandRegistry().executeCommandById('opencodian:open-view');
@@ -559,7 +592,7 @@ export default class ReadingDeskPlugin extends Plugin {
 	private async exportToVault(format: 'markdown' | 'json'): Promise<void> {
 		const stamp = new Date().toISOString().replace(/[:.]/g, '-');
 		const path = `Reading Desk/exports/reading-desk-${stamp}.${format === 'markdown' ? 'md' : 'json'}`;
-		await this.ensureFile(path, format === 'markdown' ? this.exportMarkdown() : this.exportJson());
+		await this.vaultFiles.ensureFile(path, format === 'markdown' ? this.exportMarkdown() : this.exportJson());
 		await this.app.workspace.openLinkText(path, '', false);
 		const label = format === 'markdown' ? 'Markdown' : 'JSON';
 		this.notice(`书架已导出为 ${label}，已写入新文件 ${path}；导出只新建文件，不会覆盖已有内容。`);
@@ -599,44 +632,6 @@ export default class ReadingDeskPlugin extends Plugin {
 		const adapter = this.app.vault.adapter;
 		const pluginPath = `${this.manifest.dir}/${path}`;
 		return adapter.getResourcePath?.(pluginPath) ?? null;
-	}
-
-	private async atomicTransform(path: string, transform: (current: string) => string): Promise<void> {
-		const existing = this.app.vault.getAbstractFileByPath(path);
-		if (existing instanceof TFile) {
-			await this.app.vault.process(existing, current => transform(current));
-			return;
-		}
-		await this.ensureFile(path, await transform(''));
-	}
-
-	private async ensureFile(path: string, content: string): Promise<void> {
-		const existing = this.app.vault.getAbstractFileByPath(path);
-		if (existing instanceof TFile) return;
-		await this.ensureFolder(path.split('/').slice(0, -1).join('/'));
-		await this.app.vault.create(path, content);
-	}
-
-	private async ensureFolder(path: string): Promise<void> {
-		const parts = path.split('/').filter(Boolean);
-		for (let index = 1; index <= parts.length; index += 1) {
-			const partial = parts.slice(0, index).join('/');
-			if (this.app.vault.getAbstractFileByPath(partial)) continue;
-			try {
-				await this.app.vault.createFolder(partial);
-			} catch (error) {
-				if (!isAlreadyExistingFolderError(error)) throw error;
-			}
-		}
-	}
-
-	private async writeBinary(path: string, value: ArrayBuffer): Promise<void> {
-		const existing = this.app.vault.getAbstractFileByPath(path);
-		if (existing instanceof TFile) await this.app.vault.modifyBinary(existing, value);
-		else {
-			await this.ensureFolder(path.split('/').slice(0, -1).join('/'));
-			await this.app.vault.createBinary(path, value);
-		}
 	}
 }
 
