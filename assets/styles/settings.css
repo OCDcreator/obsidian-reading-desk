@@ -121,3 +121,47 @@
 .rd-setting-save-status.is-success { color: var(--text-success); }
 .rd-setting-save-status.is-error { color: var(--text-error); }
 .rd-setting-save-feedback button[hidden] { display: none; }
+
+/* Folder suggest dropdown items. The popover itself is host chrome; only the
+ * item layout belongs to the plugin. */
+.rd-folder-suggest { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.rd-folder-suggest__name { font-weight: 500; }
+.rd-folder-suggest__path { color: var(--text-muted, var(--rd-ink-muted)); font-size: 11.5px; overflow-wrap: anywhere; }
+
+/* Folder picker modal. It renders outside .reading-desk-settings, so it carries
+ * its own token block (same pattern as .rd-action-menu), and its buttons need
+ * the pane-scoped restatement because host rules outrank single classes. */
+.rd-folder-modal {
+	--rd-ink: var(--text-normal, oklch(0.24 0.02 250));
+	--rd-ink-muted: var(--text-muted, oklch(0.48 0.02 250));
+	--rd-line: var(--background-modifier-border, oklch(0.75 0.02 250));
+	--rd-accent: var(--interactive-accent, oklch(0.62 0.13 235));
+	color: var(--rd-ink);
+}
+.rd-folder-modal .modal-content { display: grid; gap: 10px; }
+.rd-folder-modal__tree {
+	max-height: min(46vh, 380px); overflow: auto; min-width: 320px;
+	border: 1px solid var(--rd-line); border-radius: 8px; padding: 6px 4px;
+}
+.rd-folder-modal__row { display: flex; align-items: center; gap: 4px; min-height: 28px; border-radius: 6px; }
+.rd-folder-modal__row:hover { background: var(--background-modifier-hover, transparent); }
+.rd-folder-modal__caret {
+	display: inline-flex; align-items: center; justify-content: center;
+	width: 18px; height: 18px; flex: none;
+	color: var(--rd-ink-muted); cursor: pointer;
+}
+.rd-folder-modal__caret:empty { cursor: default; }
+.rd-folder-modal__caret svg { width: 14px; height: 14px; display: block; }
+.rd-folder-modal__label { display: flex; align-items: center; gap: 7px; flex: 1; min-width: 0; cursor: pointer; }
+.rd-folder-modal__label input[type='checkbox'] { width: 15px; height: 15px; min-width: 15px; margin: 0; accent-color: var(--rd-accent); cursor: pointer; }
+.rd-folder-modal__name { font-size: 13px; min-width: 0; overflow-wrap: anywhere; }
+.rd-folder-modal__status { color: var(--rd-ink-muted); font-size: 12px; }
+.rd-folder-modal__actions { display: flex; justify-content: flex-end; gap: 8px; }
+.rd-folder-modal .rd-folder-modal__button {
+	border: 1px solid var(--rd-line); border-radius: 8px;
+	background: var(--interactive-normal); color: var(--text-normal);
+	font: inherit; font-size: 13px; min-height: 30px; padding: 4px 14px; cursor: pointer;
+}
+.rd-folder-modal .rd-folder-modal__button:hover:not(:disabled) { background: var(--interactive-hover); }
+.rd-folder-modal .rd-folder-modal__button--primary { background: var(--rd-accent); border-color: transparent; color: var(--text-on-accent, #fff); }
+.rd-folder-modal .rd-folder-modal__button--primary:hover:not(:disabled) { background: var(--interactive-accent-hover, var(--rd-accent)); }

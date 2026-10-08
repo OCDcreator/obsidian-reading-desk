@@ -1,9 +1,12 @@
-import { PluginSettingTab, setIcon, Setting } from 'obsidian';
+import { PluginSettingTab, setIcon, Setting, TFolder, TextComponent } from 'obsidian';
 import { hostThemeDark, marginAnchorIconId, observeHostTheme } from '../ui/icons/ReadingDeskIcons';
 import type ReadingDeskPlugin from '../main';
 import { ObjectStorageConfigurationError, ObjectStorageRequestError } from '../storage/ObjectStorageService';
 import { SettingSaveFeedback } from './SettingSaveFeedback';
 import { ImportExportPanel } from '../ui/portability/ImportExportPanel';
+import { buildFolderTree, formatFolderList, FolderTreeNode, parseFolderList } from './FolderSelection';
+import { FolderPickerModal } from './FolderPickerModal';
+import { FolderSuggest } from './FolderSuggest';
 
 const CONNECTION_HINTS: Record<string, string> = {
 	'storage-disabled': '对象存储未启用',
@@ -166,14 +169,48 @@ export class ReadingDeskSettingTab extends PluginSettingTab {
 
 	private renderLibrarySection(panel: HTMLElement): void {
 		const content = this.createCard(panel, '书库文件夹', 'Reading Desk 从这些文件夹自动发现 PDF 与 EPUB。');
+		let folderText: TextComponent | null = null;
+		const saveFolders = (paths: string[]) => {
+			if (!folderText) return;
+			folderText.setValue(formatFolderList(paths));
+			this.save(folderText.inputEl, () => this.readingDesk.repository.updateSettings({ libraryFolders: paths }));
+		};
 		new Setting(content)
 			.setName('文件夹列表')
-			.setDesc('用英文逗号分隔；修改后从书架「扫描书库」或命令面板重新扫描。')
+			.setDesc('用英文逗号分隔，输入时可模糊匹配库内文件夹；修改后从书架「扫描书库」或命令面板重新扫描。')
 			.addText(text => {
 				text.inputEl.setAttribute('aria-label', '书库文件夹');
-				return text.setValue(this.readingDesk.repository.readSettings().libraryFolders.join(', ')).onChange(value => this.save(text.inputEl, () => this.readingDesk.repository.updateSettings({ libraryFolders: value.split(',').map(item => item.trim()).filter(Boolean) })));
-			});
+				new FolderSuggest(this.app, text.inputEl, () => this.listVaultFolders());
+				folderText = text;
+				return text.setValue(this.readingDesk.repository.readSettings().libraryFolders.join(', ')).onChange(value => this.save(text.inputEl, () => this.readingDesk.repository.updateSettings({ libraryFolders: parseFolderList(value) })));
+			})
+			.addExtraButton(button => button
+				.setIcon('folder-open')
+				.setTooltip('浏览文件夹')
+				.onClick(() => {
+					button.extraSettingsEl.setAttribute('aria-label', '浏览文件夹');
+					const initial = parseFolderList(folderText?.getValue() ?? '');
+					new FolderPickerModal(this.app, initial, this.buildVaultFolderTree(), paths => saveFolders(paths)).open();
+				}));
 		this.renderEnrichmentSection(panel);
+	}
+
+	private listVaultFolders(): TFolder[] {
+		const folders: TFolder[] = [];
+		const walk = (folder: TFolder) => {
+			for (const child of folder.children) {
+				if (child instanceof TFolder) {
+					folders.push(child);
+					walk(child);
+				}
+			}
+		};
+		walk(this.app.vault.getRoot());
+		return folders;
+	}
+
+	private buildVaultFolderTree(): FolderTreeNode {
+		return buildFolderTree(this.listVaultFolders().map(folder => folder.path));
 	}
 
 	private renderEnrichmentSection(panel: HTMLElement): void {
