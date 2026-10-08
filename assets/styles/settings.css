@@ -4,7 +4,10 @@
  * modal columns collapse the sidebar into a horizontal tab strip. */
 .reading-desk-settings { container-type: inline-size; }
 .rd-settings-layout {
-	display: grid; grid-template-columns: 200px minmax(0, 1fr);
+	/* Sidebar keeps at least a 1:4 ratio with the content column: 20% of the
+	 * pane, capped at 200px on wide windows with a 120px floor; below 520px
+	 * the strip fallback takes over because 1:4 would starve the labels. */
+	display: grid; grid-template-columns: clamp(120px, 20%, 200px) minmax(0, 1fr);
 	border: 1px solid var(--rd-line); border-radius: 10px;
 	background: var(--rd-surface); overflow: hidden;
 }
@@ -21,9 +24,9 @@
 }
 .rd-settings-nav { display: flex; flex-direction: column; gap: 2px; }
 .rd-settings-tab {
-	display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+	display: flex; align-items: center; gap: 8px; width: 100%; text-align: left;
 	border: 0; border-radius: 8px; background: transparent; color: var(--rd-ink-muted);
-	font: inherit; font-size: 13.5px; line-height: 1.4; min-height: 32px; padding: 6px 10px;
+	font: inherit; font-size: 13.5px; line-height: 1.4; min-height: 32px; padding: 6px 8px;
 	cursor: pointer;
 }
 .rd-settings-tab-icon { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; flex: none; }
