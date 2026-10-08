@@ -37,6 +37,8 @@ const SETTINGS_TABS: readonly SettingsTabDefinition[] = [
 ];
 
 export class ReadingDeskSettingTab extends PluginSettingTab {
+	/** Pane width from which the 200px sidebar keeps the 1:4 minimum. */
+	private static readonly SIDEBAR_MIN_PANE_WIDTH = 1000;
 	private portabilityPanel: ImportExportPanel | null = null;
 	private activeTab = 'library';
 	private panel?: HTMLElement;
@@ -44,6 +46,7 @@ export class ReadingDeskSettingTab extends PluginSettingTab {
 	private headingIcon?: HTMLElement;
 	private readonly saves = new WeakMap<HTMLElement, SettingSaveFeedback>();
 	private stopHeadingIconSync: (() => void) | null = null;
+	private layoutObserver: ResizeObserver | null = null;
 
 	constructor(private readonly readingDesk: ReadingDeskPlugin) {
 		super(readingDesk.app, readingDesk);
@@ -61,6 +64,7 @@ export class ReadingDeskSettingTab extends PluginSettingTab {
 		this.stopHeadingIconSync?.();
 		this.stopHeadingIconSync = null;
 		containerEl.addClass('reading-desk-settings');
+		containerEl.dataset.rdSettingsLayout = 'stacked';
 		const layout = containerEl.createDiv({ cls: 'rd-settings-layout' });
 		const sidebar = layout.createDiv({ cls: 'rd-settings-sidebar' });
 		sidebar.createDiv({ cls: 'rd-settings-brand', text: 'Reading Desk' });
@@ -77,6 +81,17 @@ export class ReadingDeskSettingTab extends PluginSettingTab {
 		head.createEl('p', { cls: 'rd-setting-intro', text: '书架、阅读器和标注共用同一份本地数据。' });
 		this.panel = main.createDiv({ cls: 'rd-settings-panel', attr: { role: 'tabpanel', tabindex: '0', id: 'rd-settings-panel' } });
 		this.renderActiveTab();
+		this.layoutObserver?.disconnect();
+		this.layoutObserver = null;
+		// The containerEl lives in the detached settings window's document, so the
+		// observer must come from that realm — the main window's constructor never
+		// fires for it.
+		const view = containerEl.ownerDocument.defaultView;
+		if (view && typeof view.ResizeObserver === 'function') {
+			this.layoutObserver = new view.ResizeObserver(() => this.syncLayoutState());
+			this.layoutObserver.observe(containerEl);
+		}
+		this.syncLayoutState();
 	}
 
 	onClose(): void {
@@ -84,6 +99,16 @@ export class ReadingDeskSettingTab extends PluginSettingTab {
 		this.portabilityPanel = null;
 		this.stopHeadingIconSync?.();
 		this.stopHeadingIconSync = null;
+		this.layoutObserver?.disconnect();
+		this.layoutObserver = null;
+	}
+
+	/** Mirrors the pane width into a data attribute for the stylesheet: container
+	 * queries proved unreliable on the detached settings window, and the repo
+	 * already mirrors query boundaries into DOM state for the reader toolbar. */
+	private syncLayoutState(): void {
+		const sidebar = this.containerEl.clientWidth >= ReadingDeskSettingTab.SIDEBAR_MIN_PANE_WIDTH;
+		this.containerEl.dataset.rdSettingsLayout = sidebar ? 'sidebar' : 'stacked';
 	}
 
 	private syncHeadingIcon(): void {

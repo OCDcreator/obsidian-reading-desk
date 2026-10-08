@@ -1,66 +1,106 @@
 /* Settings. Host-first: every color stays on the shared token block so
- * light/dark follow the vault theme. The pane is its own inline-size container:
- * the shadcn-style layout is a 200px sidebar plus a content column, and narrow
- * modal columns collapse the sidebar into a horizontal tab strip. */
-.reading-desk-settings { container-type: inline-size; }
+ * light/dark follow the vault theme. The pane has two states keyed by the
+ * data-rd-settings-layout attribute that ReadingDeskSettingTab mirrors from a
+ * ResizeObserver (container queries proved unreliable on the detached settings
+ * window): 'stacked' (default) renders shadcn pill tabs under the heading with
+ * stacked form rows; 'sidebar' — once the pane holds 200px plus the 1:4
+ * minimum against the content column, i.e. >=1000px — switches to the
+ * left-sidebar layout. The host centers its settings pages by writing a huge
+ * scaling padding-inline INLINE on this very element from JS (421px per side
+ * on a wide window), pinning the pane to ~700px forever; !important is the
+ * only way past an inline style, and the pane must own the window width for
+ * the two states to exist at all. */
+.reading-desk-settings { padding-inline: 18px !important; }
 .rd-settings-layout {
-	/* Sidebar keeps at least a 1:4 ratio with the content column: 20% of the
-	 * pane, capped at 200px on wide windows with a 120px floor; below 520px
-	 * the strip fallback takes over because 1:4 would starve the labels. */
-	display: grid; grid-template-columns: clamp(120px, 20%, 200px) minmax(0, 1fr);
+	display: grid; width: 100%;
+	grid-template-columns: minmax(0, 1fr);
+	grid-template-areas: 'head' 'nav' 'panel';
 	border: 1px solid var(--rd-line); border-radius: 10px;
 	background: var(--rd-surface); overflow: hidden;
 }
-.rd-settings-sidebar {
-	display: flex; flex-direction: column; gap: 2px;
-	padding: 14px 10px 12px;
-	border-right: 1px solid var(--rd-line);
-	background: color-mix(in oklch, var(--rd-surface) 55%, var(--rd-surface-raised));
+
+/* Stacked: pill tabs under the heading. display:contents promotes the sidebar
+ * and main children into the grid, so the nav can sit between head and panel. */
+.rd-settings-sidebar, .rd-settings-main { display: contents; }
+.rd-settings-main-head { grid-area: head; padding: 16px 18px 13px; border-bottom: 1px solid var(--rd-line); }
+.rd-settings-nav {
+	grid-area: nav;
+	display: flex; flex-wrap: wrap; gap: 3px;
+	margin: 12px 18px 0; padding: 3px; border-radius: 9px;
+	background: var(--rd-surface-raised);
 }
-.rd-settings-brand {
-	padding: 2px 10px 10px;
-	font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
-	color: var(--rd-ink-muted);
-}
-.rd-settings-nav { display: flex; flex-direction: column; gap: 2px; }
 .rd-settings-tab {
-	display: flex; align-items: center; gap: 8px; width: 100%; text-align: left;
-	border: 0; border-radius: 8px; background: transparent; color: var(--rd-ink-muted);
-	font: inherit; font-size: 13.5px; line-height: 1.4; min-height: 32px; padding: 6px 8px;
-	cursor: pointer;
+	display: flex; align-items: center; gap: 8px; text-align: left;
+	border: 0; border-radius: 7px; background: transparent; color: var(--rd-ink-muted);
+	font: inherit; font-size: 13px; line-height: 1.4; min-height: 30px; padding: 5px 13px;
+	cursor: pointer; white-space: nowrap;
 }
 .rd-settings-tab-icon { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; flex: none; }
 .rd-settings-tab-icon svg { width: 16px; height: 16px; display: block; }
 .rd-settings-tab:hover { color: var(--rd-ink); }
-.rd-settings-tab[aria-selected='true'] { color: var(--rd-ink); background: var(--rd-surface-raised); font-weight: 500; }
-.rd-settings-tab:focus-visible { outline: 2px solid var(--rd-accent); outline-offset: 2px; }
+.rd-settings-tab[aria-selected='true'] { color: var(--rd-ink); background: var(--rd-surface); font-weight: 500; box-shadow: 0 1px 2px var(--rd-elevation); }
+.rd-settings-tab:focus-visible { outline: 2px solid var(--rd-accent); outline-offset: 1px; }
 /* Obsidian's button:not(.clickable-icon) rule paints button chrome at (0,1,1),
- * including center-justified flex; restate the quiet nav skin scoped to the
- * pane so nav items stay transparent and left-aligned. The selected state is
- * restated after it — same specificity, later position would otherwise win. */
+ * including center-justified flex; restate the quiet tab skin scoped to the
+ * pane. The selected state is restated after it — same specificity, later
+ * position would otherwise win. */
 .reading-desk-settings .rd-settings-tab { border: 0; background: transparent; box-shadow: none; justify-content: flex-start; }
-.reading-desk-settings .rd-settings-tab[aria-selected='true'] { background: var(--rd-surface-raised); }
-.rd-settings-foot { margin-top: auto; padding: 8px 10px 0; font-size: 12px; color: var(--rd-ink-muted); }
-.rd-settings-main { min-width: 0; }
-.rd-settings-main-head { padding: 16px 18px 13px; border-bottom: 1px solid var(--rd-line); }
-.rd-settings-panel { min-width: 0; padding: 16px 18px 20px; }
+.reading-desk-settings .rd-settings-tab[aria-selected='true'] { background: var(--rd-surface); box-shadow: 0 1px 2px var(--rd-elevation); }
+.rd-settings-panel { grid-area: panel; min-width: 0; padding: 16px 18px 20px; }
+.rd-settings-brand, .rd-settings-foot { display: none; }
 
-/* Obsidian 1.14 caps the detached settings-window content column near 610px,
- * so the sidebar must survive that width; only truly tiny columns (<520px)
- * fall back to the horizontal tab strip. */
-@container (max-width: 520px) {
-	.rd-settings-layout { grid-template-columns: minmax(0, 1fr); }
-	.rd-settings-sidebar {
-		flex-direction: row; align-items: center; gap: 4px;
-		padding: 8px; border-right: 0; border-bottom: 1px solid var(--rd-line);
-		overflow-x: auto;
-	}
-	.rd-settings-brand, .rd-settings-foot { display: none; }
-	.rd-settings-nav { flex-direction: row; }
-	.rd-settings-tab { width: auto; white-space: nowrap; }
-	.rd-settings-main-head { padding: 14px 16px 12px; }
-	.rd-settings-panel { padding: 14px 16px 18px; }
+/* Stacked rows: name and description above, control full-width below. Switch
+ * rows keep the standard horizontal setting-row shape. */
+.reading-desk-settings .setting-item { display: block; }
+.reading-desk-settings .setting-item:has(.checkbox-container) {
+	display: flex; align-items: center; justify-content: space-between; gap: 24px;
 }
+.reading-desk-settings .setting-item-control { margin-top: 10px; }
+.reading-desk-settings .setting-item:has(.checkbox-container) .setting-item-control { margin-top: 0; }
+.reading-desk-settings .rd-card-content input[type='text'],
+.reading-desk-settings .rd-card-content input[type='password'],
+.reading-desk-settings .rd-card-content select { width: 100%; }
+
+/* Sidebar state: the attribute flips once the pane holds a 200px sidebar plus
+ * the 1:4 minimum for the content column (>=1000px). */
+.reading-desk-settings[data-rd-settings-layout='sidebar'] .rd-settings-layout {
+	grid-template-columns: 200px minmax(0, 1fr);
+	grid-template-areas: 'side main';
+}
+.reading-desk-settings[data-rd-settings-layout='sidebar'] .rd-settings-sidebar {
+	display: flex; flex-direction: column; gap: 2px;
+	grid-area: side;
+	padding: 14px 10px 12px;
+	border-right: 1px solid var(--rd-line);
+	background: color-mix(in oklch, var(--rd-surface) 55%, var(--rd-surface-raised));
+}
+.reading-desk-settings[data-rd-settings-layout='sidebar'] .rd-settings-brand {
+	display: block; padding: 2px 10px 10px;
+	font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+	color: var(--rd-ink-muted);
+}
+.reading-desk-settings[data-rd-settings-layout='sidebar'] .rd-settings-nav {
+	flex-direction: column; gap: 2px;
+	margin: 0; padding: 0; background: transparent; border-radius: 0;
+}
+.reading-desk-settings[data-rd-settings-layout='sidebar'] .rd-settings-tab {
+	width: 100%; min-height: 32px; padding: 6px 10px; border-radius: 8px; font-size: 13.5px; white-space: normal;
+}
+.reading-desk-settings[data-rd-settings-layout='sidebar'] .rd-settings-tab[aria-selected='true'] { background: var(--rd-surface-raised); box-shadow: none; }
+.reading-desk-settings[data-rd-settings-layout='sidebar'] .rd-settings-foot {
+	display: block; margin-top: auto; padding: 8px 10px 0;
+	font-size: 12px; color: var(--rd-ink-muted);
+}
+.reading-desk-settings[data-rd-settings-layout='sidebar'] .rd-settings-main {
+	display: flex; flex-direction: column; grid-area: main; min-width: 0;
+}
+.reading-desk-settings[data-rd-settings-layout='sidebar'] .setting-item {
+	display: flex; align-items: center; justify-content: space-between; gap: 28px;
+}
+.reading-desk-settings[data-rd-settings-layout='sidebar'] .setting-item-control { margin-top: 0; }
+.reading-desk-settings[data-rd-settings-layout='sidebar'] .rd-card-content input[type='text'],
+.reading-desk-settings[data-rd-settings-layout='sidebar'] .rd-card-content input[type='password'] { width: auto; max-width: 480px; }
+.reading-desk-settings[data-rd-settings-layout='sidebar'] .rd-card-content select { width: auto; min-width: 148px; }
 
 /* Heading and intro open the content column, mirroring the dialog header. */
 .rd-setting-heading-row { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
@@ -94,8 +134,8 @@
 }
 .reading-desk-settings .rd-card-content input:focus-visible,
 .reading-desk-settings .rd-card-content select:focus-visible { outline: 2px solid var(--rd-accent); outline-offset: 1px; border-color: var(--rd-accent); }
-.reading-desk-settings .rd-card-content input[type='text'] { width: 100%; max-width: 480px; }
-.reading-desk-settings .rd-card-content select { min-width: 148px; }
+/* Control widths follow the layout state: full-width when stacked, capped in
+ * the sidebar state — see the data-rd-settings-layout block above. */
 .reading-desk-settings .rd-button { min-height: 34px; padding: 4px 14px; border-radius: 8px; }
 .rd-settings-portability { min-width: 0; padding: 0 18px 18px; }
 .rd-setting-result.is-success { color: var(--text-success, var(--rd-ink)); }
