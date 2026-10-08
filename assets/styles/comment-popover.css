@@ -1,0 +1,165 @@
+/* Comment popover portal. The host carries .reading-desk-shell, so its tokens
+ * come from the shared block; dark themes raise it one surface further. Padding
+ * stays zero so the sticky header and composer can pin flush to the edges. */
+.rd-comment-popover-host {
+	position: fixed; z-index: 20;
+	width: min(360px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow: auto;
+	overscroll-behavior: contain;
+	border: 1px solid var(--rd-line); background: var(--rd-surface-raised);
+	border-radius: 10px;
+	box-shadow: 0 12px 28px var(--rd-elevation);
+}
+.theme-dark.rd-comment-popover-host { --rd-surface-raised: var(--background-secondary-alt, oklch(0.22 0.012 75)); }
+
+/* Sheet structure: sticky header, scrolling body, sticky composer footer. */
+.rd-comment-popover { display: flex; flex-direction: column; min-width: 0; font-size: 13px; }
+.rd-comment-popover h3, .rd-comment-popover h4 { margin: 0; }
+.rd-comment-popover__header {
+	position: sticky; top: 0; z-index: 2;
+	display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+	padding: 12px 10px 10px 14px;
+	border-bottom: 1px solid var(--rd-line); background: var(--rd-surface-raised);
+	border-radius: 9px 9px 0 0;
+}
+.rd-comment-popover__titles { min-width: 0; }
+.rd-comment-popover__heading { font-size: 15px; font-weight: 600; }
+.rd-comment-popover__target { margin: 2px 0 0; color: var(--rd-ink-muted); font-size: 12px; line-height: 1.4; overflow-wrap: anywhere; }
+.rd-comment-popover__close { flex: none; color: var(--rd-ink-muted); }
+.rd-comment-popover__body { display: grid; gap: 12px; padding: 12px 14px; min-width: 0; }
+.rd-comment-popover__sep { border: 0; border-top: 1px solid var(--rd-line); margin: 0; }
+
+/* Button variants, restated under the popover root: Obsidian's
+ * button:not(.clickable-icon) background rule outranks bare variant classes. */
+.rd-comment-popover .rd-button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.rd-comment-popover .rd-button--sm { min-height: 28px; height: 28px; padding: 0 10px; font-size: 12px; }
+.rd-comment-popover .rd-button--icon { width: 28px; min-width: 28px; padding: 0; }
+.rd-comment-popover .rd-button--icon svg { width: 14px; height: 14px; display: block; }
+.rd-comment-popover .rd-button--outline { background: transparent; border-color: var(--rd-line); }
+.rd-comment-popover .rd-button--outline:hover:not(:disabled) { background: color-mix(in srgb, var(--rd-ink) 6%, transparent); border-color: var(--rd-line); }
+.rd-comment-popover .rd-button--ghost, .rd-comment-popover .rd-button--ghost-danger { background: transparent; border-color: transparent; }
+.rd-comment-popover .rd-button--ghost:hover:not(:disabled) { background: color-mix(in srgb, var(--rd-ink) 6%, transparent); border-color: transparent; }
+.rd-comment-popover .rd-button--ghost-danger:hover:not(:disabled) { background: color-mix(in srgb, var(--background-modifier-error, #e93147) 12%, transparent); border-color: transparent; color: var(--text-error, #e93147); }
+.rd-comment-popover .rd-button--ghost-danger[data-armed='true'], .rd-comment-popover .rd-button--ghost-danger[data-armed='true']:hover:not(:disabled) {
+	background: var(--background-modifier-error, #e93147); border-color: transparent; color: #fff; opacity: 1;
+}
+.rd-comment-popover .rd-button--primary { background: var(--rd-accent); border-color: transparent; color: var(--text-on-accent, #fff); }
+.rd-comment-popover .rd-button--primary:hover:not(:disabled) { background: var(--interactive-accent-hover, var(--rd-accent)); border-color: transparent; color: var(--text-on-accent, #fff); }
+.rd-comment-popover .rd-button--secondary { background: var(--rd-surface); border-color: var(--rd-line); }
+.rd-comment-popover .rd-button--secondary:hover:not(:disabled) { background: color-mix(in srgb, var(--rd-ink) 6%, var(--rd-surface)); border-color: var(--rd-line); }
+
+/* Excerpt context card: the left bar follows the current highlight colour. */
+.rd-comment-popover__excerpt {
+	margin: 0; padding: 9px 12px; overflow-wrap: anywhere;
+	background: var(--rd-surface); border: 1px solid var(--rd-line);
+	border-left: 3px solid var(--rd-excerpt-color, var(--rd-line));
+	border-radius: 6px; color: var(--rd-ink); font-size: 13px; line-height: 1.55;
+}
+.rd-comment-popover__excerpt[data-color='moss'] { --rd-excerpt-color: var(--rd-moss); }
+.rd-comment-popover__excerpt[data-color='amber'] { --rd-excerpt-color: var(--rd-amber); }
+.rd-comment-popover__excerpt[data-color='brick'] { --rd-excerpt-color: var(--rd-brick); }
+.rd-comment-popover__excerpt[data-color='indigo'] { --rd-excerpt-color: var(--rd-indigo); }
+.rd-comment-popover__excerpt[data-color='plum'] { --rd-excerpt-color: var(--rd-plum); }
+
+.rd-comment-popover__actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; min-width: 0; border: 0; margin: 0; padding: 0; }
+.rd-comment-popover__label { font-size: 12px; font-weight: 600; color: var(--rd-ink); }
+
+/* Swatch group base stays shared with the drawer list; the popover restyles
+ * its own swatches as circular toggles (check inherits the sampled foreground). */
+.rd-swatch-group { display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; border: 0; margin: 0; padding: 0; }
+.rd-comment-popover .rd-swatch-group { display: block; }
+.rd-comment-popover .rd-swatch-group__row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 6px; }
+.rd-comment-popover .rd-swatch-group legend { padding: 0; font-size: 12px; font-weight: 600; color: var(--rd-ink); }
+.rd-comment-popover .rd-swatch {
+	min-width: 0; width: 26px; height: 26px; min-height: 26px; padding: 0;
+	border: 1px solid color-mix(in srgb, var(--rd-ink) 14%, transparent); border-radius: 50%;
+	font-size: 0; line-height: 0; display: inline-grid; place-items: center;
+	transition: transform 120ms ease, box-shadow 120ms ease;
+}
+.rd-comment-popover .rd-swatch:hover { transform: scale(1.14); }
+.rd-comment-popover .rd-swatch svg { width: 13px; height: 13px; opacity: 0; }
+.rd-comment-popover .rd-swatch[aria-pressed='true'] svg { opacity: 1; }
+.rd-comment-popover .rd-swatch--moss[aria-pressed='true'] { box-shadow: 0 0 0 2px var(--rd-surface-raised), 0 0 0 4px var(--rd-moss); }
+.rd-comment-popover .rd-swatch--amber[aria-pressed='true'] { box-shadow: 0 0 0 2px var(--rd-surface-raised), 0 0 0 4px var(--rd-amber); }
+.rd-comment-popover .rd-swatch--brick[aria-pressed='true'] { box-shadow: 0 0 0 2px var(--rd-surface-raised), 0 0 0 4px var(--rd-brick); }
+.rd-comment-popover .rd-swatch--indigo[aria-pressed='true'] { box-shadow: 0 0 0 2px var(--rd-surface-raised), 0 0 0 4px var(--rd-indigo); }
+.rd-comment-popover .rd-swatch--plum[aria-pressed='true'] { box-shadow: 0 0 0 2px var(--rd-surface-raised), 0 0 0 4px var(--rd-plum); }
+.rd-comment-popover__color-name { margin-left: auto; font-size: 12px; color: var(--rd-ink-muted); }
+
+/* Tag combobox: quiet overlay per the opencodian dropdown contract (1px border,
+ * accent-tinted highlight, 5px thin scrollbar). */
+.rd-comment-popover input, .rd-comment-popover textarea { width: 100%; min-width: 0; }
+.rd-comment-popover__tags, .rd-comment-popover__comments { display: grid; gap: 8px; min-width: 0; }
+.rd-comment-popover__tag-row { display: flex; gap: 8px; align-items: flex-start; }
+.rd-combo { position: relative; flex: 1; min-width: 0; }
+.rd-combo__menu {
+	position: absolute; z-index: 3; top: calc(100% + 5px); left: 0; right: 0;
+	display: grid; gap: 2px; max-height: min(240px, 50vh); overflow-y: auto; padding: 5px;
+	border: 1px solid var(--rd-line); border-radius: 8px;
+	background: var(--rd-surface);
+	box-shadow: 0 12px 28px var(--rd-elevation);
+	scrollbar-width: thin;
+}
+.rd-combo__menu[hidden] { display: none; }
+.rd-combo__menu::-webkit-scrollbar { width: 5px; }
+.rd-combo__menu::-webkit-scrollbar-track { background: transparent; }
+.rd-combo__menu::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb-bg, var(--rd-line)); border-radius: 999px; }
+.rd-combo__group { padding: 4px 10px 2px; font-size: 11px; font-weight: 600; color: var(--rd-ink-muted); }
+.rd-comment-popover .rd-combo__option {
+	display: flex; align-items: center; gap: 8px; width: 100%;
+	min-height: 30px; padding: 4px 8px 4px 10px;
+	border: 0; border-radius: 6px; background: transparent;
+	color: var(--rd-ink); font: inherit; font-size: 13px; text-align: left; cursor: pointer;
+}
+.rd-comment-popover .rd-combo__option:hover, .rd-comment-popover .rd-combo__option.is-highlighted {
+	background: color-mix(in srgb, var(--rd-accent) 13%, transparent);
+}
+.rd-combo__option:focus-visible { outline: 2px solid var(--rd-accent); outline-offset: -2px; }
+.rd-combo__option svg { width: 13px; height: 13px; flex: none; color: var(--rd-ink-muted); }
+.rd-combo__option--create span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rd-combo__empty { padding: 8px 10px; font-size: 12px; color: var(--rd-ink-muted); text-align: center; }
+
+/* Tags render as badges inside the popover; the drawer list keeps the pill. */
+.rd-comment-popover__tag-list { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; font-size: 12.5px; color: var(--rd-ink-muted); }
+.rd-comment-popover .rd-tag { height: 24px; padding: 0 5px 0 9px; gap: 3px; border: 0; border-radius: 6px; background: color-mix(in srgb, var(--rd-ink) 7%, transparent); color: var(--rd-ink); font-weight: 500; }
+.rd-comment-popover .rd-tag__remove { display: inline-grid; place-items: center; width: 16px; height: 16px; padding: 0; border-radius: 4px; color: var(--rd-ink-muted); }
+.rd-comment-popover .rd-tag__remove:hover { color: var(--text-error, #e93147); background: color-mix(in srgb, var(--background-modifier-error, #e93147) 12%, transparent); }
+.rd-comment-popover .rd-tag__remove svg { width: 11px; height: 11px; display: block; }
+
+/* Comment list: quiet rows; the destructive action reveals on hover/focus. */
+.rd-comment-popover__comments-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.rd-comment-popover__comments-header h4 { font-size: 12.5px; font-weight: 600; }
+.rd-comment-popover__count { font-size: 11px; font-weight: 500; color: var(--rd-ink-muted); border: 1px solid var(--rd-line); border-radius: 999px; padding: 1px 8px; font-variant-numeric: tabular-nums; }
+.rd-comment-popover__comments ol { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
+.rd-comment-popover__comment { display: grid; gap: 3px; min-width: 0; padding: 7px 8px; margin: 0 -8px; border-radius: 6px; }
+.rd-comment-popover__comment:hover, .rd-comment-popover__comment:focus-within { background: color-mix(in srgb, var(--rd-ink) 5%, transparent); }
+.rd-comment-popover__comment p { margin: 0; overflow-wrap: anywhere; line-height: 1.5; }
+.rd-comment-popover__comment-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 22px; }
+.rd-comment-popover__comment time { color: var(--rd-ink-muted); font-size: 11.5px; }
+.rd-comment-popover__delete-comment { opacity: 0; min-height: 22px; height: 22px; padding: 0 6px; font-size: 11.5px; }
+.rd-comment-popover__comment:hover .rd-comment-popover__delete-comment,
+.rd-comment-popover__comment:focus-within .rd-comment-popover__delete-comment { opacity: 1; }
+.rd-comment-popover__empty {
+	border: 1px dashed var(--rd-line); border-radius: 8px; padding: 22px 14px;
+	display: grid; justify-items: center; gap: 6px;
+	color: var(--rd-ink-muted); font-size: 12.5px; text-align: center;
+}
+.rd-comment-popover__empty p { margin: 0; }
+.rd-comment-popover__empty-icon { display: grid; place-items: center; opacity: 0.7; }
+.rd-comment-popover__empty-icon svg { width: 18px; height: 18px; }
+
+/* Composer: sticky footer with a primary action and the shortcut hint. */
+.rd-comment-popover__composer {
+	position: sticky; bottom: 0; z-index: 2;
+	display: grid; gap: 8px; min-width: 0;
+	padding: 10px 14px 12px;
+	border-top: 1px solid var(--rd-line); background: var(--rd-surface-raised);
+	border-radius: 0 0 9px 9px;
+}
+.rd-comment-popover textarea { min-height: 64px; resize: vertical; }
+.rd-comment-popover__composer-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.rd-comment-popover__composer-hint { display: inline-flex; align-items: center; gap: 3px; font-size: 11.5px; color: var(--rd-ink-muted); }
+.rd-comment-popover__composer-hint kbd {
+	font-family: var(--font-monospace, monospace); font-size: 10.5px; line-height: 1.6;
+	padding: 0 4px; border: 1px solid var(--rd-line); border-bottom-width: 2px; border-radius: 4px;
+	background: var(--rd-surface); color: var(--rd-ink-muted);
+}

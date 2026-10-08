@@ -1,0 +1,104 @@
+/* Reading Desk (Margin). Host-first: surface, ink, line and accent derive from
+ * Obsidian variables; shadows are reserved for the PDF document surface and
+ * true overlays. */
+
+/* Tokens. The comment portal host and the settings page carry these roots too,
+ * so detached surfaces inherit the same derivation without a second block. */
+.reading-desk-shell, .rd-reader, .rd-shelf, .reading-desk-settings, .reading-desk-pdf-navigation-host {
+	--rd-surface: var(--background-primary, oklch(0.98 0.005 250));
+	--rd-surface-raised: var(--background-secondary, oklch(0.96 0.01 250));
+	--rd-surface-document: oklch(0.985 0.006 90);
+	--rd-ink: var(--text-normal, oklch(0.24 0.02 250));
+	--rd-ink-muted: var(--text-muted, oklch(0.48 0.02 250));
+	--rd-line: var(--background-modifier-border, oklch(0.75 0.02 250));
+	--rd-accent: var(--interactive-accent, oklch(0.62 0.13 235));
+	--rd-moss: var(--canvas-color-4, oklch(0.68 0.12 145));
+	--rd-amber: var(--canvas-color-3, oklch(0.77 0.14 80));
+	--rd-brick: var(--canvas-color-1, oklch(0.62 0.15 30));
+	--rd-indigo: var(--canvas-color-6, oklch(0.61 0.13 275));
+	--rd-plum: var(--canvas-color-5, oklch(0.62 0.13 325));
+	--rd-elevation: oklch(0.2 0.02 250 / 0.2);
+	color: var(--rd-ink);
+}
+
+.theme-dark .reading-desk-shell, .theme-dark .rd-reader, .theme-dark .rd-shelf, .theme-dark .reading-desk-pdf-navigation-host {
+	--rd-surface-document: oklch(0.22 0.012 75);
+}
+
+/* Border-box is the control vocabulary. The portability panel renders inside
+ * the Obsidian settings modal, outside the three plugin roots. */
+.reading-desk-shell, .reading-desk-shell *,
+.rd-reader, .rd-reader *,
+.rd-shelf, .rd-shelf *,
+.reading-desk-pdf-navigation-host, .reading-desk-pdf-navigation-host *,
+.rd-settings-portability, .rd-settings-portability * {
+	box-sizing: border-box;
+}
+
+/* Author display values below would otherwise beat the UA [hidden] rule, and
+ * the inline delete confirmations and crop controls rely on the hidden property. */
+.reading-desk-shell [hidden], .rd-reader [hidden], .rd-shelf [hidden], .reading-desk-pdf-navigation-host [hidden], .rd-settings-portability [hidden] { display: none !important; }
+
+/* Heading roots that Obsidian already renders in the leaf header are kept for
+ * assistive tech without repeating the title on screen. */
+.rd-visually-hidden {
+	position: absolute; width: 1px; height: 1px; margin: -1px;
+	padding: 0; border: 0; overflow: hidden; white-space: nowrap; clip-path: inset(50%);
+}
+
+/* Shared control chrome. Every plugin button carries .rd-button; selects and
+ * inputs have no shared class, so their host regions are listed explicitly. */
+.rd-button,
+.rd-reader-toolbar select, .rd-reader-toolbar input,
+.rd-shelf button, .rd-shelf input, .rd-shelf select,
+.rd-target-panel select,
+.rd-crop-overlay select,
+.rd-comment-popover input, .rd-comment-popover textarea {
+	border: 1px solid var(--rd-line);
+	border-radius: 5px;
+	background: var(--rd-surface);
+	color: var(--rd-ink);
+	font: inherit;
+	min-height: 30px;
+	padding: 4px 8px;
+	transition: border-color 120ms ease, background-color 120ms ease;
+}
+.rd-button:focus-visible,
+.rd-reader-toolbar select:focus-visible, .rd-reader-toolbar input:focus-visible,
+.rd-shelf select:focus-visible, .rd-shelf input:focus-visible,
+.rd-target-panel select:focus-visible,
+.rd-crop-overlay select:focus-visible, .rd-crop-drag-handle:focus-visible,
+.rd-comment-popover input:focus-visible, .rd-comment-popover textarea:focus-visible,
+.rd-link:focus-visible, .rd-tag__remove:focus-visible, .rd-swatch:focus-visible {
+	outline: 2px solid var(--rd-accent);
+	outline-offset: 2px;
+}
+.rd-button:hover:not(:disabled):not([aria-disabled='true']),
+.rd-shelf button:hover:not(:disabled):not([aria-disabled='true']) {
+	border-color: var(--rd-accent);
+}
+.rd-button:active:not(:disabled):not([aria-disabled='true']) {
+	background: color-mix(in oklch, var(--rd-surface) 88%, var(--rd-accent));
+}
+.rd-button:disabled, .rd-button[aria-disabled='true'],
+.rd-reader-toolbar select:disabled, .rd-reader-toolbar input:disabled,
+.rd-shelf select:disabled, .rd-shelf input:disabled,
+.rd-target-panel select:disabled,
+.rd-crop-overlay select:disabled,
+.rd-comment-popover input:disabled, .rd-comment-popover textarea:disabled {
+	opacity: 0.6;
+	color: var(--rd-ink-muted);
+	cursor: default;
+}
+
+/* Obsidian ships `button:not(.clickable-icon) { background-color: var(--interactive-normal) }`
+ * at (0,1,1), which outranks every single-class rule the plugin can write. Without
+ * this block the toolbar palette, the drawer and the popover swatches all paint as
+ * flat theme buttons and the palette colours disappear entirely. Each value below is
+ * restated with a root scope so the documented surface and palette keys land. */
+.rd-reader .rd-button, .rd-shelf .rd-button,
+.reading-desk-shell .rd-button, .reading-desk-settings .rd-button { background: var(--rd-surface); }
+.rd-reader .rd-highlight-comment-button, .rd-reader .rd-crop-drag-handle { background: var(--rd-surface-raised); }
+.rd-highlight-drawer .rd-link, .rd-comment-popover .rd-link,
+.rd-comment-popover .rd-tag__remove { background: transparent; }
+.rd-shelf .rd-category-chip, .rd-shelf .rd-view-switch-button { background: var(--rd-surface); }

@@ -1,0 +1,17 @@
+/* Target panel and excerpt cards */
+.rd-target-panel { position: fixed; right: 16px; top: var(--rd-toolbar-height, 72px); z-index: 7; width: min(360px, calc(100% - 32px)); max-height: calc(100% - var(--rd-toolbar-height, 72px) - 16px); overflow: auto; border: 1px solid var(--rd-line); background: var(--rd-surface-raised); box-shadow: 0 12px 28px var(--rd-elevation); padding: 16px; display: grid; gap: 12px; min-height: 180px; min-width: 0; }
+.rd-target-panel h2, .rd-target-panel h3 { font-size: 16px; margin: 0; }
+.rd-target-panel__header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.rd-target-panel p { color: var(--rd-ink-muted); font-size: 14px; line-height: 1.5; }
+.rd-target-panel:focus-within { border-color: var(--rd-accent); }
+.rd-target-panel select { width: 100%; min-width: 0; max-width: 100%; }
+.rd-excerpt-target-panel { display: grid; gap: 8px; border-top: 1px solid var(--rd-line); padding-top: 16px; }
+.rd-excerpt-target-panel h3 { font-size: 14px; margin: 0; }
+.rd-excerpt-target-panel__cards { display: grid; gap: 8px; padding: 0; margin: 0; list-style: none; }
+.rd-excerpt-card { border: 1px solid var(--rd-line); padding: 8px; display: grid; gap: 8px; }
+.rd-excerpt-card:focus-within { border-color: var(--rd-accent); }
+.rd-excerpt-card__title { width: 100%; min-width: 0; font-weight: 600; background: transparent; border: 0; border-bottom: 1px solid transparent; color: var(--rd-ink); }
+.rd-excerpt-card__title:focus { border-bottom-color: var(--rd-accent); outline: 2px solid var(--rd-accent); outline-offset: 2px; }
+.rd-excerpt-card__controls { display: flex; gap: 8px; flex-wrap: wrap; }
+.rd-excerpt-card__text { white-space: pre-wrap; margin: 0; color: var(--rd-ink-muted); font-size: 12px; line-height: 1.5; min-width: 0; overflow-wrap: anywhere; }
+.rd-loading { margin: 0; color: var(--rd-ink-muted); font-size: 12px; }

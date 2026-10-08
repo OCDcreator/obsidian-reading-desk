@@ -1,7 +1,7 @@
-import fs from 'fs';
 import { describe, expect, it } from 'vitest';
+import { readStylesheet } from '../../scripts/sync-styles.mjs';
 
-const styles = fs.readFileSync(new URL('../../assets/styles.css', import.meta.url), 'utf8');
+const styles = readStylesheet();
 
 describe('Reader thumbnail layout styles', () => {
 	it('mirrors the host PDF sidebar halo: 8px transparent border with 4px radius', () => {

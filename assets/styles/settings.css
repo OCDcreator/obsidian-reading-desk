@@ -1,0 +1,72 @@
+/* Portability panel (settings page) */
+.rd-import-export-panel { display: grid; gap: 12px; min-width: 0; }
+.rd-import-export-panel__heading { margin: 0; font-size: 20px; font-weight: 600; line-height: 1.25; }
+.rd-import-export-panel__import, .rd-import-export-panel__export { display: grid; gap: 8px; }
+.rd-import-export-panel__import p, .rd-import-export-panel__export p { margin: 0; color: var(--rd-ink-muted); font-size: 14px; line-height: 1.5; max-width: 75ch; overflow-wrap: anywhere; }
+.rd-import-export-panel__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.rd-import-export-panel__status-wrap { display: grid; gap: 8px; }
+.rd-import-export-panel__status { margin: 0; color: var(--rd-ink-muted); font-size: 14px; line-height: 1.5; max-width: 75ch; overflow-wrap: anywhere; }
+.rd-import-export-panel__status.is-idle,
+.rd-import-export-panel__status.is-loading-import,
+.rd-import-export-panel__status.is-loading-markdown,
+.rd-import-export-panel__status.is-loading-json { color: var(--rd-ink-muted); }
+.rd-import-export-panel__status.is-success { color: var(--text-success); }
+.rd-import-export-panel__status.is-error { color: var(--text-error); }
+.rd-import-export-panel__button { justify-self: start; }
+.rd-setting-heading-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+/* h2 carries host margins that flex centering ignores; zero them so the icon
+ * optically centers on the text line, and let the row own the spacing below. */
+.reading-desk-settings h2.rd-setting-heading { font-size: 20px !important; font-weight: 650; line-height: 1.25; margin: 0 !important; }
+.rd-setting-heading-icon { display: flex; align-items: center; width: 22px; height: 22px; }
+.rd-setting-heading-icon svg { width: 22px; height: 22px; display: block; }
+.reading-desk-settings .rd-setting-intro { font-size: 14px; line-height: 1.5; color: var(--rd-ink-muted); }
+
+
+/* Settings: shadcn-style layout — vertical category nav on the left, bordered
+ * card groups with hairline-divided rows on the right. All colors stay on host
+ * tokens so light/dark follow the vault theme. */
+.rd-settings-nav-card { margin-bottom: 16px; }
+.rd-settings-nav { display: flex; flex-wrap: wrap; gap: 4px; padding: 8px; }
+.rd-settings-tab {
+	display: flex; align-items: center; text-align: left;
+	border: 0; border-radius: 6px; background: transparent; color: var(--rd-ink-muted);
+	font: inherit; font-size: 14px; line-height: 1.4; min-height: 30px; padding: 4px 8px;
+	cursor: pointer; white-space: nowrap;
+}
+.rd-settings-tab:hover { color: var(--rd-ink); background: color-mix(in oklch, var(--rd-surface) 96%, var(--rd-ink) 4%); }
+.rd-settings-tab[aria-selected='true'] { color: var(--rd-ink); background: var(--rd-surface-raised); font-weight: 500; }
+.rd-settings-tab:focus-visible { outline: 2px solid var(--rd-accent); outline-offset: 2px; }
+.rd-settings-panel { min-width: 0; }
+
+.rd-card { border: 1px solid var(--rd-line); border-radius: 8px; background: var(--rd-surface); overflow: hidden; }
+.rd-card + .rd-card { margin-top: 16px; }
+.rd-card-header { padding: 16px 16px 12px; }
+.rd-card-title { font-size: 14px; font-weight: 600; line-height: 1.3; color: var(--rd-ink); }
+.rd-card-desc { margin-top: 4px; font-size: 12px; line-height: 1.5; color: var(--rd-ink-muted); max-width: 75ch; }
+.rd-card-header + .rd-card-content .setting-item:first-child { border-top: 1px solid var(--rd-line); }
+
+/* Rows inside cards replace Obsidian's default setting block with quiet dividers. */
+.reading-desk-settings .setting-item { border: 0; border-top: 1px solid var(--rd-line); padding: 12px 16px; margin: 0; }
+.reading-desk-settings .setting-item:first-child { border-top: 0; }
+.reading-desk-settings .setting-item-name { font-size: 14px; font-weight: 500; color: var(--rd-ink); }
+.reading-desk-settings .setting-item-description { font-size: 12px; color: var(--rd-ink-muted); }
+.reading-desk-settings .rd-card-content .setting-item-control { gap: 8px; }
+.reading-desk-settings .rd-card-content input[type='text'],
+.reading-desk-settings .rd-card-content input[type='password'],
+.reading-desk-settings .rd-card-content select {
+	border: 1px solid var(--rd-line); border-radius: 6px; background: var(--rd-surface);
+	color: var(--rd-ink); font: inherit; font-size: 14px; min-height: 30px; padding: 4px 8px;
+}
+.reading-desk-settings .rd-card-content input:focus-visible,
+.reading-desk-settings .rd-card-content select:focus-visible { outline: 2px solid var(--rd-accent); outline-offset: 1px; border-color: var(--rd-accent); }
+.rd-settings-portability { min-width: 0; padding: 0 16px 16px; }
+.rd-setting-result.is-success { color: var(--text-success, var(--rd-ink)); }
+.rd-setting-result.is-error { color: var(--text-error, var(--rd-ink)); }
+.reading-desk-settings .rd-card-content input[type="text"] { width: 100%; max-width: 480px; }
+
+.rd-setting-save-feedback { display: flex; flex-wrap: wrap; gap: 8px; flex-basis: 100%; margin-top: 6px; }
+.setting-item:has(.rd-setting-save-feedback) { flex-wrap: wrap; }
+.rd-setting-save-status { color: var(--rd-ink-muted); font-size: 12px; overflow-wrap: anywhere; }
+.rd-setting-save-status.is-success { color: var(--text-success); }
+.rd-setting-save-status.is-error { color: var(--text-error); }
+.rd-setting-save-feedback button[hidden] { display: none; }

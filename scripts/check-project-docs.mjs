@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { readStylesheet } from './sync-styles.mjs';
 
 const root = process.cwd();
 const packageJson = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
@@ -30,13 +31,17 @@ const requiredDocs = [
 
 const failures = [];
 
-const styleSource = path.join(root, 'assets/styles.css');
 const styleOutput = path.join(root, 'styles.css');
-if (!fs.existsSync(styleSource)) failures.push('assets/styles.css is missing');
-if (!fs.existsSync(styleOutput)) failures.push('styles.css build output is missing; run npm run styles:sync');
-if (fs.existsSync(styleSource) && fs.existsSync(styleOutput)
-	&& !fs.readFileSync(styleSource).equals(fs.readFileSync(styleOutput))) {
-	failures.push('styles.css must be regenerated from assets/styles.css by the build');
+if (!fs.existsSync(styleOutput)) {
+	failures.push('styles.css build output is missing; run npm run styles:sync');
+} else {
+	try {
+		if (fs.readFileSync(styleOutput, 'utf8') !== readStylesheet()) {
+			failures.push('styles.css must be regenerated from assets/styles/ partials; run npm run styles:sync');
+		}
+	} catch (error) {
+		failures.push(`assets/styles/ partials are incomplete: ${error instanceof Error ? error.message : String(error)}`);
+	}
 }
 
 for (const [scriptName, expectedCommand] of Object.entries(requiredScripts)) {

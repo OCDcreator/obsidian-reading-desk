@@ -22,7 +22,8 @@ const appVersion = packageJson.version;
 const releaseCodename = packageJson.releaseCodename ?? 'Reed';
 const buildId = `${appVersion}+${new Date().toISOString()}`;
 
-await import('./scripts/sync-styles.mjs');
+const styles = await import('./scripts/sync-styles.mjs');
+styles.writeStylesheet();
 
 const context = await esbuild.context({
 	banner: {
