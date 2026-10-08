@@ -15,8 +15,8 @@
 	--rd-moss: var(--canvas-color-4, oklch(0.68 0.12 145));
 	--rd-amber: var(--canvas-color-3, oklch(0.77 0.14 80));
 	--rd-brick: var(--canvas-color-1, oklch(0.62 0.15 30));
-	--rd-indigo: var(--canvas-color-5, oklch(0.60 0.11 195));
-	--rd-plum: var(--canvas-color-6, oklch(0.58 0.16 300));
+	--rd-indigo: var(--canvas-color-6, oklch(0.61 0.13 275));
+	--rd-plum: var(--canvas-color-5, oklch(0.62 0.13 325));
 	--rd-elevation: oklch(0.2 0.02 250 / 0.2);
 	color: var(--rd-ink);
 }
@@ -112,7 +112,7 @@
 .rd-reader-aux { min-height: 0; }
 .rd-reader-toolbar {
 	display: flex; align-items: center; gap: 8px; flex-wrap: nowrap;
-	padding: 8px; position: sticky; top: 0; z-index: 4;
+	padding: 12px 16px; position: sticky; top: 0; z-index: 4;
 	border-bottom: 1px solid var(--rd-line); background: var(--rd-surface-raised);
 	max-width: 100%; overflow-x: auto;
 }
@@ -138,7 +138,7 @@
 	align-items: stretch; gap: 16px; padding: 24px;
 	min-height: 0; height: 100%; min-width: 0; overflow: hidden;
 }
-.rd-pdf-stage { min-width: 0; min-height: 0; height: 100%; overflow: auto; display: grid; place-items: start center; padding: 24px; }
+.rd-pdf-stage { min-width: 0; min-height: 0; height: 100%; overflow: auto; display: grid; place-items: start center; }
 .rd-reader-navigation {
 	min-width: 0; max-height: calc(100vh - var(--rd-toolbar-height, 54px) - 48px); overflow: hidden;
 	border: 1px solid var(--rd-line); background: var(--rd-surface); display: grid; grid-template-rows: auto minmax(0, 1fr);
@@ -246,9 +246,8 @@
  * spilling across the Reader; the Reader remains the primary scroll container. */
 .rd-pdf-page-host { position: relative; background: var(--rd-surface-document); box-shadow: 0 8px 22px var(--rd-elevation); max-width: 100%; overflow: auto; }
 .rd-reader[data-rd-size='medium'] .rd-reader-body { grid-template-columns: minmax(0, 1fr); padding: 16px; }
-.rd-reader[data-rd-size='medium'] .rd-pdf-stage { padding: 16px; }
 .rd-reader[data-rd-size='narrow'] .rd-reader-body { grid-template-columns: minmax(0, 1fr); padding: 16px; overflow: hidden; }
-.rd-reader[data-rd-size='narrow'] .rd-pdf-stage { min-width: 0; min-height: 320px; padding: 16px 0; overflow: auto; }
+.rd-reader[data-rd-size='narrow'] .rd-pdf-stage { min-width: 0; min-height: 320px; overflow: auto; }
 .rd-pdf-canvas, .rd-pdf-text-layer, .rd-highlight-layer { inset: 0; position: absolute; }
 .rd-pdf-canvas { position: relative; display: block; }
 .rd-pdf-text-layer { overflow: hidden; line-height: 1; opacity: 1; user-select: text; -webkit-user-select: text; pointer-events: auto; }
@@ -276,7 +275,7 @@
  * is a single character, so the name travels on aria-label alone. Every other
  * swatch is a labelled control and keeps its visible colour name. */
 .rd-toolbar-palette .rd-button {
-	width: 22px; min-width: 22px; height: 22px; min-height: 22px;
+	width: 28px; min-width: 28px; height: 28px; min-height: 28px;
 	border: 1px solid var(--rd-line); border-radius: 50%; box-shadow: none;
 	font-size: 0; padding: 0;
 }
@@ -314,7 +313,7 @@
 /* Highlight drawer */
 .rd-highlight-drawer {
 	position: fixed; right: 16px; top: var(--rd-drawer-top, 72px); z-index: 8;
-	width: min(360px, calc(100vw - 32px)); max-height: calc(100vh - 96px); overflow: auto;
+	width: min(360px, calc(100vw - 32px)); max-height: calc(100vh - var(--rd-drawer-top, 72px) - 24px); overflow: auto;
 	overscroll-behavior: contain;
 	border: 1px solid var(--rd-line); background: var(--rd-surface-raised);
 	box-shadow: 0 12px 28px var(--rd-elevation); padding: 12px;
@@ -347,33 +346,170 @@
 .rd-tag__remove { border: 0; background: transparent; color: inherit; font: inherit; padding: 0 0 0 2px; cursor: pointer; }
 
 /* Comment popover portal. The host carries .reading-desk-shell, so its tokens
- * come from the shared block; dark themes raise it one surface further. */
+ * come from the shared block; dark themes raise it one surface further. Padding
+ * stays zero so the sticky header and composer can pin flush to the edges. */
 .rd-comment-popover-host {
 	position: fixed; z-index: 20;
 	width: min(360px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow: auto;
 	overscroll-behavior: contain;
 	border: 1px solid var(--rd-line); background: var(--rd-surface-raised);
-	box-shadow: 0 12px 28px var(--rd-elevation); padding: 12px;
+	border-radius: 10px;
+	box-shadow: 0 12px 28px var(--rd-elevation);
 }
 .theme-dark.rd-comment-popover-host { --rd-surface-raised: var(--background-secondary-alt, oklch(0.22 0.012 75)); }
-.rd-comment-popover { display: grid; gap: 10px; max-height: min(560px, 70vh); overflow: auto; min-width: 0; }
+
+/* Sheet structure: sticky header, scrolling body, sticky composer footer. */
+.rd-comment-popover { display: flex; flex-direction: column; min-width: 0; font-size: 13px; }
 .rd-comment-popover h3, .rd-comment-popover h4 { margin: 0; }
-.rd-comment-popover__header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.rd-comment-popover__close { flex: none; }
-.rd-comment-popover__excerpt { margin: 0; color: var(--rd-ink); font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
-.rd-comment-popover__target { margin: 0; color: var(--rd-ink-muted); font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
-.rd-comment-popover__actions, .rd-swatch-group, .rd-comment-popover__tag-list { display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; border: 0; margin: 0; padding: 0; }
+.rd-comment-popover__header {
+	position: sticky; top: 0; z-index: 2;
+	display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+	padding: 12px 10px 10px 14px;
+	border-bottom: 1px solid var(--rd-line); background: var(--rd-surface-raised);
+	border-radius: 9px 9px 0 0;
+}
+.rd-comment-popover__titles { min-width: 0; }
+.rd-comment-popover__heading { font-size: 15px; font-weight: 600; }
+.rd-comment-popover__target { margin: 2px 0 0; color: var(--rd-ink-muted); font-size: 12px; line-height: 1.4; overflow-wrap: anywhere; }
+.rd-comment-popover__close { flex: none; color: var(--rd-ink-muted); }
+.rd-comment-popover__body { display: grid; gap: 12px; padding: 12px 14px; min-width: 0; }
+.rd-comment-popover__sep { border: 0; border-top: 1px solid var(--rd-line); margin: 0; }
+
+/* Button variants, restated under the popover root: Obsidian's
+ * button:not(.clickable-icon) background rule outranks bare variant classes. */
+.rd-comment-popover .rd-button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.rd-comment-popover .rd-button--sm { min-height: 28px; height: 28px; padding: 0 10px; font-size: 12px; }
+.rd-comment-popover .rd-button--icon { width: 28px; min-width: 28px; padding: 0; }
+.rd-comment-popover .rd-button--icon svg { width: 14px; height: 14px; display: block; }
+.rd-comment-popover .rd-button--outline { background: transparent; border-color: var(--rd-line); }
+.rd-comment-popover .rd-button--outline:hover:not(:disabled) { background: color-mix(in srgb, var(--rd-ink) 6%, transparent); border-color: var(--rd-line); }
+.rd-comment-popover .rd-button--ghost, .rd-comment-popover .rd-button--ghost-danger { background: transparent; border-color: transparent; }
+.rd-comment-popover .rd-button--ghost:hover:not(:disabled) { background: color-mix(in srgb, var(--rd-ink) 6%, transparent); border-color: transparent; }
+.rd-comment-popover .rd-button--ghost-danger:hover:not(:disabled) { background: color-mix(in srgb, var(--background-modifier-error, #e93147) 12%, transparent); border-color: transparent; color: var(--text-error, #e93147); }
+.rd-comment-popover .rd-button--ghost-danger[data-armed='true'], .rd-comment-popover .rd-button--ghost-danger[data-armed='true']:hover:not(:disabled) {
+	background: var(--background-modifier-error, #e93147); border-color: transparent; color: #fff; opacity: 1;
+}
+.rd-comment-popover .rd-button--primary { background: var(--rd-accent); border-color: transparent; color: var(--text-on-accent, #fff); }
+.rd-comment-popover .rd-button--primary:hover:not(:disabled) { background: var(--interactive-accent-hover, var(--rd-accent)); border-color: transparent; color: var(--text-on-accent, #fff); }
+.rd-comment-popover .rd-button--secondary { background: var(--rd-surface); border-color: var(--rd-line); }
+.rd-comment-popover .rd-button--secondary:hover:not(:disabled) { background: color-mix(in srgb, var(--rd-ink) 6%, var(--rd-surface)); border-color: var(--rd-line); }
+
+/* Excerpt context card: the left bar follows the current highlight colour. */
+.rd-comment-popover__excerpt {
+	margin: 0; padding: 9px 12px; overflow-wrap: anywhere;
+	background: var(--rd-surface); border: 1px solid var(--rd-line);
+	border-left: 3px solid var(--rd-excerpt-color, var(--rd-line));
+	border-radius: 6px; color: var(--rd-ink); font-size: 13px; line-height: 1.55;
+}
+.rd-comment-popover__excerpt[data-color='moss'] { --rd-excerpt-color: var(--rd-moss); }
+.rd-comment-popover__excerpt[data-color='amber'] { --rd-excerpt-color: var(--rd-amber); }
+.rd-comment-popover__excerpt[data-color='brick'] { --rd-excerpt-color: var(--rd-brick); }
+.rd-comment-popover__excerpt[data-color='indigo'] { --rd-excerpt-color: var(--rd-indigo); }
+.rd-comment-popover__excerpt[data-color='plum'] { --rd-excerpt-color: var(--rd-plum); }
+
+.rd-comment-popover__actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; min-width: 0; border: 0; margin: 0; padding: 0; }
+.rd-comment-popover__label { font-size: 12px; font-weight: 600; color: var(--rd-ink); }
+
+/* Swatch group base stays shared with the drawer list; the popover restyles
+ * its own swatches as circular toggles (check inherits the sampled foreground). */
+.rd-swatch-group { display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; border: 0; margin: 0; padding: 0; }
+.rd-comment-popover .rd-swatch-group { display: block; }
+.rd-comment-popover .rd-swatch-group__row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 6px; }
+.rd-comment-popover .rd-swatch-group legend { padding: 0; font-size: 12px; font-weight: 600; color: var(--rd-ink); }
+.rd-comment-popover .rd-swatch {
+	min-width: 0; width: 26px; height: 26px; min-height: 26px; padding: 0;
+	border: 1px solid color-mix(in srgb, var(--rd-ink) 14%, transparent); border-radius: 50%;
+	font-size: 0; line-height: 0; display: inline-grid; place-items: center;
+	transition: transform 120ms ease, box-shadow 120ms ease;
+}
+.rd-comment-popover .rd-swatch:hover { transform: scale(1.14); }
+.rd-comment-popover .rd-swatch svg { width: 13px; height: 13px; opacity: 0; }
+.rd-comment-popover .rd-swatch[aria-pressed='true'] svg { opacity: 1; }
+.rd-comment-popover .rd-swatch--moss[aria-pressed='true'] { box-shadow: 0 0 0 2px var(--rd-surface-raised), 0 0 0 4px var(--rd-moss); }
+.rd-comment-popover .rd-swatch--amber[aria-pressed='true'] { box-shadow: 0 0 0 2px var(--rd-surface-raised), 0 0 0 4px var(--rd-amber); }
+.rd-comment-popover .rd-swatch--brick[aria-pressed='true'] { box-shadow: 0 0 0 2px var(--rd-surface-raised), 0 0 0 4px var(--rd-brick); }
+.rd-comment-popover .rd-swatch--indigo[aria-pressed='true'] { box-shadow: 0 0 0 2px var(--rd-surface-raised), 0 0 0 4px var(--rd-indigo); }
+.rd-comment-popover .rd-swatch--plum[aria-pressed='true'] { box-shadow: 0 0 0 2px var(--rd-surface-raised), 0 0 0 4px var(--rd-plum); }
+.rd-comment-popover__color-name { margin-left: auto; font-size: 12px; color: var(--rd-ink-muted); }
+
+/* Tag combobox: quiet overlay per the opencodian dropdown contract (1px border,
+ * accent-tinted highlight, 5px thin scrollbar). */
 .rd-comment-popover input, .rd-comment-popover textarea { width: 100%; min-width: 0; }
-.rd-comment-popover textarea { min-height: 84px; resize: vertical; }
-.rd-comment-popover__tags, .rd-comment-popover__comments, .rd-comment-popover__composer { display: grid; gap: 8px; min-width: 0; }
-/* Grid children stretch, which turned these secondary actions into 334px full-width
- * bars that read as primary calls to action next to content-width siblings. */
-.rd-comment-popover__add-tag, .rd-comment-popover__add-comment { justify-self: start; }
-.rd-comment-popover__comments ol { display: grid; gap: 8px; margin: 0; padding-left: 16px; }
-.rd-comment-popover__comment { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; min-width: 0; }
-.rd-comment-popover__comment p { margin: 0; overflow-wrap: anywhere; }
-.rd-comment-popover__comment time { grid-column: 1; color: var(--rd-ink-muted); font-size: 12px; }
-.rd-comment-popover__delete-comment { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
+.rd-comment-popover__tags, .rd-comment-popover__comments { display: grid; gap: 8px; min-width: 0; }
+.rd-comment-popover__tag-row { display: flex; gap: 8px; align-items: flex-start; }
+.rd-combo { position: relative; flex: 1; min-width: 0; }
+.rd-combo__menu {
+	position: absolute; z-index: 3; top: calc(100% + 5px); left: 0; right: 0;
+	display: grid; gap: 2px; max-height: min(240px, 50vh); overflow-y: auto; padding: 5px;
+	border: 1px solid var(--rd-line); border-radius: 8px;
+	background: var(--rd-surface);
+	box-shadow: 0 12px 28px var(--rd-elevation);
+	scrollbar-width: thin;
+}
+.rd-combo__menu[hidden] { display: none; }
+.rd-combo__menu::-webkit-scrollbar { width: 5px; }
+.rd-combo__menu::-webkit-scrollbar-track { background: transparent; }
+.rd-combo__menu::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb-bg, var(--rd-line)); border-radius: 999px; }
+.rd-combo__group { padding: 4px 10px 2px; font-size: 11px; font-weight: 600; color: var(--rd-ink-muted); }
+.rd-comment-popover .rd-combo__option {
+	display: flex; align-items: center; gap: 8px; width: 100%;
+	min-height: 30px; padding: 4px 8px 4px 10px;
+	border: 0; border-radius: 6px; background: transparent;
+	color: var(--rd-ink); font: inherit; font-size: 13px; text-align: left; cursor: pointer;
+}
+.rd-comment-popover .rd-combo__option:hover, .rd-comment-popover .rd-combo__option.is-highlighted {
+	background: color-mix(in srgb, var(--rd-accent) 13%, transparent);
+}
+.rd-combo__option:focus-visible { outline: 2px solid var(--rd-accent); outline-offset: -2px; }
+.rd-combo__option svg { width: 13px; height: 13px; flex: none; color: var(--rd-ink-muted); }
+.rd-combo__option--create span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rd-combo__empty { padding: 8px 10px; font-size: 12px; color: var(--rd-ink-muted); text-align: center; }
+
+/* Tags render as badges inside the popover; the drawer list keeps the pill. */
+.rd-comment-popover__tag-list { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; font-size: 12.5px; color: var(--rd-ink-muted); }
+.rd-comment-popover .rd-tag { height: 24px; padding: 0 5px 0 9px; gap: 3px; border: 0; border-radius: 6px; background: color-mix(in srgb, var(--rd-ink) 7%, transparent); color: var(--rd-ink); font-weight: 500; }
+.rd-comment-popover .rd-tag__remove { display: inline-grid; place-items: center; width: 16px; height: 16px; padding: 0; border-radius: 4px; color: var(--rd-ink-muted); }
+.rd-comment-popover .rd-tag__remove:hover { color: var(--text-error, #e93147); background: color-mix(in srgb, var(--background-modifier-error, #e93147) 12%, transparent); }
+.rd-comment-popover .rd-tag__remove svg { width: 11px; height: 11px; display: block; }
+
+/* Comment list: quiet rows; the destructive action reveals on hover/focus. */
+.rd-comment-popover__comments-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.rd-comment-popover__comments-header h4 { font-size: 12.5px; font-weight: 600; }
+.rd-comment-popover__count { font-size: 11px; font-weight: 500; color: var(--rd-ink-muted); border: 1px solid var(--rd-line); border-radius: 999px; padding: 1px 8px; font-variant-numeric: tabular-nums; }
+.rd-comment-popover__comments ol { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
+.rd-comment-popover__comment { display: grid; gap: 3px; min-width: 0; padding: 7px 8px; margin: 0 -8px; border-radius: 6px; }
+.rd-comment-popover__comment:hover, .rd-comment-popover__comment:focus-within { background: color-mix(in srgb, var(--rd-ink) 5%, transparent); }
+.rd-comment-popover__comment p { margin: 0; overflow-wrap: anywhere; line-height: 1.5; }
+.rd-comment-popover__comment-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 22px; }
+.rd-comment-popover__comment time { color: var(--rd-ink-muted); font-size: 11.5px; }
+.rd-comment-popover__delete-comment { opacity: 0; min-height: 22px; height: 22px; padding: 0 6px; font-size: 11.5px; }
+.rd-comment-popover__comment:hover .rd-comment-popover__delete-comment,
+.rd-comment-popover__comment:focus-within .rd-comment-popover__delete-comment { opacity: 1; }
+.rd-comment-popover__empty {
+	border: 1px dashed var(--rd-line); border-radius: 8px; padding: 22px 14px;
+	display: grid; justify-items: center; gap: 6px;
+	color: var(--rd-ink-muted); font-size: 12.5px; text-align: center;
+}
+.rd-comment-popover__empty p { margin: 0; }
+.rd-comment-popover__empty-icon { display: grid; place-items: center; opacity: 0.7; }
+.rd-comment-popover__empty-icon svg { width: 18px; height: 18px; }
+
+/* Composer: sticky footer with a primary action and the shortcut hint. */
+.rd-comment-popover__composer {
+	position: sticky; bottom: 0; z-index: 2;
+	display: grid; gap: 8px; min-width: 0;
+	padding: 10px 14px 12px;
+	border-top: 1px solid var(--rd-line); background: var(--rd-surface-raised);
+	border-radius: 0 0 9px 9px;
+}
+.rd-comment-popover textarea { min-height: 64px; resize: vertical; }
+.rd-comment-popover__composer-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.rd-comment-popover__composer-hint { display: inline-flex; align-items: center; gap: 3px; font-size: 11.5px; color: var(--rd-ink-muted); }
+.rd-comment-popover__composer-hint kbd {
+	font-family: var(--font-monospace, monospace); font-size: 10.5px; line-height: 1.6;
+	padding: 0 4px; border: 1px solid var(--rd-line); border-bottom-width: 2px; border-radius: 4px;
+	background: var(--rd-surface); color: var(--rd-ink-muted);
+}
 
 /* Crop overlay. Selection geometry stays inline; everything static lives here.
  * The [hidden] overrides matter: author display beats the UA hidden rule. */
@@ -408,7 +544,7 @@
  * declares its own inline-size container (same pattern as the Reader); the
  * workspace padding lives on the frame so the container query can shrink it. */
 .rd-shelf { container-type: inline-size; }
-.rd-shelf-frame { max-width: 1368px; margin: 0 auto; min-width: 0; padding: 24px 24px 72px; }
+.rd-shelf-frame { max-width: 1368px; margin: 0 auto; min-width: 0; padding: 24px; }
 .rd-shelf-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; margin-bottom: 16px; }
 .rd-shelf-title-wrap { min-width: 0; }
 .rd-shelf-heading { margin: 0; font-size: 25px; font-weight: 600; line-height: 1.25; }
@@ -443,7 +579,7 @@
 .rd-continue-card:focus-visible, .rd-shelf-card:focus-visible { outline: 2px solid var(--rd-accent); outline-offset: 2px; }
 .rd-book-cover--continue { aspect-ratio: auto; min-height: 118px; box-shadow: none; }
 .rd-continue-copy { min-width: 0; display: flex; flex-direction: column; gap: 4px; padding: 12px; }
-.rd-continue-title { margin: 0; font-size: 16px; font-weight: 500; line-height: 1.3; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.rd-continue-title { margin: 0; font-size: 16px; font-weight: 500; line-height: 1.25; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
 .rd-continue-author { margin: 0; color: var(--rd-ink-muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rd-continue-copy .rd-progress-row { margin-top: auto; }
 /* Category chips: one wrapping row with counts; selected keeps accent line only. */
@@ -452,7 +588,6 @@
 .rd-shelf .rd-category-chip { min-height: 26px; padding: 3px 10px; color: var(--rd-ink-muted); }
 .rd-category-chip.is-selected { border-color: var(--rd-accent); outline: 1px solid var(--rd-accent); outline-offset: 1px; color: var(--rd-ink); }
 .rd-shelf .rd-category-chip-add { font-size: 14px; line-height: 1; }
-.rd-chip-input { min-height: 26px; padding: 3px 10px; }
 /* Shelf grid and cards: full-bleed cover over a fixed info slot; slots drive equal heights. */
 .rd-shelf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(184px, 1fr)); gap: 16px; }
 .rd-shelf-card { min-width: 0; cursor: pointer; display: grid; grid-template-rows: auto minmax(0, 1fr); border: 1px solid var(--rd-line); background: var(--rd-surface-raised); }
@@ -463,7 +598,7 @@
 .rd-book-cover-unavailable { padding: 0 8px; text-align: center; overflow-wrap: anywhere; }
 .rd-cover-category-badge { position: absolute; left: 10px; top: 10px; height: 21px; display: inline-flex; align-items: center; padding: 1px 7px; border: 1px solid rgb(255 255 255 / 34%); border-radius: 999px; background: rgb(18 21 27 / 82%); color: #fff; font-size: var(--font-ui-smaller, 11px); line-height: 1.4; max-width: calc(100% - 20px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rd-book-details { min-width: 0; display: grid; gap: 7px; padding: 12px; align-content: start; }
-.rd-book-title { margin: 0; font-size: 16px; font-weight: 500; line-height: 1.3; min-height: 2.6em; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.rd-book-title { margin: 0; font-size: 16px; font-weight: 500; line-height: 1.25; min-height: 2.6em; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
 .rd-book-author { display: block; color: var(--rd-ink); font-size: 12px; min-width: 0; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* Grid items blockify inline-block, so the underline hugs the text via fit-content instead. */
 .rd-author-editable { justify-self: start; width: fit-content; max-width: 100%; cursor: text; border-bottom: 1px dashed transparent; }
@@ -522,9 +657,9 @@
 .rd-nav-focus-meta { margin: 0; color: var(--rd-ink-muted); font-size: 12px; max-width: 62ch; }
 .rd-nav-focus-copy .rd-progress-row { margin-top: auto; max-width: 360px; }
 .rd-shelf .rd-nav-focus-open { align-self: flex-start; }
-/* Category manager modal and action menus detach from .rd-shelf, so they carry
- * their own token block and control chrome (host button rules outrank bare classes). */
-.rd-category-modal, .rd-action-menu {
+/* Action menus detach from .rd-shelf, so they carry their own token block and
+ * control chrome (host button rules outrank bare classes). */
+.rd-action-menu {
 	--rd-surface: var(--background-primary, oklch(0.98 0.005 250));
 	--rd-surface-raised: var(--background-secondary, oklch(0.96 0.01 250));
 	--rd-ink: var(--text-normal, oklch(0.24 0.02 250));
@@ -535,25 +670,6 @@
 	box-sizing: border-box;
 }
 .rd-modal-scrim { position: fixed; inset: 0; z-index: var(--layer-modal, 20); display: grid; place-items: center; padding: 24px; background: rgb(0 0 0 / 32%); }
-.rd-category-modal { width: min(560px, 100%); max-height: min(70vh, 640px); overflow: auto; display: grid; gap: 12px; padding: 20px; border: 1px solid var(--rd-line); background: var(--rd-surface-raised); box-shadow: 0 12px 28px oklch(0.2 0.02 250 / 0.2); }
-.rd-category-modal-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-.rd-category-modal-title { margin: 0; font-size: 20px; font-weight: 600; }
-.rd-category-modal-desc { margin: 0; color: var(--rd-ink-muted); font-size: 12px; max-width: 75ch; }
-.rd-category-modal-list { list-style: none; margin: 0; padding: 0; border-block: 1px solid var(--rd-line); }
-.rd-category-modal-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--rd-line); min-width: 0; }
-.rd-category-modal-row:last-child { border-bottom: 0; }
-.rd-category-modal-name { min-width: 0; overflow-wrap: anywhere; }
-.rd-category-modal-actions { display: inline-flex; gap: 4px; align-items: center; flex: none; }
-.rd-category-modal-count { color: var(--rd-ink-muted); font-size: 12px; white-space: nowrap; }
-.rd-category-modal-empty { margin: 12px 0; color: var(--rd-ink-muted); }
-.rd-category-modal-create { display: flex; gap: 8px; }
-.rd-category-modal-create input { flex: 1; min-width: 0; }
-.rd-category-modal .rd-button { border: 1px solid var(--rd-line); border-radius: 5px; background: var(--rd-surface); color: var(--rd-ink); box-shadow: none; font: inherit; min-height: 30px; padding: 4px 8px; }
-.rd-category-modal .rd-button:hover:not(:disabled) { border-color: var(--rd-accent); }
-.rd-category-modal .rd-button.is-danger { color: var(--text-error); }
-.rd-category-modal .rd-button.is-armed { border-color: var(--text-error); }
-.rd-category-modal .rd-category-modal-actions .rd-button { min-height: 26px; padding: 2px 6px; font-size: 12px; }
-.rd-category-modal input, .rd-category-modal .rd-chip-input { border: 1px solid var(--rd-line); border-radius: 5px; background: var(--rd-surface); color: var(--rd-ink); font: inherit; min-height: 30px; padding: 4px 8px; }
 .rd-action-menu { position: fixed; z-index: var(--layer-menu, 30); display: grid; min-width: 160px; padding: 4px; border: 1px solid var(--rd-line); border-radius: 5px; background: var(--rd-surface-raised); box-shadow: 0 12px 28px oklch(0.2 0.02 250 / 0.2); }
 .rd-action-menu .rd-action-menu-item { justify-content: flex-start; min-height: 28px; padding: 4px 10px; border-color: transparent; background: transparent; box-shadow: none; }
 .rd-action-menu .rd-action-menu-item.is-danger { color: var(--text-error); }
@@ -567,7 +683,7 @@
 	.rd-shelf-navigation { grid-template-columns: 190px minmax(0, 1fr); }
 }
 @container (max-width: 880px) {
-	.rd-shelf-frame { padding: 16px 16px 56px; }
+	.rd-shelf-frame { padding: 16px; }
 	.rd-shelf-header, .rd-shelf-toolbar { flex-wrap: wrap; }
 	.rd-shelf-actions { width: 100%; }
 	.rd-shelf-search { min-width: 0; flex-basis: 100%; max-width: none; }
@@ -582,7 +698,7 @@
 }
 
 /* States and progress */
-.rd-shelf-state, .rd-shelf-loading, .rd-shelf-empty { padding: 32px 0; color: var(--rd-ink-muted); }
+.rd-shelf-state, .rd-shelf-loading, .rd-shelf-empty { padding: 24px 0; color: var(--rd-ink-muted); }
 .rd-shelf-error { color: var(--text-error); }
 .rd-shelf-error-message { margin: 0 0 12px; max-width: 75ch; overflow-wrap: anywhere; }
 .rd-empty, .rd-error { max-width: 75ch; color: var(--rd-ink-muted); padding: 24px; }
@@ -629,7 +745,6 @@
 /* The Reader often occupies a narrow Obsidian leaf inside a wide window, so a
  * container query guards the PDF column; the media query covers narrow windows. */
 @media (max-width: 760px) {
-	.rd-reader-toolbar { align-items: center; padding: 8px; gap: 8px; }
 	.rd-reader-toolbar .rd-button, .rd-reader-toolbar select, .rd-reader-toolbar input { flex: 0 1 auto; }
 	.rd-reader-body, .rd-reader-body--split { grid-template-columns: minmax(0, 1fr); padding: 12px; }
 	.rd-target-panel { position: static; }
@@ -638,7 +753,6 @@
 	.rd-shelf-search { min-width: 0; flex-basis: 100%; }
 }
 @container (max-width: 800px) {
-	.rd-reader-toolbar { align-items: center; padding: 8px; gap: 8px; }
 	.rd-reader-toolbar .rd-button, .rd-reader-toolbar select, .rd-reader-toolbar input { flex: 0 1 auto; }
 	.rd-reader-body, .rd-reader-body--split { grid-template-columns: minmax(0, 1fr); padding: 12px; }
 	.rd-target-panel { position: static; }
@@ -707,7 +821,7 @@
 .rd-settings-tab {
 	display: flex; align-items: center; text-align: left;
 	border: 0; border-radius: 6px; background: transparent; color: var(--rd-ink-muted);
-	font: inherit; font-size: 14px; line-height: 1.4; min-height: 32px; padding: 6px 10px;
+	font: inherit; font-size: 14px; line-height: 1.4; min-height: 30px; padding: 4px 8px;
 	cursor: pointer; white-space: nowrap;
 }
 .rd-settings-tab:hover { color: var(--rd-ink); background: color-mix(in oklch, var(--rd-surface) 96%, var(--rd-ink) 4%); }
@@ -749,19 +863,19 @@
 .rd-shelf-field select, .rd-shelf-field input { max-width: 100%; min-width: 0; }
 .rd-shelf-pagination { justify-content: center; color: var(--rd-ink-muted); font-size: 12px; padding: 8px 0; }
 
-.rd-book-cover-type { display: grid; align-content: space-between; gap: 8px; padding: 14px; width: 100%; height: 100%; box-sizing: border-box; text-align: left; }
+.rd-book-cover-type { display: grid; align-content: space-between; gap: 8px; padding: 12px; width: 100%; height: 100%; box-sizing: border-box; text-align: left; }
 .rd-book-cover-format { font-size: 11px; letter-spacing: .08em; }
 .rd-book-cover-title { color: var(--rd-ink); font-family: var(--font-text); font-size: 20px; line-height: 1.4; font-weight: 600; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
 
-.rd-book-badges { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0; }
-.rd-book-badge { border: 1px solid var(--rd-line); border-radius: 4px; color: var(--rd-ink-muted); font-size: 11px; padding: 1px 5px; max-width: 100%; overflow-wrap: anywhere; }
+.rd-book-badges { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0; }
+.rd-book-badge { border: 1px solid var(--rd-line); border-radius: 999px; color: var(--rd-ink-muted); font-size: 11px; padding: 1px 5px; max-width: 100%; overflow-wrap: anywhere; }
 .rd-book-badge.is-error { color: var(--text-error); }
 .rd-book-selection { display: flex; align-items: center; gap: 6px; font-size: 12px; }
 .rd-library-table-wrap { overflow: auto; max-width: 100%; }
 .rd-library-table { min-width: 760px; }
 .rd-metadata-editor { display: grid; gap: 4px; min-width: 100px; }
 .rd-metadata-source { color: var(--rd-ink-muted); font-size: 11px; }
-.rd-shelf-dialog { position: absolute; z-index: 20; inset: 24px auto auto 50%; transform: translateX(-50%); width: min(640px, calc(100% - 48px)); max-height: calc(100% - 48px); padding: 16px; overflow: auto; background: var(--rd-surface-raised); color: var(--rd-ink); border: 1px solid var(--rd-line); border-radius: 8px; box-shadow: var(--shadow-l); }
+.rd-shelf-dialog { position: absolute; z-index: 20; inset: 24px auto auto 50%; transform: translateX(-50%); width: min(640px, calc(100% - 48px)); max-height: calc(100% - 48px); padding: 16px; overflow: auto; background: var(--rd-surface-raised); color: var(--rd-ink); border: 1px solid var(--rd-line); box-shadow: 0 12px 28px var(--rd-elevation); }
 .rd-shelf-dialog__header { display: flex; gap: 12px; justify-content: space-between; align-items: start; }
 .rd-shelf-dialog__body { display: grid; gap: 12px; }
 .rd-shelf-dialog .rd-section-title { font-size: 20px; }
@@ -792,8 +906,8 @@
 .rd-search-hit--current { background: color-mix(in srgb, var(--rd-accent) 35%, transparent); outline: 2px solid var(--rd-accent); }
 .rd-pdf-link { position: absolute; display: block; pointer-events: auto; cursor: pointer; background: transparent; border: 0; padding: 0; min-width: 0; min-height: 0; border-radius: 0; box-shadow: none; }
 .rd-pdf-link:hover, .rd-pdf-link:focus-visible { background: color-mix(in srgb, var(--rd-accent) 12%, transparent); outline: 2px solid var(--rd-accent); }
-.rd-pdf-link-preview { position: absolute; pointer-events: auto; border: 1px solid var(--rd-line); background: var(--rd-surface-raised); color: var(--rd-ink); border-radius: 4px; }
-.rd-pdf-preview { position: absolute; z-index: 30; inset: 12px; display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: 8px; padding: 12px; background: var(--rd-surface-raised); border: 1px solid var(--rd-line); border-radius: 8px; box-shadow: var(--shadow-l); }
+.rd-pdf-link-preview { position: absolute; pointer-events: auto; border: 1px solid var(--rd-line); background: var(--rd-surface-raised); color: var(--rd-ink); }
+.rd-pdf-preview { position: absolute; z-index: 30; inset: 12px; display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: 8px; padding: 12px; background: var(--rd-surface-raised); border: 1px solid var(--rd-line); box-shadow: 0 12px 28px var(--rd-elevation); }
 .rd-pdf-preview__body { grid-row: 1; overflow: auto; min-width: 0; min-height: 0; }
 .rd-pdf-preview__body .rd-pdf-page { position: relative; }
 .rd-pdf-preview__body canvas { display: block; margin-inline: auto; }

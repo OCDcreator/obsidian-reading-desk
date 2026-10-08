@@ -1,0 +1,60 @@
+{
+  "timestamp": "2026-10-07T11:58:09.926Z",
+  "reload": {
+    "enabled": true
+  },
+  "startupLines": [
+    "[Reading Desk] Margin v0.5.1 build 0.5.1+2026-10-07T11:44:18.485Z",
+    "[Reading Desk] Margin v0.5.1 build 0.5.1+2026-10-07T11:44:18.485Z",
+    "[Reading Desk] Margin v0.5.1 build 0.5.1+2026-10-07T11:57:48.796Z"
+  ],
+  "pick": {
+    "total": 5,
+    "first": {
+      "id": "highlight-2ab55fda-9b59-4840-a94a-9702fce38c48",
+      "page": 0,
+      "color": "moss",
+      "tags": []
+    },
+    "bookTitle": "reader-text-fixture"
+  },
+  "opened": {
+    "opened": true
+  },
+  "popover": {
+    "open": true,
+    "swatchShape": {
+      "radius": "50%",
+      "width": "26px",
+      "height": "26px"
+    },
+    "primaryButton": {
+      "background": "rgb(170, 17, 65)",
+      "color": "rgb(0, 0, 0)"
+    },
+    "headerPosition": "sticky",
+    "excerptBar": {
+      "borderLeftWidth": "2.66667px",
+      "borderLeftColor": "rgb(8, 185, 78)"
+    },
+    "commentCount": "1 条"
+  },
+  "screenshots": {
+    "popover": "C:\\Users\\lt\\Desktop\\Write\\custom-project\\obsidian-reading-desk\\docs\\self-check\\functional-comment-redesign-popover.png",
+    "combobox": "C:\\Users\\lt\\Desktop\\Write\\custom-project\\obsidian-reading-desk\\docs\\self-check\\functional-comment-redesign-combobox.png"
+  },
+  "combobox": {
+    "present": true,
+    "allOptions": [],
+    "filtered": [
+      "创建新标签 “化”"
+    ],
+    "expanded": "true",
+    "activeDescendant": "rd-tag-highlight-2ab55fda-9b59-4840-a94a-9702fce38c48-menu-opt-0",
+    "menuStyle": {
+      "background": "color(srgb 1 0.984627 0.984627)",
+      "borderRadius": "8px"
+    },
+    "highlighted": "创建新标签 “化”"
+  }
+}

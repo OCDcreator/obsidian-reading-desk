@@ -13,7 +13,7 @@ describe('Shelf layout contract (ADR 0007)', () => {
 		expect(styles).toMatch(/^\.rd-shelf \{ container-type: inline-size; \}$/m);
 		expect(rule('.rd-shelf-frame')).toContain('max-width: 1368px');
 		expect(rule('.rd-shelf-frame')).toContain('margin: 0 auto');
-		expect(rule('.rd-shelf-frame')).toContain('padding: 24px 24px 72px');
+		expect(rule('.rd-shelf-frame')).toContain('padding: 24px');
 	});
 
 	it('breaks on the shelf container, not the host window', () => {
@@ -101,11 +101,12 @@ describe('Shelf layout contract (ADR 0007)', () => {
 		expect(navCategory).toContain('box-shadow: none');
 	});
 
-	it('detached modal and menus restate their own tokens and control chrome', () => {
-		const tokens = rule('.rd-category-modal, .rd-action-menu');
+	it('detached menus restate their own tokens and control chrome', () => {
+		const tokens = rule('.rd-action-menu');
 		expect(tokens).toContain('--rd-line: var(--background-modifier-border');
 		expect(tokens).toContain('--rd-accent: var(--interactive-accent');
-		expect(rule('.rd-category-modal .rd-button')).toContain('background: var(--rd-surface)');
-		expect(rule('.rd-category-modal .rd-button')).toContain('box-shadow: none');
+		const item = rule('.rd-action-menu .rd-action-menu-item');
+		expect(item).toContain('background: transparent');
+		expect(item).toContain('box-shadow: none');
 	});
 });

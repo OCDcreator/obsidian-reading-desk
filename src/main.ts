@@ -632,11 +632,11 @@ export default class ReadingDeskPlugin extends Plugin {
 
 	private async writeBinary(path: string, value: ArrayBuffer): Promise<void> {
 		const existing = this.app.vault.getAbstractFileByPath(path);
-		if (existing instanceof TFile) await this.app.vault.modifyBinary(existing, value);
-		else {
-			await this.ensureFolder(path.split('/').slice(0, -1).join('/'));
-			await this.app.vault.createBinary(path, value);
-		}
+		if (existing instanceof TFile) return this.app.vault.modifyBinary(existing, value);
+		// Covers live under .obsidian/plugins, outside the vault index; the adapter sees them.
+		if (await this.app.vault.adapter.exists(path)) return this.app.vault.adapter.writeBinary(path, value);
+		await this.ensureFolder(path.split('/').slice(0, -1).join('/'));
+		await this.app.vault.createBinary(path, value);
 	}
 }
 

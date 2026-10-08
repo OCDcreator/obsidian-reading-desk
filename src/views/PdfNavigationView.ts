@@ -33,6 +33,14 @@ export class PdfNavigationView extends ItemView {
 		});
 		this.registerEvent(eventRef);
 		this.stopWorkspaceListener = () => this.app.workspace.offref(eventRef);
+		// Closing a reader tab in the background fires no active-leaf-change;
+		// layout-change is the only structural signal that the leaf went away.
+		this.registerEvent(this.app.workspace.on('layout-change', () => {
+			if (this.activeReader && !this.readerIsAlive(this.activeReader)) {
+				this.activeReader = null;
+				this.render();
+			}
+		}));
 	}
 	async onClose(): Promise<void> {
 		this.stopWorkspaceListener?.();
@@ -44,6 +52,10 @@ export class PdfNavigationView extends ItemView {
 	private navigationHost(): HTMLElement { return this.containerEl.children[1] as HTMLElement; }
 	private render(): void {
 		if (!this.navigationRoot) return;
+		// A cached reader whose leaf was closed must never be re-attached:
+		// attachNavigation rebuilds the panel from the dead document and the
+		// sidebar keeps showing ghost thumbnails for a book that is gone.
+		if (this.activeReader && !this.readerIsAlive(this.activeReader)) this.activeReader = null;
 		const reader = this.activeReader ?? this.findReader();
 		if (!reader) {
 			this.navigationRoot.replaceChildren();
@@ -53,6 +65,11 @@ export class PdfNavigationView extends ItemView {
 		this.activeReader = reader;
 		this.restorePreferredMode(reader);
 		reader.attachNavigation(this.navigationRoot);
+	}
+
+	/** A reader counts as alive only while its leaf is still in the workspace. */
+	private readerIsAlive(reader: ReaderView): boolean {
+		return this.app.workspace.getLeavesOfType(reader.getViewType()).some(leaf => leaf.view === reader);
 	}
 	/** Restores the last-used thumbnail, outline or bookmark tab across sessions. */
 	private restorePreferredMode(reader: ReaderView): void {

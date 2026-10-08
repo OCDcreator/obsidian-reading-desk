@@ -87,7 +87,7 @@ components:
     backgroundColor: "{colors.surface-raised}"
     textColor: "{colors.ink}"
     rounded: "{rounded.square}"
-    padding: "10px"
+    padding: "12px"
   target-panel:
     backgroundColor: "{colors.surface-raised}"
     textColor: "{colors.ink}"

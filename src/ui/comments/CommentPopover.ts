@@ -1,6 +1,9 @@
+import { setIcon } from 'obsidian';
 import type { PdfHighlight } from '../../types/contracts';
+import { TagCombobox } from './TagCombobox';
 import {
 	CommentPopoverHost,
+	colorLabel,
 	createButton,
 	createConfirmDelete,
 	errorMessage,
@@ -25,6 +28,8 @@ export class CommentPopover {
 	private error = '';
 	private stopSwatchWatcher: (() => void) | null = null;
 	private liveRegion: HTMLParagraphElement | null = null;
+	private tagCombo: TagCombobox | null = null;
+	private reopenTags = false;
 
 	constructor(private readonly host: CommentPopoverHost) { }
 
@@ -38,6 +43,8 @@ export class CommentPopover {
 	close(): void {
 		this.stopSwatchWatcher?.();
 		this.stopSwatchWatcher = null;
+		this.tagCombo?.dispose();
+		this.tagCombo = null;
 		this.container?.replaceChildren();
 		this.options?.onClose?.();
 		this.container = null;
@@ -48,6 +55,8 @@ export class CommentPopover {
 		if (!this.container || !this.options) return;
 		this.stopSwatchWatcher?.();
 		this.stopSwatchWatcher = null;
+		this.tagCombo?.dispose();
+		this.tagCombo = null;
 		const { highlight } = this.options;
 		const root = document.createElement('section');
 		root.className = 'rd-comment-popover';
@@ -61,30 +70,44 @@ export class CommentPopover {
 			}
 		});
 
+		const titles = document.createElement('div');
+		titles.className = 'rd-comment-popover__titles';
 		const heading = document.createElement('h3');
+		heading.className = 'rd-comment-popover__heading';
 		heading.textContent = '评论与标注';
-		const header = document.createElement('div');
-		header.className = 'rd-comment-popover__header';
-		header.append(heading, createButton('关闭评论', 'rd-button rd-comment-popover__close', () => this.close()));
-		root.append(header);
-		const excerpt = document.createElement('p');
-		excerpt.className = 'rd-comment-popover__excerpt';
-		excerpt.textContent = highlight.text || '此高亮没有可显示的原文。';
-		root.append(excerpt);
 		const target = document.createElement('p');
 		target.className = 'rd-comment-popover__target';
 		target.textContent = `目标：${targetLabel(highlight)}`;
-		root.append(target);
+		titles.append(heading, target);
+		const closeButton = createButton('关闭评论', 'rd-button rd-button--ghost rd-button--icon rd-comment-popover__close', () => this.close());
+		closeButton.textContent = '';
+		setIcon(closeButton, 'x');
+		const header = document.createElement('div');
+		header.className = 'rd-comment-popover__header';
+		header.append(titles, closeButton);
+		root.append(header);
 
-		root.append(this.renderActions(highlight));
-		root.append(this.renderColorChoices(highlight));
-		root.append(this.renderTags(highlight));
-		root.append(this.renderComments(highlight));
+		const body = document.createElement('div');
+		body.className = 'rd-comment-popover__body';
+		body.append(this.renderExcerpt(highlight));
+		body.append(this.renderActions(highlight));
+		body.append(this.renderSeparator());
+		body.append(this.renderColorChoices(highlight));
+		body.append(this.renderSeparator());
+		body.append(this.renderTags(highlight));
+		body.append(this.renderSeparator());
+		body.append(this.renderComments(highlight));
+		root.append(body);
+
 		root.append(this.renderComposer(highlight));
 		root.append(this.liveMessageNode());
 		this.container.replaceChildren(root);
 		this.setLiveMessage(this.failureText());
 		this.stopSwatchWatcher = watchSwatchContrast(root);
+		if (this.reopenTags) {
+			this.reopenTags = false;
+			this.tagCombo?.focusAndOpen();
+		}
 	}
 
 	/**
@@ -108,19 +131,41 @@ export class CommentPopover {
 		if (this.liveRegion && this.liveRegion.textContent !== text) this.liveRegion.textContent = text;
 	}
 
+	private renderSeparator(): HTMLElement {
+		const separator = document.createElement('hr');
+		separator.className = 'rd-comment-popover__sep';
+		return separator;
+	}
+
+	private renderExcerpt(highlight: PdfHighlight): HTMLElement {
+		const excerpt = document.createElement('p');
+		excerpt.className = 'rd-comment-popover__excerpt';
+		// The colour bar follows the current highlight colour via data-color rules.
+		excerpt.dataset.color = highlight.color;
+		excerpt.textContent = highlight.text || '此高亮没有可显示的原文。';
+		return excerpt;
+	}
+
 	private renderActions(highlight: PdfHighlight): HTMLElement {
 		const actions = document.createElement('div');
 		actions.className = 'rd-comment-popover__actions';
-		actions.append(createButton('跳转到此高亮', 'rd-button rd-comment-popover__jump', async () => {
+		const jump = createButton('跳转到此高亮', 'rd-button rd-button--outline rd-button--sm rd-comment-popover__jump', async () => {
 			await this.run(() => this.host.jumpToHighlight(highlight));
-		}));
+		});
+		jump.textContent = '';
+		setIcon(jump, 'arrow-up-right');
+		const jumpLabel = document.createElement('span');
+		jumpLabel.textContent = '跳转到此高亮';
+		jump.append(jumpLabel);
+		actions.append(jump);
 		// Deleting a highlight also deletes its linked target excerpt.
-		const deletion = createConfirmDelete('删除此高亮', 'rd-button rd-comment-popover__delete-highlight', '确认删除此高亮', async () => {
+		const deletion = createConfirmDelete('删除此高亮', 'rd-button rd-button--ghost-danger rd-button--sm rd-comment-popover__delete-highlight', '确认删除此高亮', async () => {
 			await this.run(async () => {
 				await this.host.deleteHighlight(highlight.id);
 				this.close();
 			});
 		});
+		deletion.cancel.className = 'rd-button rd-button--outline rd-button--sm';
 		actions.append(deletion.confirm, deletion.cancel);
 		return actions;
 	}
@@ -130,16 +175,27 @@ export class CommentPopover {
 		fieldset.className = 'rd-swatch-group';
 		const legend = document.createElement('legend');
 		legend.textContent = '高亮颜色';
-		fieldset.append(legend);
+		// The row wrapper keeps the legend on its own line: a flexed fieldset
+		// pulls the rendered legend into the item flow and it overlaps swatches.
+		const row = document.createElement('div');
+		row.className = 'rd-swatch-group__row';
+		fieldset.append(legend, row);
 		for (const option of HIGHLIGHT_COLORS) {
 			const button = createButton(`选择${option.label}高亮色`, `rd-swatch rd-swatch--${option.value}`, async () => {
 				await this.run(() => this.host.recolorHighlight(highlight.id, option.value));
 			});
-			button.textContent = option.label;
+			// Circle swatches carry no visible label; the check mark inherits the
+			// WCAG foreground that applySwatchContrast writes inline.
+			button.textContent = '';
+			setIcon(button, 'check');
 			button.setAttribute('aria-pressed', String(option.value === highlight.color));
 			button.dataset.color = option.value;
-			fieldset.append(button);
+			row.append(button);
 		}
+		const name = document.createElement('span');
+		name.className = 'rd-comment-popover__color-name';
+		name.textContent = colorLabel(highlight.color);
+		row.append(name);
 		return fieldset;
 	}
 
@@ -149,40 +205,27 @@ export class CommentPopover {
 		const label = document.createElement('label');
 		const inputId = `rd-tag-${safeId(highlight.id)}`;
 		label.htmlFor = inputId;
-		// Same text as the input's accessible name, so the announced label is
-		// exactly what sighted users read (WCAG 2.5.3 Label in Name).
-		label.textContent = '添加标签';
+		label.className = 'rd-comment-popover__label';
+		label.textContent = '标签';
 		section.append(label);
-		const input = document.createElement('input');
-		input.id = inputId;
-		input.type = 'text';
-		// Class hook for the shared control chrome and :focus-visible styling.
-		input.className = 'rd-comment-popover__tag-input';
-		input.placeholder = '输入或选择已有标签';
-		input.setAttribute('aria-label', '添加标签');
-		const listId = `${inputId}-suggestions`;
-		input.setAttribute('list', listId);
-		section.append(input);
-		const dataList = document.createElement('datalist');
-		dataList.id = listId;
-		for (const tag of this.host.allTags()) {
-			const option = document.createElement('option');
-			option.value = tag;
-			dataList.append(option);
-		}
-		section.append(dataList);
-		const add = createButton('添加标签', 'rd-button rd-comment-popover__add-tag', async () => {
-			const tag = input.value.trim();
-			if (!tag || highlight.tags.includes(tag)) return;
-			await this.run(() => this.host.setTags(highlight.id, [...highlight.tags, tag]), [add]);
+
+		const row = document.createElement('div');
+		row.className = 'rd-comment-popover__tag-row';
+		const combo = new TagCombobox({
+			inputId,
+			inputLabel: '添加标签',
+			placeholder: '输入或选择已有标签',
+			allTags: () => this.host.allTags(),
+			exclude: () => this.options?.highlight.tags ?? [],
+			onPick: tag => { void this.addTag(highlight, tag); }
 		});
-		input.addEventListener('keydown', event => {
-			if (event.key === 'Enter') {
-				event.preventDefault();
-				add.click();
-			}
+		this.tagCombo = combo;
+		const add = createButton('添加', 'rd-button rd-button--secondary rd-button--sm rd-comment-popover__add-tag', async () => {
+			await this.addTag(highlight, combo.currentValue(), [add]);
 		});
-		section.append(add);
+		row.append(combo.element, add);
+		section.append(row);
+
 		const tags = document.createElement('div');
 		tags.className = 'rd-comment-popover__tag-list';
 		if (!highlight.tags.length) {
@@ -191,10 +234,14 @@ export class CommentPopover {
 			for (const tag of highlight.tags) {
 				const tagEl = document.createElement('span');
 				tagEl.className = 'rd-tag';
-				tagEl.textContent = tag;
+				const tagText = document.createElement('span');
+				tagText.textContent = tag;
+				tagEl.append(tagText);
 				const remove = createButton(`删除标签：${tag}`, 'rd-tag__remove', async () => {
 					await this.run(() => this.host.setTags(highlight.id, highlight.tags.filter(item => item !== tag)), [remove]);
 				});
+				remove.textContent = '';
+				setIcon(remove, 'x');
 				tagEl.append(remove);
 				tags.append(tagEl);
 			}
@@ -203,17 +250,37 @@ export class CommentPopover {
 		return section;
 	}
 
+	private async addTag(highlight: PdfHighlight, value: string, controls: HTMLButtonElement[] = []): Promise<void> {
+		const tag = value.trim();
+		if (!tag || highlight.tags.includes(tag)) return;
+		// The re-render replaces the combobox; reopen it so tagging can continue.
+		this.reopenTags = true;
+		await this.run(() => this.host.setTags(highlight.id, [...highlight.tags, tag]), controls);
+	}
+
 	private renderComments(highlight: PdfHighlight): HTMLElement {
 		const section = document.createElement('section');
 		section.className = 'rd-comment-popover__comments';
-		const heading = document.createElement('h4');
-		heading.textContent = '评论列表';
-		section.append(heading);
 		const comments = this.host.comments(highlight.id);
+		const header = document.createElement('div');
+		header.className = 'rd-comment-popover__comments-header';
+		const heading = document.createElement('h4');
+		heading.textContent = '评论';
+		const count = document.createElement('span');
+		count.className = 'rd-comment-popover__count';
+		count.textContent = `${comments.length} 条`;
+		header.append(heading, count);
+		section.append(header);
 		if (!comments.length) {
-			const empty = document.createElement('p');
-			empty.className = 'rd-empty';
-			empty.textContent = '还没有评论。';
+			const empty = document.createElement('div');
+			empty.className = 'rd-comment-popover__empty';
+			const icon = document.createElement('span');
+			icon.className = 'rd-comment-popover__empty-icon';
+			empty.append(icon);
+			setIcon(icon, 'message-square');
+			const text = document.createElement('p');
+			text.textContent = '还没有评论，在下方写下第一条想法。';
+			empty.append(text);
 			section.append(empty);
 			return section;
 		}
@@ -223,18 +290,23 @@ export class CommentPopover {
 			item.className = 'rd-comment-popover__comment';
 			const content = document.createElement('p');
 			content.textContent = comment.content;
-			item.append(content);
+			const meta = document.createElement('div');
+			meta.className = 'rd-comment-popover__comment-meta';
 			if (comment.showTimestamp) {
 				const time = document.createElement('time');
 				time.dateTime = new Date(comment.createdAt).toISOString();
 				time.textContent = formatCommentTimestamp(comment.createdAt);
-				item.append(time);
+				meta.append(time);
+			} else {
+				meta.append(document.createElement('span'));
 			}
-			const deletion = createConfirmDelete('删除', 'rd-button rd-comment-popover__delete-comment', `确认删除评论：${comment.content}`, async () => {
+			const deletion = createConfirmDelete('删除', 'rd-button rd-button--ghost-danger rd-button--sm rd-comment-popover__delete-comment', `确认删除评论：${comment.content}`, async () => {
 				await this.run(() => this.host.deleteComment(highlight.id, comment.id));
 			});
 			deletion.confirm.setAttribute('aria-label', `删除评论：${comment.content}`);
-			item.append(deletion.confirm, deletion.cancel);
+			deletion.cancel.className = 'rd-button rd-button--outline rd-button--sm';
+			meta.append(deletion.confirm, deletion.cancel);
+			item.append(content, meta);
 			list.append(item);
 		}
 		section.append(list);
@@ -244,20 +316,29 @@ export class CommentPopover {
 	private renderComposer(highlight: PdfHighlight): HTMLElement {
 		const section = document.createElement('section');
 		section.className = 'rd-comment-popover__composer';
-		const label = document.createElement('label');
-		const inputId = `rd-comment-${safeId(highlight.id)}`;
-		label.htmlFor = inputId;
-		label.textContent = '新增评论';
-		section.append(label);
 		const input = document.createElement('textarea');
-		input.id = inputId;
+		input.id = `rd-comment-${safeId(highlight.id)}`;
 		// Class hook for the shared control chrome and :focus-visible styling.
 		input.className = 'rd-comment-popover__composer-input';
 		input.placeholder = '记录你的想法';
-		// Matches the visible 新增评论 label instead of overriding it.
 		input.setAttribute('aria-label', '新增评论');
 		section.append(input);
-		const add = createButton('添加评论', 'rd-button rd-comment-popover__add-comment', async () => {
+
+		const row = document.createElement('div');
+		row.className = 'rd-comment-popover__composer-row';
+		const hint = document.createElement('span');
+		hint.className = 'rd-comment-popover__composer-hint';
+		const modifier = document.createElement('kbd');
+		modifier.textContent = this.isMac() ? '⌘' : 'Ctrl';
+		const plus = document.createElement('span');
+		plus.textContent = '+';
+		const enter = document.createElement('kbd');
+		enter.textContent = 'Enter';
+		const suffix = document.createElement('span');
+		suffix.textContent = ' 发送';
+		hint.append(modifier, plus, enter, suffix);
+
+		const add = createButton('添加评论', 'rd-button rd-button--primary rd-button--sm rd-comment-popover__add-comment', async () => {
 			const content = input.value.trim();
 			if (!content) return;
 			await this.run(() => this.host.addComment(highlight.id, content), [add]);
@@ -267,8 +348,14 @@ export class CommentPopover {
 		input.addEventListener('keydown', event => {
 			if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') add.click();
 		});
-		section.append(add);
+		row.append(hint, add);
+		section.append(row);
 		return section;
+	}
+
+	private isMac(): boolean {
+		const body = this.container?.ownerDocument?.body;
+		return !!body?.classList?.contains?.('mod-mac');
 	}
 
 	private async run(operation: () => Promise<void> | void, controls: HTMLButtonElement[] = []): Promise<void> {

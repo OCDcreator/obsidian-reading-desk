@@ -37,6 +37,7 @@ class FakeElement {
 	replaceChildren(...children: FakeElement[]): void { this.ownText = ''; this.children = [...children]; }
 	setAttribute(name: string, value: string): void { this.attributes.set(name, value); }
 	getAttribute(name: string): string | null { return this.attributes.get(name) ?? null; }
+	removeAttribute(name: string): void { this.attributes.delete(name); }
 	addEventListener(name: string, listener: Listener): void {
 		const listeners = this.listeners.get(name) ?? [];
 		listeners.push(listener);
@@ -144,6 +145,45 @@ describe('CommentPopover', () => {
 		findByLabel(root, '选择琥珀高亮色').click();
 		await flushActions();
 		expect(root.textContent).toContain('操作失败：存储不可用');
+	});
+
+	it('fuzzy-matches tags in the combobox, picks with arrow keys, and creates on bare Enter', async () => {
+		const calls: string[] = [];
+		const host: CommentPopoverHost = {
+			comments: () => [],
+			allTags: () => ['旧标签', '研究', '化学', '有机化学'],
+			addComment: () => undefined,
+			deleteComment: () => undefined,
+			setTags: (_id, tags) => { calls.push(`tags:${tags.join(',')}`); },
+			recolorHighlight: () => undefined,
+			deleteHighlight: () => undefined,
+			jumpToHighlight: () => undefined
+		};
+		const root = new FakeElement();
+		const popover = new CommentPopover(host);
+		popover.open(root as unknown as HTMLElement, { highlight });
+
+		// Typing filters existing tags (already-attached 旧标签 is excluded) and
+		// offers a create row; ArrowDown twice selects the second fuzzy match.
+		const input = findByLabel(root, '添加标签');
+		input.value = '化';
+		input.emit('input');
+		const options = walk(root).filter(element => element.getAttribute('role') === 'option');
+		expect(options.map(option => option.textContent)).toEqual(['化学', '有机化学', '创建新标签 “化”']);
+		input.emit('keydown', Object.assign(new FakeEvent(), { key: 'ArrowDown' }));
+		input.emit('keydown', Object.assign(new FakeEvent(), { key: 'ArrowDown' }));
+		input.emit('keydown', Object.assign(new FakeEvent(), { key: 'Enter' }));
+		await flushActions();
+		expect(calls).toContain('tags:旧标签,有机化学');
+
+		// After the host-driven re-render the menu reopens for continuous tagging;
+		// Enter with no highlight creates the typed text as a new tag.
+		const input2 = findByLabel(root, '添加标签');
+		input2.value = '生物';
+		input2.emit('input');
+		input2.emit('keydown', Object.assign(new FakeEvent(), { key: 'Enter' }));
+		await flushActions();
+		expect(calls).toContain('tags:旧标签,生物');
 	});
 });
 

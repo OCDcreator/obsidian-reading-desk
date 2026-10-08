@@ -18,6 +18,9 @@ export interface PdfLoader {
 	load(data: ArrayBuffer): Promise<PdfDocumentLike>;
 }
 
+/** Shelf cards show covers at roughly 213 CSS px wide; 480 device px keeps them crisp on 1.5x/2x displays. */
+const COVER_TARGET_WIDTH = 480;
+
 export class MetadataExtractor implements BookMetadataExtractor {
 	constructor(private readonly files: BinaryReader, private readonly pdf: PdfLoader, private readonly coverDirectory = '.obsidian/plugins/obsidian-reading-desk/covers') { }
 
@@ -59,7 +62,11 @@ export class MetadataExtractor implements BookMetadataExtractor {
 	private async renderPdfCover(document: PdfDocumentLike, sourcePath: string): Promise<string> {
 		if (typeof document === 'undefined' || typeof window === 'undefined') throw new Error('当前环境不能生成 PDF 封面');
 		const page = await document.getPage(1);
-		const viewport = page.getViewport({ scale: 0.35 });
+		// Render to the display pixel size, not a fixed fraction of the page:
+		// scale 0.35 upscaled 1.5x+ on hiDPI screens and read as blur.
+		const base = page.getViewport({ scale: 1 });
+		const scale = Math.min(2, COVER_TARGET_WIDTH / base.width);
+		const viewport = page.getViewport({ scale });
 		const canvas = globalThis.document.createElement('canvas');
 		canvas.width = Math.ceil(viewport.width);
 		canvas.height = Math.ceil(viewport.height);
