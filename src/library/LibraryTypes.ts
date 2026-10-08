@@ -1,4 +1,4 @@
-import type { BibliographicSource, LibraryBook, ReadingStatus } from '../types/contracts';
+import type { BibliographicSource, BookEnrichmentRecord, LibraryBook, ReadingStatus } from '../types/contracts';
 
 export interface LibraryFile {
 	path: string;
@@ -54,3 +54,18 @@ export interface LibraryRelinkCandidate {
 
 export type MetadataField = 'title' | 'author';
 export type ExtractedBookMetadata = Pick<LibraryBook, 'title' | 'author' | 'pageCount' | 'coverPath' | 'metadataError' | 'coverRetryable' | 'coverError'>;
+
+/**
+ * Field-level enrichment for one existing book. Blank fields only; never touches
+ * metadataOverrides, identity fields, or merges records (ADR 0017 vs ADR 0011).
+ */
+export interface BookEnrichment {
+	title?: string;
+	author?: string;
+	pageCount?: number;
+	rating?: number;
+	coverPath?: string;
+	source?: BibliographicSource;
+	needsReview: boolean;
+	record: BookEnrichmentRecord;
+}

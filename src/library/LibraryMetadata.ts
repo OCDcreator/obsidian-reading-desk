@@ -1,5 +1,5 @@
 import type { LibraryBook } from '../types/contracts';
-import type { ExtractedBookMetadata, LibraryBookPatch, MetadataField } from './LibraryTypes';
+import type { BookEnrichment, ExtractedBookMetadata, LibraryBookPatch, MetadataField } from './LibraryTypes';
 
 export function uniqueValues(values: string[]): string[] {
 	return [...new Set(values.map(value => value.trim()).filter(Boolean))];
@@ -55,6 +55,28 @@ export function applyBookPatch(book: LibraryBook, patch: LibraryBookPatch): Libr
 		result.listIds = patch.listMode === 'append' ? uniqueValues([...(book.listIds ?? []), ...lists])
 			: patch.listMode === 'remove' ? (book.listIds ?? []).filter(id => !lists.includes(id)) : lists;
 	}
+	// A manual edit is the review: low-confidence enrichment flags do not survive it.
+	result.needsReview = undefined;
+	return result;
+}
+
+function filenameTitle(path: string): string {
+	return (path.split('/').pop() ?? path).replace(/\.[^.]+$/, '') || path;
+}
+
+/** Online enrichment writes automatic blank fields only; manual overrides and source identity stay untouched. */
+export function applyEnrichment(book: LibraryBook, patch: BookEnrichment): LibraryBook {
+	const automatic = automaticMetadata(book);
+	const overrides = book.metadataOverrides ?? {};
+	if (patch.title && overrides.title === undefined && (!automatic.title.trim() || automatic.title === filenameTitle(book.path))) automatic.title = patch.title;
+	if (patch.author && overrides.author === undefined && !automatic.author.trim()) automatic.author = patch.author;
+	const result = applyAutomaticMetadata({ ...book }, automatic);
+	if (patch.pageCount !== undefined && result.pageCount === undefined && Number.isInteger(patch.pageCount) && patch.pageCount >= 1) result.pageCount = patch.pageCount;
+	if (patch.rating !== undefined && result.rating === undefined && Number.isFinite(patch.rating)) result.rating = Math.max(0, Math.min(10, patch.rating));
+	if (patch.coverPath && !result.coverPath) result.coverPath = patch.coverPath;
+	if (patch.source && !result.source) result.source = { ...patch.source };
+	result.needsReview = patch.needsReview || undefined;
+	result.enrichment = { ...patch.record };
 	return result;
 }
 

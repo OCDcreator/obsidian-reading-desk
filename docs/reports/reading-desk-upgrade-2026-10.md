@@ -105,3 +105,16 @@ ADR 0011 禁止的是**实体合并**（凭 DOI/ISBN/文件名把两条书目记
 
 - 市场调研：`C:\Users\lt\ZCodeProject\.research-bookshelf\`（README 总览 + 01/02/03 分报告，含组件规格速查表与豆瓣事实）
 - 本仓库：`docs/research/reading-desk-enhancement-review-2026-10-02.md`（既有 P0/P1/P2 增强官方清单，实施前对照重叠）、ADR 0007/0011/0012、`enhancement-modules.md`
+
+---
+
+## 9. P1 交付状态（2026-10-08，Mac）
+
+D1–D4 按推荐值确认（字段级补全调和 / 评分 10 分制直存 / 桥接笔记默认关 / 手动+新书自动）。P1 已完成并部署 testvault：
+
+- 新模块：`src/library/metadata/DoubanClient.ts`（transport 注入，suggest + 条目页 JSON-LD/#info 双通道 + Referer 封面）、`MetadataEnricher.ts`（置信度、串行 4–8s、403 当日熔断持久化）、`src/host/DoubanRequestTransport.ts`（requestUrl 适配）、`src/host/VaultFiles.ts`（main.ts 瘦身抽取，644/650）。
+- 数据面：`LibraryIndex.enrichBooks` 单次提交；`applyEnrichment` 只补空白；`needsReview`/`enrichment` 记录/豆瓣 `source` 证据；`metadataEnrichment` 设置（启用/自动/全审核/熔断）；**附带修复 `bookCheck` rating 0–5 → 0–10 的潜在生产 bug**（此前 >5 分评分会被 Repository 校验拒写）。
+- UI：设置页书库 tab「豆瓣元数据」卡（三开关 + 手动批量刮削 + 熔断状态）；书卡封面右上「待确认」角标（DESIGN.md 已登记 `review-badge-bg`）。
+- 文档：ADR 0017、`docs/enhancement-modules.md` 模块表、PRODUCT.md 能力条目。
+- 验证：`npm run verify` 七步全绿（111 文件 625 测试，新增 21 条）；CDP 实机：10 本中文书真实刮削全部高置信命中（作者/评分/ISBN/封面落盘核对通过），review-all 重刮路径产出「待确认」角标 DOM+截图证据，插件重载启动标识新鲜无错误。证据：`.obsidian-debug/douban-enrichment-acceptance.json`、`douban-shelf-after-enrich.png`、`probe-douban-*.mjs`。
+- 注意：P1 未动 `MetadataExtractor.ts`，Windows WIP（封面写入修复若在 `main.ts writeBinary`）与 VaultFiles 抽取可能有小冲突，合并时以 VaultFiles 版本为准平移修复逻辑。

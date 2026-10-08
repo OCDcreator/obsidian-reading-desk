@@ -20,6 +20,7 @@ colors:
   "cover-badge-bg": "rgb(18 21 27 / 82%)"
   "cover-badge-border": "rgb(255 255 255 / 34%)"
   "cover-badge-ink": "#fff"
+  "review-badge-bg": "rgb(120 72 18 / 88%)"
   "modal-scrim": "rgb(0 0 0 / 32%)"
 typography:
   page:
@@ -207,7 +208,7 @@ Reader leaf 始终只承载 PDF 工作面，真实 PDF 导航作为独立原生 
 
 ### Shelf Cards and Table
 
-**真实书目优先于宣传封面。** `rd-shelf-card` 是「满宽封面 + 固定信息槽」的分区卡：方正 0 圆角、raised surface、1px line、卡面无投影；唯一功能性阴影给封面纸面（`0 8px 22px` elevation，与 PDF 页同一语言）。信息槽为两行 clamp 书名（16px，槽 `2.6em`，完整书名走 title 提示/台账/阅读器标题）、单行 ellipsis 作者（点击就地编辑，缺失态「点击添加作者信息」accent 虚线下划线）、12px 图标元数据行（页数 · 大小）与 3px 进度行；等高由槽位保证，不是拉伸。hover 只把边线加深为 `--background-modifier-border-hover`，focus 是 `2px` accent outline，选中沿用 accent 边线 + 低比例混色。封面左上角分类角标是只读 pill（宿主 `--font-ui-smaller`，半透明深底白字、白 34% 边）。台账（`rd-ledger`）使用 42px 小封面 + 书名/路径、作者/分类/标签/评分就地编辑、行底边与 `10px 12px` 单元格 padding，不把数据行伪装成卡片。继续阅读轨是「继续」入口而不是第二个书架：轨内横卡只保留 88px 封面、书名、作者与进度。
+**真实书目优先于宣传封面。** `rd-shelf-card` 是「满宽封面 + 固定信息槽」的分区卡：方正 0 圆角、raised surface、1px line、卡面无投影；唯一功能性阴影给封面纸面（`0 8px 22px` elevation，与 PDF 页同一语言）。信息槽为两行 clamp 书名（16px，槽 `2.6em`，完整书名走 title 提示/台账/阅读器标题）、单行 ellipsis 作者（点击就地编辑，缺失态「点击添加作者信息」accent 虚线下划线）、12px 图标元数据行（页数 · 大小）与 3px 进度行；等高由槽位保证，不是拉伸。hover 只把边线加深为 `--background-modifier-border-hover`，focus 是 `2px` accent outline，选中沿用 accent 边线 + 低比例混色。封面左上角分类角标是只读 pill（宿主 `--font-ui-smaller`，半透明深底白字、白 34% 边）。封面右上角「待确认」角标是低置信在线刮削的只读 pill（`review-badge-bg` 半透明琥珀底，尺寸与分类角标同族），任意人工书目编辑后消失。台账（`rd-ledger`）使用 42px 小封面 + 书名/路径、作者/分类/标签/评分就地编辑、行底边与 `10px 12px` 单元格 padding，不把数据行伪装成卡片。继续阅读轨是「继续」入口而不是第二个书架：轨内横卡只保留 88px 封面、书名、作者与进度。
 
 ### Reader Toolbar and Target Panel
 

@@ -51,4 +51,23 @@ describe('Reading Desk persisted data validation', () => {
 		expect(dataSignature({ a: 1, b: { d: 2, c: 3 } })).toBe(dataSignature({ b: { c: 3, d: 2 }, a: 1 }));
 		expect(dataSignature({ value: 1 })).not.toBe(dataSignature({ value: 2 }));
 	});
+
+	it('accepts the 0-10 rating scale used by the shelf and rejects values above 10', () => {
+		const value = completeData();
+		value.books.b.rating = 10;
+		expect(validateReadingDeskData(value).books.b.rating).toBe(10);
+		expect(() => validateReadingDeskData({ ...completeData(), books: { b: { ...value.books.b, rating: 11 } } })).toThrow('rating');
+	});
+
+	it('accepts douban enrichment state and fills enrichment settings defaults for older data', () => {
+		const value = completeData();
+		delete (value.settings as Record<string, unknown>).metadataEnrichment;
+		value.books.b.source = { provider: 'douban', id: '1203426', isbn: '9787020123456' };
+		value.books.b.needsReview = true;
+		value.books.b.enrichment = { at: 3, status: 'matched', confidence: 'low' };
+		const loaded = validateReadingDeskData(value);
+		expect(loaded.books.b.source?.provider).toBe('douban');
+		expect(loaded.books.b.needsReview).toBe(true);
+		expect(loaded.settings.metadataEnrichment).toEqual({ enabled: true, autoNewBooks: true, reviewAll: false });
+	});
 });

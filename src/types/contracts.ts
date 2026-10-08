@@ -8,7 +8,7 @@ export type ReadingStatus = 'unread' | 'reading' | 'finished' | 'abandoned';
 
 export interface LibraryList { id: string; name: string; }
 export interface BibliographicSource {
-	provider: 'csl' | 'bibtex' | 'zotero';
+	provider: 'csl' | 'bibtex' | 'zotero' | 'douban';
 	id: string;
 	doi?: string;
 	isbn?: string;
@@ -50,6 +50,16 @@ export interface LibraryBook {
 	readingStatus?: ReadingStatus;
 	/** Missing sources remain indexed so users can reconnect them without losing identity. */
 	missing?: boolean;
+	/** Low-confidence enrichment (or review-all mode) awaits user confirmation; cleared by any manual book edit. */
+	needsReview?: boolean;
+	/** Last online enrichment attempt; matched books also carry a douban source when no source existed. */
+	enrichment?: BookEnrichmentRecord;
+}
+
+export interface BookEnrichmentRecord {
+	at: number;
+	status: 'matched' | 'missed' | 'failed';
+	confidence?: 'high' | 'low';
 }
 
 export interface LibraryCategory {
@@ -136,6 +146,18 @@ export interface ReadingDeskSettings {
 	shelf?: ShelfViewState;
 	/** Fixed placeholders only; empty uses the built-in excerpt template. */
 	excerptTemplate?: string;
+	/** Douban metadata enrichment; missing keys in old data are filled from defaults at load. */
+	metadataEnrichment?: MetadataEnrichmentSettings;
+}
+
+export interface MetadataEnrichmentSettings {
+	enabled: boolean;
+	/** Newly scanned books without bibliographic sources join the scrape queue automatically. */
+	autoNewBooks: boolean;
+	/** Every enrichment result is marked needsReview, including high-confidence matches. */
+	reviewAll: boolean;
+	/** Daily circuit breaker after HTTP 403; scraping resumes after this local timestamp. */
+	blockedUntil?: number;
 }
 
 export interface ExcerptCardState {

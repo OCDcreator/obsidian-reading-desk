@@ -163,6 +163,44 @@ export class ReadingDeskSettingTab extends PluginSettingTab {
 				text.inputEl.setAttribute('aria-label', '书库文件夹');
 				return text.setValue(this.readingDesk.repository.readSettings().libraryFolders.join(', ')).onChange(value => this.save(text.inputEl, () => this.readingDesk.repository.updateSettings({ libraryFolders: value.split(',').map(item => item.trim()).filter(Boolean) })));
 			});
+		this.renderEnrichmentSection(panel);
+	}
+
+	private renderEnrichmentSection(panel: HTMLElement): void {
+		const settings = { enabled: true, autoNewBooks: true, reviewAll: false, ...this.readingDesk.repository.readSettings().metadataEnrichment };
+		const blocked = settings.blockedUntil !== undefined && settings.blockedUntil > Date.now();
+		const content = this.createCard(panel, '豆瓣元数据', '从 book.douban.com 补全作者、评分与封面；只补空白字段，从不覆盖人工修改；低置信结果在书卡上标记「待确认」。');
+		new Setting(content).setName('启用豆瓣刮削').setDesc('串行低速请求豆瓣公开页面；当日被限流（HTTP 403）后自动暂停，明天恢复。')
+			.addToggle(toggle => {
+				toggle.toggleEl.setAttribute('aria-label', '启用豆瓣刮削');
+				return toggle.setValue(settings.enabled).onChange(enabled => this.save(toggle.toggleEl, () => this.readingDesk.updateEnrichmentSettings({ enabled })));
+			});
+		new Setting(content).setName('新书自动刮削').setDesc(settings.enabled ? '扫描入库、缺少书目来源的新书自动进入刮削队列。' : '需先启用豆瓣刮削。')
+			.addToggle(toggle => {
+				toggle.toggleEl.setAttribute('aria-label', '新书自动刮削');
+				return toggle.setValue(settings.autoNewBooks).setDisabled(!settings.enabled).onChange(autoNewBooks => this.save(toggle.toggleEl, () => this.readingDesk.updateEnrichmentSettings({ autoNewBooks })));
+			});
+		new Setting(content).setName('全部标记待确认').setDesc('即使是高置信命中，也在书卡上标记「待确认」，由你逐本核对。')
+			.addToggle(toggle => {
+				toggle.toggleEl.setAttribute('aria-label', '全部标记待确认');
+				return toggle.setValue(settings.reviewAll).setDisabled(!settings.enabled).onChange(reviewAll => this.save(toggle.toggleEl, () => this.readingDesk.updateEnrichmentSettings({ reviewAll })));
+			});
+		const action = new Setting(content).setName('刮削缺失信息的书目')
+			.setDesc(blocked ? '今日已被豆瓣限流（HTTP 403），明天自动恢复。' : '为缺作者、缺封面或标题仍是文件名的存量书目逐本刮削；已有人工内容不受影响。');
+		action.addButton(button => {
+			button.buttonEl.setAttribute('aria-label', '刮削缺失信息的书目');
+			return button.setButtonText('开始刮削').setDisabled(!settings.enabled || blocked).onClick(async () => {
+				button.setDisabled(true).setButtonText('刮削中…');
+				try {
+					const summary = await this.readingDesk.enrichMissingMetadata();
+					action.setDesc(summary.blocked ? '豆瓣限流，今日暂停；已命中的书目已更新。' : `完成：命中 ${summary.matched}，未找到 ${summary.missed}，失败 ${summary.failed}，跳过 ${summary.skipped}。`);
+				} catch (error) {
+					action.setDesc(`刮削失败：${error instanceof Error ? error.message : String(error)}`);
+				} finally {
+					button.setDisabled(false).setButtonText('开始刮削');
+				}
+			});
+		});
 	}
 
 	private renderReaderSection(panel: HTMLElement): void {

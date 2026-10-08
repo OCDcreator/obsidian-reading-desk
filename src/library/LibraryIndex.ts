@@ -1,10 +1,10 @@
 import { dataSignature } from '../data/DataValidation';
 import type { ReaderBookState, ReaderBookmark, ReaderSavedPosition, LibraryBook, LibraryCategory, LibraryList, SourceFingerprint } from '../types/contracts';
 import { createId } from '../utils/ids';
-import { applyAutomaticMetadata, applyBookPatch, clearOverrides, extractedAutomaticMetadata, uniqueValues, validateBookPatch } from './LibraryMetadata';
+import { applyAutomaticMetadata, applyBookPatch, applyEnrichment, clearOverrides, extractedAutomaticMetadata, uniqueValues, validateBookPatch } from './LibraryMetadata';
 import { planImportedBooks } from './LibraryImport';
-import type { ExtractedBookMetadata, LibraryBookPatch, LibraryFile, LibraryFileEvent, LibraryImportUpdate, LibraryRelinkCandidate, LibraryRelinkOptions, LibraryRelinkResult, MetadataField } from './LibraryTypes';
-export type { LibraryBookPatch, LibraryFile, LibraryFileEvent, LibraryImportUpdate, LibraryRelinkCandidate, LibraryRelinkOptions, LibraryRelinkResult } from './LibraryTypes';
+import type { BookEnrichment, ExtractedBookMetadata, LibraryBookPatch, LibraryFile, LibraryFileEvent, LibraryImportUpdate, LibraryRelinkCandidate, LibraryRelinkOptions, LibraryRelinkResult, MetadataField } from './LibraryTypes';
+export type { BookEnrichment, LibraryBookPatch, LibraryFile, LibraryFileEvent, LibraryImportUpdate, LibraryRelinkCandidate, LibraryRelinkOptions, LibraryRelinkResult } from './LibraryTypes';
 
 export interface LibraryPersistence {
 	readBooks(): Record<string, LibraryBook>;
@@ -119,6 +119,15 @@ export class LibraryIndex {
 		return this.enqueue(async () => {
 			if (fields.some(field => field !== 'title' && field !== 'author')) throw new Error('无效的元数据字段');
 			await this.commitBooks([clearOverrides(this.require(id), fields)]);
+		});
+	}
+
+	/** Online enrichment for existing books: fill-blank field updates in a single commit (ADR 0017). */
+	enrichBooks(entries: Array<{ id: string; enrichment: BookEnrichment }>): Promise<LibraryBook[]> {
+		return this.enqueue(async () => {
+			const books = entries.map(entry => applyEnrichment(this.require(entry.id), entry.enrichment));
+			if (books.length) await this.commitBooks(books);
+			return structuredClone(books);
 		});
 	}
 
