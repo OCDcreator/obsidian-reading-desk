@@ -21,15 +21,16 @@ interface SettingsTabDefinition {
 	key: string;
 	label: string;
 	ariaLabel: string;
+	icon: string;
 }
 
 /** Tab order is the settings information architecture; keys persist per vault. */
 const SETTINGS_TABS: readonly SettingsTabDefinition[] = [
-	{ key: 'library', label: '书库', ariaLabel: '书库设置' },
-	{ key: 'reader', label: '阅读', ariaLabel: '阅读器设置' },
-	{ key: 'storage', label: '存储与图床', ariaLabel: '对象存储与图床设置' },
-	{ key: 'ai', label: 'AI 集成', ariaLabel: '可选 AI 集成设置' },
-	{ key: 'data', label: '数据与迁移', ariaLabel: '导入导出与迁移设置' }
+	{ key: 'library', label: '书库', ariaLabel: '书库设置', icon: 'library' },
+	{ key: 'reader', label: '阅读', ariaLabel: '阅读器设置', icon: 'book-open' },
+	{ key: 'storage', label: '存储与图床', ariaLabel: '对象存储与图床设置', icon: 'cloud-upload' },
+	{ key: 'ai', label: 'AI 集成', ariaLabel: '可选 AI 集成设置', icon: 'sparkles' },
+	{ key: 'data', label: '数据与迁移', ariaLabel: '导入导出与迁移设置', icon: 'arrow-down-up' }
 ];
 
 export class ReadingDeskSettingTab extends PluginSettingTab {
@@ -57,16 +58,21 @@ export class ReadingDeskSettingTab extends PluginSettingTab {
 		this.stopHeadingIconSync?.();
 		this.stopHeadingIconSync = null;
 		containerEl.addClass('reading-desk-settings');
-		const heading = containerEl.createDiv({ cls: 'rd-setting-heading-row' });
+		const layout = containerEl.createDiv({ cls: 'rd-settings-layout' });
+		const sidebar = layout.createDiv({ cls: 'rd-settings-sidebar' });
+		sidebar.createDiv({ cls: 'rd-settings-brand', text: 'Reading Desk' });
+		const nav = sidebar.createDiv({ cls: 'rd-settings-nav', attr: { role: 'tablist', 'aria-label': '设置分类' } });
+		for (const definition of SETTINGS_TABS) nav.append(this.createTabButton(definition));
+		sidebar.createDiv({ cls: 'rd-settings-foot', text: `Margin ${this.readingDesk.manifest.version}` });
+		const main = layout.createDiv({ cls: 'rd-settings-main' });
+		const head = main.createDiv({ cls: 'rd-settings-main-head' });
+		const heading = head.createDiv({ cls: 'rd-setting-heading-row' });
 		this.headingIcon = heading.createSpan({ cls: 'rd-setting-heading-icon', attr: { 'aria-hidden': 'true' } });
 		this.syncHeadingIcon();
 		this.stopHeadingIconSync = observeHostTheme(containerEl.ownerDocument, () => this.syncHeadingIcon());
 		heading.createEl('h2', { cls: 'rd-setting-heading', text: 'Reading Desk 设置' });
-		containerEl.createEl('p', { cls: 'rd-setting-intro', text: '书架、阅读器和标注共用同一份本地数据。' });
-		const navCard = containerEl.createDiv({ cls: 'rd-card rd-settings-nav-card' });
-		const nav = navCard.createDiv({ cls: 'rd-settings-nav', attr: { role: 'tablist', 'aria-label': '设置分类' } });
-		for (const definition of SETTINGS_TABS) nav.append(this.createTabButton(definition));
-		this.panel = containerEl.createDiv({ cls: 'rd-settings-panel', attr: { role: 'tabpanel', tabindex: '0', id: 'rd-settings-panel' } });
+		head.createEl('p', { cls: 'rd-setting-intro', text: '书架、阅读器和标注共用同一份本地数据。' });
+		this.panel = main.createDiv({ cls: 'rd-settings-panel', attr: { role: 'tabpanel', tabindex: '0', id: 'rd-settings-panel' } });
 		this.renderActiveTab();
 	}
 
@@ -88,7 +94,9 @@ export class ReadingDeskSettingTab extends PluginSettingTab {
 		const button = document.createElement('button');
 		button.type = 'button';
 		button.className = 'rd-settings-tab';
-		button.textContent = definition.label;
+		const icon = button.createSpan({ cls: 'rd-settings-tab-icon', attr: { 'aria-hidden': 'true' } });
+		setIcon(icon, definition.icon);
+		button.createSpan({ cls: 'rd-settings-tab-label', text: definition.label });
 		button.id = `rd-settings-tab-${definition.key}`;
 		button.setAttribute('role', 'tab');
 		button.setAttribute('aria-selected', String(selected));
@@ -97,9 +105,11 @@ export class ReadingDeskSettingTab extends PluginSettingTab {
 		button.tabIndex = selected ? 0 : -1;
 		button.addEventListener('click', () => this.switchTab(definition.key));
 		button.addEventListener('keydown', event => {
-			if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+			// The nav stacks vertically in the sidebar and runs horizontally in the
+			// narrow fallback, so all four arrows page through the same order.
+			if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight' && event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
 			event.preventDefault();
-			const delta = event.key === 'ArrowLeft' ? -1 : 1;
+			const delta = event.key === 'ArrowLeft' || event.key === 'ArrowUp' ? -1 : 1;
 			const index = SETTINGS_TABS.findIndex(item => item.key === this.activeTab);
 			const next = SETTINGS_TABS[(index + delta + SETTINGS_TABS.length) % SETTINGS_TABS.length];
 			this.switchTab(next.key);

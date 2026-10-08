@@ -1,0 +1,662 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>设置面板 · shadcn 风格重设计预览</title>
+<style>
+  /* ============================================================
+     预览页外壳(不属于面板设计本身),约定与 comment-panel-shadcn.html 一致
+     ============================================================ */
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  [hidden] { display: none !important; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    background: hsl(240 5% 94%);
+    color: hsl(240 10% 10%);
+    padding: 32px 24px 64px;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .page { max-width: 1020px; margin: 0 auto; }
+  .page-head h1 { font-size: 20px; font-weight: 650; margin: 0 0 6px; letter-spacing: -0.01em; }
+  .page-head p { margin: 0; color: hsl(240 4% 40%); font-size: 13px; max-width: 76ch; }
+
+  .mapping {
+    margin-top: 20px;
+    background: hsl(0 0% 100%);
+    border: 1px solid hsl(240 6% 88%);
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+  .mapping h2 { margin: 0 0 10px; font-size: 13px; font-weight: 600; }
+  .mapping table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .mapping th, .mapping td { text-align: left; padding: 6px 10px 6px 0; vertical-align: top; }
+  .mapping th { color: hsl(240 4% 40%); font-weight: 500; width: 150px; white-space: nowrap; }
+  .mapping tr + tr th, .mapping tr + tr td { border-top: 1px solid hsl(240 6% 92%); }
+  .mapping code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 11.5px;
+    background: hsl(240 5% 95%);
+    border: 1px solid hsl(240 6% 90%);
+    border-radius: 4px;
+    padding: 1px 5px;
+  }
+  .mapping ul { margin: 8px 0 0; padding-left: 18px; color: hsl(240 4% 40%); }
+  .mapping li { margin: 3px 0; }
+  .mapping li + li { margin-top: 3px; }
+
+  .stage-controls { margin-top: 24px; display: flex; align-items: center; gap: 12px; }
+  .stage-controls .ctl-label { font-size: 12.5px; color: hsl(240 4% 40%); }
+  .segmented {
+    display: inline-flex; gap: 2px; padding: 2px;
+    background: hsl(240 5% 89%); border-radius: 8px;
+  }
+  .segmented button {
+    border: 0; border-radius: 6px; padding: 4px 14px; font: inherit; font-size: 12.5px;
+    background: transparent; color: hsl(240 4% 38%); cursor: pointer;
+  }
+  .segmented button[aria-pressed="true"] {
+    background: hsl(0 0% 100%); color: hsl(240 10% 10%);
+    box-shadow: 0 1px 2px hsl(240 10% 10% / 0.12);
+    font-weight: 550;
+  }
+
+  .stage { margin-top: 16px; display: flex; justify-content: center; }
+
+  /* ============================================================
+     面板:shadcn token(亮 / 暗),数值与 comment-panel-shadcn.html 相同
+     实现时映射:--sh-bg → --rd-surface,--sh-fg → --rd-ink,
+     --sh-accent → --rd-accent(Obsidian interactive-accent)等。
+     ============================================================ */
+  .theme-light {
+    --sh-bg: 0 0% 100%;
+    --sh-fg: 240 10% 3.9%;
+    --sh-muted: 240 4.8% 95.9%;
+    --sh-muted-fg: 240 3.8% 42%;
+    --sh-border: 240 5.9% 90%;
+    --sh-input: 240 5.9% 86%;
+    --sh-secondary: 240 4.8% 93%;
+    --sh-secondary-fg: 240 5.9% 14%;
+    --sh-accent: 249 62% 52%;
+    --sh-accent-hover: 249 62% 46%;
+    --sh-danger: 0 72% 47%;
+    --sh-danger-text: 0 72% 42%;
+    --sh-success-text: 145 55% 30%;
+    --sh-ring: 249 62% 52%;
+    --panel-shadow: 0 1px 2px hsl(240 10% 10% / 0.05), 0 12px 32px hsl(240 10% 10% / 0.08);
+  }
+  .theme-dark {
+    --sh-bg: 240 6% 9%;
+    --sh-fg: 0 0% 96%;
+    --sh-muted: 240 4% 16%;
+    --sh-muted-fg: 240 5% 66%;
+    --sh-border: 240 4% 17%;
+    --sh-input: 240 4% 22%;
+    --sh-secondary: 240 4% 16%;
+    --sh-secondary-fg: 0 0% 96%;
+    --sh-accent: 249 65% 55%;
+    --sh-accent-hover: 249 65% 50%;
+    --sh-danger: 0 68% 42%;
+    --sh-danger-text: 0 85% 70%;
+    --sh-success-text: 145 45% 55%;
+    --sh-ring: 249 65% 55%;
+    --panel-shadow: 0 1px 2px hsl(0 0% 0% / 0.4), 0 12px 32px hsl(0 0% 0% / 0.5);
+  }
+
+  /* ============================================================
+     设置窗口:左侧 Sidebar 导航 + 右侧内容(shadcn 设置页签名布局)
+     参照:ui.shadcn.com blocks sidebar-13(settings-dialog)与 Forms 示例
+     ============================================================ */
+  .win {
+    width: 940px; max-width: 100%;
+    height: 700px;
+    display: flex;
+    background: hsl(var(--sh-bg));
+    color: hsl(var(--sh-fg));
+    border: 1px solid hsl(var(--sh-border));
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: var(--panel-shadow);
+    font-size: 13px;
+  }
+
+  /* --- 左侧导航 ------------------------------------------------ */
+  .win-nav {
+    flex: none;
+    width: 200px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 14px 10px 12px;
+    background: hsl(var(--sh-muted) / 0.5);
+    border-right: 1px solid hsl(var(--sh-border));
+  }
+  .win-nav .nav-brand {
+    padding: 2px 10px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: hsl(var(--sh-muted-fg));
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 7px 10px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: hsl(var(--sh-muted-fg));
+    font: inherit;
+    font-size: 13.5px;
+    font-weight: 500;
+    text-align: left;
+    cursor: pointer;
+  }
+  .nav-item svg { width: 16px; height: 16px; flex: none; }
+  .nav-item:hover { color: hsl(var(--sh-fg)); }
+  .nav-item[aria-selected="true"] {
+    background: hsl(var(--sh-secondary));
+    color: hsl(var(--sh-fg));
+  }
+  .win-nav .nav-foot {
+    margin-top: auto;
+    padding: 8px 10px 0;
+    font-size: 12px;
+    color: hsl(var(--sh-muted-fg));
+  }
+
+  /* --- 右侧内容 ------------------------------------------------ */
+  .win-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .win-head { flex: none; padding: 18px 24px 14px; border-bottom: 1px solid hsl(var(--sh-border)); }
+  .win-head h2 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
+  .win-head p { margin: 3px 0 0; font-size: 12.5px; color: hsl(var(--sh-muted-fg)); }
+  .win-body { flex: 1; overflow-y: auto; padding: 20px 24px 28px; }
+
+  .sec[hidden] { display: none; }
+
+  /* --- 卡片:标题 + 描述 + 细线分行(与现 rd-card 结构一致) --- */
+  .card {
+    border: 1px solid hsl(var(--sh-border));
+    border-radius: 10px;
+    background: hsl(var(--sh-bg));
+    overflow: hidden;
+  }
+  .card + .card { margin-top: 18px; }
+  .card-head { padding: 15px 18px 13px; border-bottom: 1px solid hsl(var(--sh-border)); }
+  .card-title { font-size: 14px; font-weight: 600; letter-spacing: -0.005em; }
+  .card-desc { margin: 4px 0 0; font-size: 12.5px; line-height: 1.55; color: hsl(var(--sh-muted-fg)); }
+
+  .row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 28px;
+    padding: 13px 18px;
+  }
+  .row + .row { border-top: 1px solid hsl(var(--sh-border)); }
+  .row-main { min-width: 0; }
+  .row-name { font-size: 13.5px; font-weight: 500; }
+  .row-desc { margin: 3px 0 0; font-size: 12.5px; line-height: 1.5; color: hsl(var(--sh-muted-fg)); }
+  .row.is-disabled .row-name,
+  .row.is-disabled .row-desc { opacity: 0.55; }
+  .row > :last-child { flex: none; }
+
+  .ie-status { margin: 12px 2px 0; font-size: 12.5px; color: hsl(var(--sh-muted-fg)); }
+  .ie-status.is-error { color: hsl(var(--sh-danger-text)); }
+
+  /* --- 控件 ---------------------------------------------------- */
+  .btn-row { display: flex; gap: 8px; }
+  .btn {
+    height: 34px;
+    padding: 0 14px;
+    border: 1px solid hsl(var(--sh-border));
+    border-radius: 8px;
+    background: hsl(var(--sh-secondary));
+    color: hsl(var(--sh-secondary-fg));
+    font: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .btn:hover:not(:disabled) { background: hsl(var(--sh-secondary) / 0.72); border-color: hsl(var(--sh-input)); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .switch {
+    position: relative;
+    width: 36px;
+    height: 20px;
+    padding: 0;
+    border: 1px solid hsl(var(--sh-input));
+    border-radius: 999px;
+    background: hsl(var(--sh-input));
+    cursor: pointer;
+    transition: background 150ms ease, border-color 150ms ease;
+  }
+  .switch::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: hsl(0 0% 100%);
+    box-shadow: 0 1px 2px hsl(240 10% 10% / 0.25);
+    transition: transform 150ms ease;
+  }
+  .switch[aria-checked="true"] { background: hsl(var(--sh-accent)); border-color: hsl(var(--sh-accent)); }
+  .switch[aria-checked="true"]::after { transform: translateX(16px); }
+  .switch:focus-visible { outline: none; box-shadow: 0 0 0 2px hsl(var(--sh-bg)), 0 0 0 4px hsl(var(--sh-ring) / 0.45); }
+  .switch:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .select { position: relative; flex: none; }
+  .select select {
+    appearance: none;
+    height: 34px;
+    min-width: 172px;
+    padding: 0 32px 0 12px;
+    border: 1px solid hsl(var(--sh-input));
+    border-radius: 8px;
+    background: hsl(var(--sh-bg));
+    color: hsl(var(--sh-fg));
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .select select:focus-visible { outline: none; border-color: hsl(var(--sh-ring)); box-shadow: 0 0 0 3px hsl(var(--sh-ring) / 0.25); }
+  .select select:disabled { opacity: 0.5; cursor: not-allowed; }
+  .select svg {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    width: 14px;
+    height: 14px;
+    transform: translateY(-50%);
+    color: hsl(var(--sh-muted-fg));
+    pointer-events: none;
+  }
+
+  .input {
+    height: 34px;
+    width: 280px;
+    padding: 0 12px;
+    border: 1px solid hsl(var(--sh-input));
+    border-radius: 8px;
+    background: hsl(var(--sh-bg));
+    color: hsl(var(--sh-fg));
+    font: inherit;
+    font-size: 13px;
+  }
+  .input.wide { width: 340px; }
+  .input::placeholder { color: hsl(var(--sh-muted-fg) / 0.85); }
+  .input:focus-visible { outline: none; border-color: hsl(var(--sh-ring)); box-shadow: 0 0 0 3px hsl(var(--sh-ring) / 0.25); }
+  .input:disabled { opacity: 0.5; cursor: not-allowed; }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="page-head">
+    <h1>设置面板 · shadcn 风格重设计预览</h1>
+    <p>按 shadcn 设置页签名布局(左侧 Sidebar 导航 + 分组卡片)重排 Reading Desk 设置页全部五类设置项。文案取自 <code>ReadingDeskSettingTab.ts</code> 与 <code>ImportExportPanel.ts</code>,默认值取自 <code>DEFAULT_SETTINGS</code>。控件可交互:开关联动、提供商切换 Region 行、亮暗主题均有效。</p>
+  </header>
+
+  <section class="mapping" aria-label="与插件实现的映射">
+    <h2>实现映射(定稿后落到 styles partials,不改源结构)</h2>
+    <table>
+      <tr><th>布局</th><td>现 <code>rd-settings-tab</code> 顶部横排 Tab → 左侧 <code>win-nav</code> Sidebar 导航(参照 shadcn <code>sidebar-13 settings-dialog</code> 与 Forms 示例);Obsidian 设置弹窗右栏较窄,&lt;680px 时退化为现横排 Tab</td></tr>
+      <tr><th>卡片</th><td><code>rd-card</code>(标题 + 描述 + 细线分行)结构保留,皮肤换成 shadcn Card:1px 边框、10px 圆角、内容区独立滚动</td></tr>
+      <tr><th>行</th><td><code>.setting-item</code>(名称/描述左,控件右)→ <code>.row</code>,行内细线分隔,不做悬停变色</td></tr>
+      <tr><th>开关</th><td>Obsidian toggle → Switch 36×20,on 态填充 <code>--rd-accent</code>(映射 <code>--sh-accent</code>)</td></tr>
+      <tr><th>下拉 / 输入框</th><td>Obsidian dropdown / text-input → Select 触发器与 Input:34px 高、8px 圆角、聚焦 2px ring</td></tr>
+      <tr><th>按钮</th><td>Obsidian 默认按钮 → Secondary(outline + secondary 底);设置页无 Primary「保存」——保持逐行即时保存 + 行级反馈</td></tr>
+      <tr><th>主题</th><td>host <code>theme-light/dark</code> → <code>--sh-*</code> token(与 comment-panel 稿一致);实现时 <code>--sh-bg→--rd-surface</code>、<code>--sh-fg→--rd-ink</code>、<code>--sh-accent→--rd-accent</code></td></tr>
+    </table>
+    <ul>
+      <li>「AI 集成」卡的描述文案在实现中来自 <code>AiIntegrationService.availability().reason</code>:未检测到兼容插件时整卡禁用,本稿取其典型文案示意。</li>
+      <li>「数据与迁移」两段为 <code>ImportExportPanel</code> 确认文案;备份恢复、书目导入、摘录模板等按宿主能力注入的面板复用同一 Card + Row 样式,不单独设计。</li>
+      <li>「对象存储凭据」中 Region 行仅在选择腾讯云 COS 时显示,与现实现的 <code>hidden</code> 联动一致。</li>
+    </ul>
+  </section>
+
+  <div class="stage-controls">
+    <span class="ctl-label">主题</span>
+    <div class="segmented" role="group" aria-label="预览主题">
+      <button type="button" id="theme-light" aria-pressed="true">亮色</button>
+      <button type="button" id="theme-dark" aria-pressed="false">暗色</button>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div class="win theme-light" id="stage">
+      <!-- ============ 左侧导航 ============ -->
+      <nav class="win-nav" aria-label="设置分类">
+        <div class="nav-brand">READING DESK</div>
+        <button type="button" class="nav-item" data-sec="library" aria-selected="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 6 4 14"/><path d="M12 6v14"/><path d="M8 8v12"/><path d="M4 4v16"/></svg>
+          书库
+        </button>
+        <button type="button" class="nav-item" data-sec="reader" aria-selected="false" tabindex="-1">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          阅读
+        </button>
+        <button type="button" class="nav-item" data-sec="storage" aria-selected="false" tabindex="-1">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m16 16-4-4-4 4"/></svg>
+          存储与图床
+        </button>
+        <button type="button" class="nav-item" data-sec="ai" aria-selected="false" tabindex="-1">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg>
+          AI 集成
+        </button>
+        <button type="button" class="nav-item" data-sec="data" aria-selected="false" tabindex="-1">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 16 4 4 4-4"/><path d="M7 20V4"/><path d="m21 8-4-4-4 4"/><path d="M17 4v16"/></svg>
+          数据与迁移
+        </button>
+        <div class="nav-foot">Margin 0.5.1</div>
+      </nav>
+
+      <!-- ============ 右侧内容 ============ -->
+      <div class="win-main">
+        <header class="win-head">
+          <h2>Reading Desk 设置</h2>
+          <p>书架、阅读器和标注共用同一份本地数据。</p>
+        </header>
+
+        <div class="win-body">
+          <!-- ===== 书库 ===== -->
+          <section class="sec" data-sec="library">
+            <div class="card">
+              <div class="card-head">
+                <div class="card-title">书库文件夹</div>
+                <p class="card-desc">Reading Desk 从这些文件夹自动发现 PDF 与 EPUB。</p>
+              </div>
+              <div class="row">
+                <div class="row-main">
+                  <div class="row-name">文件夹列表</div>
+                  <p class="row-desc">用英文逗号分隔;修改后从书架「扫描书库」或命令面板重新扫描。</p>
+                </div>
+                <input class="input wide" type="text" aria-label="书库文件夹" placeholder="Reading/PDF, Reading/EPUB" value="">
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-head">
+                <div class="card-title">豆瓣元数据</div>
+                <p class="card-desc">从 book.douban.com 补全作者、评分与封面;只补空白字段,从不覆盖人工修改;低置信结果在书卡上标记「待确认」。</p>
+              </div>
+              <div class="row">
+                <div class="row-main">
+                  <div class="row-name">启用豆瓣刮削</div>
+                  <p class="row-desc">串行低速请求豆瓣公开页面;当日被限流(HTTP 403)后自动暂停,明天恢复。</p>
+                </div>
+                <button type="button" class="switch" id="sw-enrich" role="switch" aria-checked="true" aria-label="启用豆瓣刮削"></button>
+              </div>
+              <div class="row" data-requires="enrich">
+                <div class="row-main">
+                  <div class="row-name">新书自动刮削</div>
+                  <p class="row-desc" data-desc-on="扫描入库、缺少书目来源的新书自动进入刮削队列。" data-desc-off="需先启用豆瓣刮削。">扫描入库、缺少书目来源的新书自动进入刮削队列。</p>
+                </div>
+                <button type="button" class="switch" role="switch" aria-checked="true" aria-label="新书自动刮削"></button>
+              </div>
+              <div class="row" data-requires="enrich">
+                <div class="row-main">
+                  <div class="row-name">全部标记待确认</div>
+                  <p class="row-desc">即使是高置信命中,也在书卡上标记「待确认」,由你逐本核对。</p>
+                </div>
+                <button type="button" class="switch" role="switch" aria-checked="false" aria-label="全部标记待确认"></button>
+              </div>
+              <div class="row" data-requires="enrich">
+                <div class="row-main">
+                  <div class="row-name">刮削缺失信息的书目</div>
+                  <p class="row-desc" data-desc-on="为缺作者、缺封面或标题仍是文件名的存量书目逐本刮削;已有人工内容不受影响。" data-desc-off="需先启用豆瓣刮削。">为缺作者、缺封面或标题仍是文件名的存量书目逐本刮削;已有人工内容不受影响。</p>
+                </div>
+                <div class="btn-row"><button type="button" class="btn">开始刮削</button></div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ===== 阅读 ===== -->
+          <section class="sec" data-sec="reader" hidden>
+            <div class="card">
+              <div class="card-head">
+                <div class="card-title">阅读偏好</div>
+                <p class="card-desc">目录样式即时作用于已打开的 PDF 导航;滚动模式与夜间纸面反相对新打开的阅读器生效,已打开的阅读器可在其工具栏「显示选项」中即时调整。</p>
+              </div>
+              <div class="row">
+                <div class="row-main">
+                  <div class="row-name">目录样式</div>
+                  <p class="row-desc">控制 PDF 导航中的章节层级呈现,不改变 PDF 或摘录数据。</p>
+                </div>
+                <div class="select">
+                  <select aria-label="目录样式">
+                    <option selected>级联树</option>
+                    <option>子弹线</option>
+                  </select>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                </div>
+              </div>
+              <div class="row">
+                <div class="row-main">
+                  <div class="row-name">滚动模式</div>
+                  <p class="row-desc">连续滚动把整本书排成一条虚拟长卷;单页一次只显示一页。</p>
+                </div>
+                <div class="select">
+                  <select aria-label="滚动模式">
+                    <option selected>连续滚动</option>
+                    <option>单页</option>
+                  </select>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                </div>
+              </div>
+              <div class="row">
+                <div class="row-main">
+                  <div class="row-name">夜间纸面反相</div>
+                  <p class="row-desc">在深色主题下把 PDF 纸面反相为夜间阅读底色,界面本身不受影响。</p>
+                </div>
+                <div class="select">
+                  <select aria-label="夜间纸面反相">
+                    <option selected>跟随主题</option>
+                    <option>始终开启</option>
+                    <option>始终关闭</option>
+                  </select>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ===== 存储与图床 ===== -->
+          <section class="sec" data-sec="storage" hidden>
+            <div class="card">
+              <div class="card-head">
+                <div class="card-title">Markdown 图床</div>
+                <p class="card-desc">开启后在 Markdown 编辑器粘贴图片时自动上传,并以外链插入。</p>
+              </div>
+              <div class="row">
+                <div class="row-main">
+                  <div class="row-name">启用对象存储</div>
+                  <p class="row-desc">裁剪图片与图床上传的总开关;凭据保存在本地插件数据中。</p>
+                </div>
+                <button type="button" class="switch" id="sw-storage" role="switch" aria-checked="false" aria-label="启用对象存储"></button>
+              </div>
+              <div class="row" data-requires="storage">
+                <div class="row-main">
+                  <div class="row-name">接管 Markdown 粘贴</div>
+                  <p class="row-desc" data-desc-on="粘贴图片时上传并插入外链。" data-desc-off="需先启用对象存储。">需先启用对象存储。</p>
+                </div>
+                <button type="button" class="switch" role="switch" aria-checked="false" aria-label="启用 Markdown 图床" disabled></button>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-head">
+                <div class="card-title">对象存储凭据</div>
+                <p class="card-desc">填写 OSS 或 COS 的访问信息,可先用只读请求测试连通。</p>
+              </div>
+              <div class="row" data-requires="storage">
+                <div class="row-main"><div class="row-name">提供商</div></div>
+                <div class="select">
+                  <select id="storage-provider" aria-label="对象存储提供商" disabled>
+                    <option value="oss" selected>阿里云 OSS</option>
+                    <option value="cos">腾讯云 COS</option>
+                  </select>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                </div>
+              </div>
+              <div class="row" data-requires="storage" data-region hidden>
+                <div class="row-main">
+                  <div class="row-name">Region</div>
+                  <p class="row-desc">仅腾讯云 COS 需要。</p>
+                </div>
+                <input class="input" type="text" aria-label="Region" placeholder="ap-guangzhou" disabled>
+              </div>
+              <div class="row" data-requires="storage">
+                <div class="row-main"><div class="row-name">Endpoint</div></div>
+                <input class="input wide" type="text" aria-label="Endpoint" placeholder="https://oss-cn-hangzhou.aliyuncs.com" disabled>
+              </div>
+              <div class="row" data-requires="storage">
+                <div class="row-main"><div class="row-name">Bucket</div></div>
+                <input class="input" type="text" aria-label="Bucket" placeholder="reading-desk" disabled>
+              </div>
+              <div class="row" data-requires="storage">
+                <div class="row-main"><div class="row-name">对象存储路径</div></div>
+                <input class="input" type="text" aria-label="对象存储路径" value="reading-desk/" disabled>
+              </div>
+              <div class="row" data-requires="storage">
+                <div class="row-main"><div class="row-name">Access Key</div></div>
+                <input class="input" type="text" aria-label="Access Key" disabled>
+              </div>
+              <div class="row" data-requires="storage">
+                <div class="row-main"><div class="row-name">Secret Key</div></div>
+                <input class="input" type="password" aria-label="Secret Key" disabled>
+              </div>
+              <div class="row" data-requires="storage">
+                <div class="row-main">
+                  <div class="row-name">测试连接</div>
+                  <p class="row-desc" data-desc-on="发送已签名的只读请求;不会上传文件。" data-desc-off="先启用对象存储并填写凭据后才可测试。">先启用对象存储并填写凭据后才可测试。</p>
+                </div>
+                <div class="btn-row"><button type="button" class="btn" disabled>测试连接</button></div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ===== AI 集成 ===== -->
+          <section class="sec" data-sec="ai" hidden>
+            <div class="card">
+              <div class="card-head">
+                <div class="card-title">AI 选区对话</div>
+                <p class="card-desc">未检测到已启用的兼容 AI 插件,集成保持关闭;安装并启用后会自动出现在这里。</p>
+              </div>
+              <div class="row">
+                <div class="row-main">
+                  <div class="row-name">发送当前选区</div>
+                  <p class="row-desc">在阅读器中选中原文后,通过命令「将当前 Reading Desk 选区交给 AI」把上下文交给已启用的兼容插件。</p>
+                </div>
+                <div class="btn-row"><button type="button" class="btn" disabled>发送当前选区</button></div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ===== 数据与迁移 ===== -->
+          <section class="sec" data-sec="data" hidden>
+            <div class="card">
+              <div class="card-head">
+                <div class="card-title">导入与导出</div>
+                <p class="card-desc">导入只读取旧数据并新建文件,不会覆盖仓库内容。</p>
+              </div>
+              <div class="row">
+                <div class="row-main">
+                  <div class="row-name">导入旧 Bookshelf 数据</div>
+                  <p class="row-desc">导入旧 Bookshelf 的书目与分类;不会修改旧插件数据。此操作在当前库中只能执行一次,执行前需要二次确认。</p>
+                </div>
+                <div class="btn-row"><button type="button" class="btn">导入旧 Bookshelf 数据</button></div>
+              </div>
+              <div class="row">
+                <div class="row-main">
+                  <div class="row-name">导出当前书架</div>
+                  <p class="row-desc">下载当前书架的 Markdown 或 JSON 清单。书架导出仅包含书目与分类;标注、评论与摘录状态请使用完整备份。</p>
+                </div>
+                <div class="btn-row">
+                  <button type="button" class="btn">导出 Markdown</button>
+                  <button type="button" class="btn">导出 JSON</button>
+                </div>
+              </div>
+            </div>
+            <p class="ie-status">旧 Bookshelf 导入状态:此库尚未导入,可执行一次导入。</p>
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ---- 主题切换 --------------------------------------------------
+  var stage = document.getElementById('stage');
+  var themeButtons = { light: document.getElementById('theme-light'), dark: document.getElementById('theme-dark') };
+  function setTheme(mode) {
+    stage.classList.toggle('theme-light', mode === 'light');
+    stage.classList.toggle('theme-dark', mode === 'dark');
+    themeButtons.light.setAttribute('aria-pressed', String(mode === 'light'));
+    themeButtons.dark.setAttribute('aria-pressed', String(mode === 'dark'));
+  }
+  themeButtons.light.addEventListener('click', function () { setTheme('light'); });
+  themeButtons.dark.addEventListener('click', function () { setTheme('dark'); });
+
+  // ---- 导航切换(与现实现的 roving tabindex 一致) ---------------
+  var navItems = Array.prototype.slice.call(document.querySelectorAll('.nav-item'));
+  var sections = Array.prototype.slice.call(document.querySelectorAll('.sec'));
+  function selectSection(key) {
+    navItems.forEach(function (item) {
+      var selected = item.dataset.sec === key;
+      item.setAttribute('aria-selected', String(selected));
+      item.tabIndex = selected ? 0 : -1;
+    });
+    sections.forEach(function (sec) { sec.hidden = sec.dataset.sec !== key; });
+  }
+  navItems.forEach(function (item, index) {
+    item.addEventListener('click', function () { selectSection(item.dataset.sec); });
+    item.addEventListener('keydown', function (event) {
+      if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp' && event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+      event.preventDefault();
+      var delta = event.key === 'ArrowDown' || event.key === 'ArrowRight' ? 1 : -1;
+      var next = navItems[(index + delta + navItems.length) % navItems.length];
+      selectSection(next.dataset.sec);
+      next.focus();
+    });
+  });
+
+  // ---- 开关与联动 -------------------------------------------------
+  function setSwitch(el, on) { el.setAttribute('aria-checked', String(on)); }
+  function setDependent(root, gateKey, enabled) {
+    Array.prototype.forEach.call(root.querySelectorAll('[data-requires="' + gateKey + '"]'), function (row) {
+      row.classList.toggle('is-disabled', !enabled);
+      Array.prototype.forEach.call(row.querySelectorAll('.switch, .btn, input, select'), function (control) { control.disabled = !enabled; });
+      var desc = row.querySelector('[data-desc-on]');
+      if (desc) desc.textContent = enabled ? desc.dataset.descOn : desc.dataset.descOff;
+    });
+  }
+  var swEnrich = document.getElementById('sw-enrich');
+  var swStorage = document.getElementById('sw-storage');
+  swEnrich.addEventListener('click', function () {
+    var on = swEnrich.getAttribute('aria-checked') !== 'true';
+    setSwitch(swEnrich, on);
+    setDependent(document.querySelector('[data-sec="library"]'), 'enrich', on);
+  });
+  swStorage.addEventListener('click', function () {
+    var on = swStorage.getAttribute('aria-checked') !== 'true';
+    setSwitch(swStorage, on);
+    setDependent(document.querySelector('[data-sec="storage"]'), 'storage', on);
+  });
+
+  // ---- 提供商切换 Region 行(与现实现的 hidden 联动一致) --------
+  var providerSelect = document.getElementById('storage-provider');
+  providerSelect.addEventListener('change', function () {
+    document.querySelector('[data-region]').hidden = providerSelect.value !== 'cos';
+  });
+</script>
+</body>
+</html>

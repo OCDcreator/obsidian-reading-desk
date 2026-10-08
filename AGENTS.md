@@ -14,6 +14,10 @@ npm run build
 npm run verify
 ```
 
+## Styles
+
+The stylesheet source is the `assets/styles/*.css` partials; `npm run styles:sync` concatenates them (order defined in `scripts/sync-styles.mjs`) into the gitignored root `styles.css`. Edit partials, never the built root file.
+
 ## Single-Responsibility Rule
 
 Keep source modules under 650 lines and functions under 220 lines. `LibraryIndex` is the only book metadata index; `AnnotationStore` is the only annotation source; `TargetService` owns native target file mutation. Preserve normalized PDF `rects[]`, not screen pixels.

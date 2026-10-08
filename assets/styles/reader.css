@@ -1,0 +1,188 @@
+/* Reader shell */
+.rd-reader, .rd-shelf { height: 100%; background: var(--rd-surface); }
+.rd-shelf { overflow: auto; }
+.rd-reader { container-type: inline-size; display: grid; grid-template-rows: auto auto minmax(0, 1fr); overflow: hidden; }
+/* The aux row carries the docked search panel; it collapses to zero when hidden. */
+.rd-reader-aux:empty, .rd-reader-aux > .is-hidden { line-height: 0; }
+.rd-reader-aux { min-height: 0; }
+.rd-reader-toolbar {
+	display: flex; align-items: center; gap: 8px; flex-wrap: nowrap;
+	padding: 12px 16px; position: sticky; top: 0; z-index: 4;
+	border-bottom: 1px solid var(--rd-line); background: var(--rd-surface-raised);
+	max-width: 100%; overflow-x: auto;
+}
+.rd-reader-toolbar > * { min-width: 0; }
+.rd-reader-toolbar__group {
+	display: flex; align-items: center; flex: 0 0 auto; gap: 4px; min-width: 0;
+	white-space: nowrap;
+}
+.rd-reader .rd-reader-toolbar .rd-icon-button {
+	width: 30px; min-width: 30px; height: 30px; min-height: 30px; padding: 5px;
+	display: inline-grid; place-items: center; border: 0; background: transparent; box-shadow: none;
+	color: var(--rd-ink-muted);
+}
+.rd-reader .rd-reader-toolbar .rd-icon-button:hover:not(:disabled) { background: color-mix(in oklch, var(--rd-surface-raised) 85%, var(--rd-accent)); color: var(--rd-ink); }
+.rd-reader-toolbar .rd-icon-button svg { width: 18px; height: 18px; }
+.rd-reader .rd-reader-toolbar .rd-reader-toolbar__more { display: none; margin-left: auto; }
+.rd-page-count { align-self: center; color: var(--rd-ink-muted); font: inherit; white-space: nowrap; }
+.rd-page-control { display: flex; align-items: center; gap: 4px; min-width: 0; white-space: nowrap; }
+.rd-reader-toolbar .rd-page-control input { width: 42px; min-width: 42px; height: 30px; min-height: 30px; padding: 2px; font-variant-numeric: tabular-nums; text-align: center; }
+.rd-page-control__prefix, .rd-page-control__suffix { display: none; }
+.rd-reader-body {
+	display: grid; grid-template-columns: minmax(0, 1fr);
+	align-items: stretch; gap: 16px; padding: 24px;
+	min-height: 0; height: 100%; min-width: 0; overflow: hidden;
+}
+.rd-pdf-stage { min-width: 0; min-height: 0; height: 100%; overflow: auto; display: grid; place-items: start center; }
+.rd-reader-navigation {
+	min-width: 0; max-height: calc(100vh - var(--rd-toolbar-height, 54px) - 48px); overflow: hidden;
+	border: 1px solid var(--rd-line); background: var(--rd-surface); display: grid; grid-template-rows: auto minmax(0, 1fr);
+}
+.reading-desk-pdf-navigation-host { padding: 0; overflow: hidden; }
+.reading-desk-pdf-navigation-host > div { height: 100%; }
+.reading-desk-pdf-navigation-host .rd-reader-navigation { height: 100%; max-height: none; border: 0; }
+.rd-reader-navigation__tabs { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--rd-line); background: var(--rd-surface-raised); padding: 8px; gap: 8px; }
+.rd-reader-navigation__tab {
+	border: 1px solid transparent; border-radius: 5px; background: transparent; color: var(--rd-ink); font: inherit;
+}
+.rd-reader-thumbnail {
+	border: 8px solid transparent; border-radius: 4px; background: transparent; color: var(--rd-ink); font: inherit;
+	padding: 0; position: relative; display: block; cursor: pointer;
+}
+.rd-reader-navigation__tab { min-height: 30px; padding: 4px 8px; }
+.rd-reader-navigation__tab[aria-selected='true'] { border-color: var(--rd-accent); background: color-mix(in oklch, var(--rd-surface) 90%, var(--rd-accent)); }
+.rd-reader-navigation__panel { min-height: 0; overflow: auto; padding: 8px; }
+.rd-reader-thumbnails, .rd-reader-outline, .rd-outline-group { list-style: none; margin: 0; padding: 0; }
+.reading-desk-pdf-navigation-host .rd-reader-navigation__tab:not([aria-selected='true']) { background: transparent; border-color: transparent; box-shadow: none; }
+.reading-desk-pdf-navigation-host .rd-reader-thumbnail { width: auto; height: auto; min-height: 0; overflow: visible; background: transparent; border-color: transparent; box-shadow: none; }
+/* Mirrors the host PDF sidebar: wrapped centered papers; li shrink-wraps so rows flow. */
+.rd-reader-thumbnails { display: flex; flex-wrap: wrap; align-content: flex-start; justify-content: center; gap: 4px; padding: 4px; }
+.rd-reader-thumbnails > li { width: fit-content; }
+.reading-desk-pdf-navigation-host .rd-reader-thumbnail:hover,
+.reading-desk-pdf-navigation-host .rd-reader-thumbnail[aria-current='page'] { border-color: var(--background-modifier-hover, var(--rd-line)); }
+.reading-desk-pdf-navigation-host .rd-reader-thumbnail::after {
+	content: attr(data-page-label);
+	position: absolute; right: 4px; bottom: 4px;
+	padding: 2px 4px; border-radius: 3px; line-height: 1;
+	background: var(--background-secondary, var(--rd-surface-raised)); color: var(--text-muted, var(--rd-ink-muted));
+	font-size: var(--font-ui-smaller, 11px); font-variant-numeric: tabular-nums;
+}
+.reading-desk-pdf-navigation-host .rd-outline-row { background: transparent; box-shadow: none; }
+.reading-desk-pdf-navigation-host .rd-outline-row:hover { background: var(--nav-item-background-hover, transparent); box-shadow: none; }
+.reading-desk-pdf-navigation-host .rd-outline-node[aria-current='location'] > .rd-outline-row {
+	color: var(--nav-item-color-active, var(--rd-ink));
+	background: var(--nav-item-background-active, transparent);
+	font-weight: 600;
+}
+.reading-desk-pdf-navigation-host .rd-outline-node[aria-current='location'] .rd-reader-outline__page { color: inherit; }
+.reading-desk-pdf-navigation-host .rd-reader-thumbnail canvas {
+	display: block; width: 148px; max-width: 100%; height: auto; flex: none;
+	background: var(--rd-surface-document); box-shadow: var(--pdf-thumbnail-shadow);
+}
+.reading-desk-pdf-navigation-host .rd-reader-thumbnail canvas:not([data-rendered]) {
+	box-shadow: none; border: 1px dashed var(--rd-line); margin: -1px;
+}
+.rd-reader-thumbnail span, .rd-reader-outline__page { color: var(--rd-ink-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+/* Outline tree rows. One fixed 30px row keeps the bullet dot (5px at a 10px inset),
+ * the 1px connector segments and the 24px chevron gutter on a shared 12.5px center
+ * line at every depth; per-level indent is padding-inline-start: 16px on role=group. */
+.rd-outline-node { position: relative; }
+.rd-outline-group { position: relative; padding-inline-start: 16px; }
+.rd-outline-row {
+	display: flex; align-items: center; gap: 8px;
+	width: 100%; min-width: 0; height: 30px;
+	padding-inline-end: 8px; border-radius: 5px;
+	cursor: pointer; position: relative;
+}
+.rd-reader-outline__page { flex: none; }
+.rd-outline-gutter {
+	flex: none; width: 24px; height: 24px;
+	display: inline-flex; align-items: center; justify-content: center;
+	color: var(--rd-ink-muted);
+}
+.rd-outline-gutter svg { width: 15px; height: 15px; transition: transform 120ms ease; }
+.rd-outline-node[aria-expanded] .rd-outline-gutter { cursor: pointer; }
+.rd-outline-node[aria-expanded='true'] .rd-outline-gutter svg { transform: rotate(90deg); }
+.rd-outline-title { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rd-reader-outline--bullet .rd-outline-gutter { justify-content: flex-start; padding-inline-start: 10px; }
+.rd-reader-outline--bullet .rd-outline-gutter::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--rd-ink-muted); pointer-events: none; }
+.rd-reader-outline--bullet .rd-outline-node[aria-current='location'] .rd-outline-gutter::before { background: var(--rd-accent); }
+/* Branch connectors: a parent's rail leaves its own dot and always ends at the final
+ * child's dot, so a line can never run on into the next branch. */
+.rd-outline-group::before {
+	content: ''; position: absolute;
+	inset-inline-start: 12px; top: -15px; height: 15px;
+	border-inline-start: 1px solid var(--rd-line);
+	pointer-events: none;
+}
+.rd-reader-outline--tree .rd-outline-group > .rd-outline-node::before,
+.rd-reader-outline--bullet .rd-outline-group > .rd-outline-node::before {
+	content: ''; position: absolute;
+	inset-inline-start: -4px; top: 0; bottom: 0;
+	border-inline-start: 1px solid var(--rd-line);
+	pointer-events: none;
+}
+.rd-reader-outline--tree .rd-outline-group > .rd-outline-node:last-child::before,
+.rd-reader-outline--bullet .rd-outline-group > .rd-outline-node:last-child::before {
+	bottom: auto; height: 15px;
+	pointer-events: none;
+}
+.rd-reader-outline--bullet .rd-outline-group > .rd-outline-node > .rd-outline-row::after {
+	content: ''; position: absolute;
+	inset-inline-start: -4px; top: 15px; width: 14px;
+	border-block-start: 1px solid var(--rd-line);
+	pointer-events: none;
+}
+.rd-reader-navigation__tab:focus-visible, .rd-reader-thumbnail:focus-visible, .rd-outline-node:focus-visible > .rd-outline-row { outline: 2px solid var(--rd-accent); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+	.rd-outline-gutter svg { transition: none; }
+}
+/* The host keeps its own overflow so an over-wide page stays contained instead of
+ * spilling across the Reader; the Reader remains the primary scroll container. */
+.rd-pdf-page-host { position: relative; background: var(--rd-surface-document); box-shadow: 0 8px 22px var(--rd-elevation); max-width: 100%; overflow: auto; }
+.rd-reader[data-rd-size='medium'] .rd-reader-body { grid-template-columns: minmax(0, 1fr); padding: 16px; }
+.rd-reader[data-rd-size='narrow'] .rd-reader-body { grid-template-columns: minmax(0, 1fr); padding: 16px; overflow: hidden; }
+.rd-reader[data-rd-size='narrow'] .rd-pdf-stage { min-width: 0; min-height: 320px; overflow: auto; }
+.rd-pdf-canvas, .rd-pdf-text-layer, .rd-highlight-layer { inset: 0; position: absolute; }
+.rd-pdf-canvas { position: relative; display: block; }
+.rd-pdf-text-layer { overflow: hidden; line-height: 1; opacity: 1; user-select: text; -webkit-user-select: text; pointer-events: auto; }
+.rd-pdf-text-layer span { color: transparent; cursor: text; position: absolute; transform-origin: 0 0; user-select: text; -webkit-user-select: text; }
+.rd-highlight-layer { pointer-events: none; }
+.rd-highlight { position: absolute; opacity: 0.33; border-radius: 2px; pointer-events: auto; cursor: pointer; }
+.rd-highlight-comment-button { position: absolute; z-index: 4; width: 24px; height: 24px; border: 1px solid var(--rd-line); border-radius: 50%; background: var(--rd-surface-raised); color: var(--rd-ink); padding: 0; cursor: pointer; display: grid; place-items: center; }
+.rd-highlight-comment-button svg { width: 12px; height: 12px; display: block; }
+.rd-highlight-comment-button:focus-visible { outline: 2px solid var(--rd-accent); outline-offset: 2px; }
+
+/* Palette keys drive PDF highlights, swatches and Canvas nodes alike. The doubled
+ * class on the button carriers restores the key over Obsidian's button rule above. */
+.rd-highlight--moss, .rd-color-moss, .rd-swatch--moss { background: var(--rd-moss); }
+.rd-highlight--amber, .rd-color-amber, .rd-swatch--amber { background: var(--rd-amber); }
+.rd-highlight--brick, .rd-color-brick, .rd-swatch--brick { background: var(--rd-brick); }
+.rd-highlight--indigo, .rd-color-indigo, .rd-swatch--indigo { background: var(--rd-indigo); }
+.rd-highlight--plum, .rd-color-plum, .rd-swatch--plum { background: var(--rd-plum); }
+.rd-swatch.rd-swatch--moss, .rd-button.rd-swatch--moss { background: var(--rd-moss); }
+.rd-swatch.rd-swatch--amber, .rd-button.rd-swatch--amber { background: var(--rd-amber); }
+.rd-swatch.rd-swatch--brick, .rd-button.rd-swatch--brick { background: var(--rd-brick); }
+.rd-swatch.rd-swatch--indigo, .rd-button.rd-swatch--indigo { background: var(--rd-indigo); }
+.rd-swatch.rd-swatch--plum, .rd-button.rd-swatch--plum { background: var(--rd-plum); }
+.rd-toolbar-palette { display: flex; align-items: center; gap: 4px; }
+/* The toolbar palette is the one colour control without a text label: its glyph
+ * is a single character, so the name travels on aria-label alone. Every other
+ * swatch is a labelled control and keeps its visible colour name. */
+.rd-toolbar-palette .rd-button {
+	width: 28px; min-width: 28px; height: 28px; min-height: 28px;
+	border: 1px solid var(--rd-line); border-radius: 50%; box-shadow: none;
+	font-size: 0; padding: 0;
+}
+.rd-reader .rd-reader-toolbar .rd-toolbar-palette__more { display: none; }
+.rd-swatch {
+	min-width: 52px; height: 28px; min-height: 28px; padding: 0 8px;
+	border: 1px solid var(--rd-line); border-radius: 5px;
+	font-size: 12px; font-weight: 650; line-height: 24px;
+	/* The runtime samples the resolved Canvas color and writes a WCAG foreground
+	 * inline with !important; this host-derived value only covers the first
+	 * frame before that sampling runs. */
+	color: var(--rd-ink);
+	text-shadow: none;
+}
+.rd-toolbar-palette .rd-button:hover, .rd-swatch[aria-pressed='true'] { outline: 3px solid var(--rd-accent); outline-offset: 2px; }

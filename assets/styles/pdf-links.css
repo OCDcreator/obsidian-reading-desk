@@ -1,0 +1,22 @@
+/* Reader search ranges and PDF links share PDF.js page coordinates. */
+.rd-search-hit-overlay, .rd-pdf-link-layer { position: absolute; inset: 0; pointer-events: none; }
+.rd-search-hit { position: absolute; background: color-mix(in srgb, var(--text-highlight-bg) 55%, transparent); outline: 1px solid var(--rd-line); pointer-events: none; }
+.rd-search-hit--current { background: color-mix(in srgb, var(--rd-accent) 35%, transparent); outline: 2px solid var(--rd-accent); }
+.rd-pdf-link { position: absolute; display: block; pointer-events: auto; cursor: pointer; background: transparent; border: 0; padding: 0; min-width: 0; min-height: 0; border-radius: 0; box-shadow: none; }
+.rd-pdf-link:hover, .rd-pdf-link:focus-visible { background: color-mix(in srgb, var(--rd-accent) 12%, transparent); outline: 2px solid var(--rd-accent); }
+.rd-pdf-link-preview { position: absolute; pointer-events: auto; border: 1px solid var(--rd-line); background: var(--rd-surface-raised); color: var(--rd-ink); }
+.rd-pdf-preview { position: absolute; z-index: 30; inset: 12px; display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: 8px; padding: 12px; background: var(--rd-surface-raised); border: 1px solid var(--rd-line); box-shadow: 0 12px 28px var(--rd-elevation); }
+.rd-pdf-preview__body { grid-row: 1; overflow: auto; min-width: 0; min-height: 0; }
+.rd-pdf-preview__body .rd-pdf-page { position: relative; }
+.rd-pdf-preview__body canvas { display: block; margin-inline: auto; }
+.rd-pdf-preview__actions { grid-row: 2; display: flex; flex-wrap: wrap; justify-content: end; gap: 8px; }
+
+/* DOM state mirrors container-query boundaries for host layouts without named containers. */
+.rd-reader[data-rd-toolbar-overflow='secondary'] .rd-reader-toolbar [data-rd-overflow='secondary'],
+.rd-reader[data-rd-toolbar-overflow='tight'] .rd-reader-toolbar [data-rd-overflow='secondary'],
+.rd-reader[data-rd-toolbar-overflow='tight'] .rd-reader-toolbar [data-rd-overflow='tight'],
+.rd-reader[data-rd-toolbar-overflow='tight'] .rd-reader-toolbar__group[data-rd-toolbar-group='annotation'],
+.rd-reader[data-rd-toolbar-overflow='tight'] .rd-toolbar-palette { display: none; }
+.rd-reader[data-rd-toolbar-overflow='secondary'] .rd-reader-toolbar .rd-reader-toolbar__more,
+.rd-reader[data-rd-toolbar-overflow='tight'] .rd-reader-toolbar .rd-reader-toolbar__more,
+.rd-reader[data-rd-toolbar-overflow='tight'] .rd-reader-toolbar .rd-toolbar-palette__more { display: inline-grid; }

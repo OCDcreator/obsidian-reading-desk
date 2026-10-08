@@ -1,0 +1,28 @@
+/* Crop overlay. Selection geometry stays inline; everything static lives here.
+ * The [hidden] overrides matter: author display beats the UA hidden rule. */
+.rd-crop-overlay { position: absolute; inset: 0; z-index: 2; cursor: crosshair; touch-action: none; }
+.rd-crop-overlay.is-disabled, .rd-crop-overlay[data-crop-state='disabled'] { cursor: default; }
+.rd-crop-overlay[data-crop-state='loading'] { cursor: progress; }
+.rd-crop-selection {
+	position: absolute; display: none; pointer-events: auto;
+	border: 1px solid var(--rd-accent);
+	background: color-mix(in oklch, var(--rd-accent) 16%, transparent);
+}
+.rd-crop-selection--active { display: block; }
+.rd-crop-overlay:focus-visible { outline: 2px solid var(--rd-accent); outline-offset: -2px; }
+.rd-crop-status {
+	position: absolute; top: 8px; left: 8px; max-width: calc(100% - 16px); pointer-events: none;
+	border: 1px solid var(--rd-line); background: var(--rd-surface-raised); color: var(--rd-ink);
+	font-size: 12px; line-height: 1.5; padding: 2px 8px; overflow-wrap: anywhere;
+}
+.rd-crop-overlay[data-crop-state='error'] .rd-crop-status { color: var(--text-error); }
+.rd-crop-controls { position: absolute; left: 8px; bottom: 8px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; cursor: default; }
+.rd-crop-controls[hidden], .rd-crop-drag-handle[hidden] { display: none; }
+.rd-crop-controls label { display: inline-flex; align-items: center; gap: 4px; color: var(--rd-ink); font-size: 12px; }
+.rd-crop-drag-handle {
+	position: absolute; right: 0; bottom: 0; cursor: grab;
+	border: 1px solid var(--rd-line); border-radius: 5px;
+	background: var(--rd-surface-raised); color: var(--rd-ink);
+	font: inherit; min-height: 30px; padding: 4px 8px;
+}
+.rd-crop-drag-handle img, .rd-crop-drag-preview { display: block; max-width: 112px; max-height: 72px; }

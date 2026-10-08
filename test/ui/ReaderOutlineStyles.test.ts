@@ -1,7 +1,7 @@
-import fs from 'fs';
 import { describe, expect, it } from 'vitest';
+import { readStylesheet } from '../../scripts/sync-styles.mjs';
 
-const styles = fs.readFileSync(new URL('../../assets/styles.css', import.meta.url), 'utf8');
+const styles = readStylesheet();
 
 /** Body of the first rule whose selector line starts with `selector`, alone or in a list. */
 function ruleBody(selector: string): string {
