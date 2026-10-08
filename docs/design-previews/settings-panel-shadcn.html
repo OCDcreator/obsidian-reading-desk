@@ -307,7 +307,7 @@
   <section class="mapping" aria-label="与插件实现的映射">
     <h2>实现映射(定稿后落到 styles partials,不改源结构)</h2>
     <table>
-      <tr><th>布局</th><td>现 <code>rd-settings-tab</code> 顶部横排 Tab → 左侧 <code>win-nav</code> Sidebar 导航(参照 shadcn <code>sidebar-13 settings-dialog</code> 与 Forms 示例);Obsidian 设置弹窗右栏较窄,&lt;680px 时退化为现横排 Tab</td></tr>
+      <tr><th>布局</th><td>现 <code>rd-settings-tab</code> 顶部横排 Tab → 左侧 <code>win-nav</code> Sidebar 导航(参照 shadcn <code>sidebar-13 settings-dialog</code> 与 Forms 示例);Obsidian 1.14 独立设置窗口内容列约 610px 上限,&lt;520px 才退化为横排 Tab(真机实测后调整)</td></tr>
       <tr><th>卡片</th><td><code>rd-card</code>(标题 + 描述 + 细线分行)结构保留,皮肤换成 shadcn Card:1px 边框、10px 圆角、内容区独立滚动</td></tr>
       <tr><th>行</th><td><code>.setting-item</code>(名称/描述左,控件右)→ <code>.row</code>,行内细线分隔,不做悬停变色</td></tr>
       <tr><th>开关</th><td>Obsidian toggle → Switch 36×20,on 态填充 <code>--rd-accent</code>(映射 <code>--sh-accent</code>)</td></tr>

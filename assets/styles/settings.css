@@ -31,12 +31,21 @@
 .rd-settings-tab:hover { color: var(--rd-ink); }
 .rd-settings-tab[aria-selected='true'] { color: var(--rd-ink); background: var(--rd-surface-raised); font-weight: 500; }
 .rd-settings-tab:focus-visible { outline: 2px solid var(--rd-accent); outline-offset: 2px; }
+/* Obsidian's button:not(.clickable-icon) rule paints button chrome at (0,1,1),
+ * including center-justified flex; restate the quiet nav skin scoped to the
+ * pane so nav items stay transparent and left-aligned. The selected state is
+ * restated after it — same specificity, later position would otherwise win. */
+.reading-desk-settings .rd-settings-tab { border: 0; background: transparent; box-shadow: none; justify-content: flex-start; }
+.reading-desk-settings .rd-settings-tab[aria-selected='true'] { background: var(--rd-surface-raised); }
 .rd-settings-foot { margin-top: auto; padding: 8px 10px 0; font-size: 12px; color: var(--rd-ink-muted); }
 .rd-settings-main { min-width: 0; }
 .rd-settings-main-head { padding: 16px 18px 13px; border-bottom: 1px solid var(--rd-line); }
 .rd-settings-panel { min-width: 0; padding: 16px 18px 20px; }
 
-@container (max-width: 680px) {
+/* Obsidian 1.14 caps the detached settings-window content column near 610px,
+ * so the sidebar must survive that width; only truly tiny columns (<520px)
+ * fall back to the horizontal tab strip. */
+@container (max-width: 520px) {
 	.rd-settings-layout { grid-template-columns: minmax(0, 1fr); }
 	.rd-settings-sidebar {
 		flex-direction: row; align-items: center; gap: 4px;
